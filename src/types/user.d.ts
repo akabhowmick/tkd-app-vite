@@ -6,6 +6,7 @@ export interface BaseUser {
   role: UserRole; // Role of the user: 'parent', 'student', or 'instructor'
   profilePicture?: string; // Optional profile picture URL
   createdAt: Date; // Account creation timestamp
+  schoolId: string; // Reference to the school the user belongs to
 }
 
 // Enum for User Roles
@@ -13,7 +14,7 @@ export enum UserRole {
   Parent = "parent",
   Student = "student",
   Instructor = "instructor",
-  
+  SchoolAdmin = "schoolAdmin",
 }
 
 // Parent Interface
@@ -62,4 +63,13 @@ export interface Availability {
   day: string; // e.g., "Monday", "Tuesday"
   startTime: string; // Start time in HH:mm format (e.g., "09:00")
   endTime: string; // End time in HH:mm format (e.g., "12:00")
+}
+
+
+export interface School {
+  id: string; // Unique identifier
+  name: string; // School name
+  address: string; // School address
+  logo?: string; // Optional logo URL
+  createdAt: Date; // Creation timestamp
 }
