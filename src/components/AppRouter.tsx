@@ -5,6 +5,8 @@ import Home from '../pages/Home';
 import Login from '../pages/Login';
 import SignUp from '../pages/Signup';
 import { Dashboard } from './Dashboard';
+import { Header } from './Header';
+
 
 
 const AppRouter: React.FC = () => {
@@ -21,6 +23,7 @@ const AppRouter: React.FC = () => {
 
   return (
     <Router>
+      <Header />
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<Home />} />
