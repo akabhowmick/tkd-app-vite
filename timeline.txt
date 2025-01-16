@@ -1,0 +1,69 @@
+Day 2: Header and Footer
+Build and style the Header component with navigation links using Material Tailwind React and React Router.
+Create and style the Footer component.
+Ensure consistent layout across pages.
+Day 3: Authentication Context
+Implement AuthContext with login and logout functionality.
+Mock a user object with roles like "parent," "student," or "instructor."
+Add a function to persist authentication state (e.g., localStorage).
+Day 4: Routing
+Implement routing for Home, Login, SignUp, and Dashboard pages.
+Protect the Dashboard route using a private route wrapper.
+Add active link highlighting to the navigation.
+Day 5: Home Page
+Design the Home page with a welcome message and a brief description of the app.
+Add links/buttons for Login and SignUp.
+Day 6: Login and SignUp Pages
+Build the login form with email and password fields.
+Build the signup form with additional fields (name, role, etc.).
+Add form validation using a library like yup or custom logic.
+Day 7: Dashboard Base
+Create a basic Dashboard layout.
+Add placeholders for school-based content (e.g., announcements, student details).
+Link to other pages from the dashboard.
+Week 2: Core Features and Styling
+Day 8: Tailwind Enhancements
+Add global styling with Tailwind.
+Apply consistent button and form styles.
+Enhance responsive design for mobile and desktop views.
+Day 9: Schools Feature
+Add functionality to differentiate schools (e.g., school ID in the user object).
+Update AuthContext to include the selected school.
+Create a dropdown or modal to select/change schools.
+Day 10: Chat Feature
+Set up a basic chat component.
+Mock data for chat messages.
+Style the chat interface with Tailwind.
+Day 11: Notifications
+Build a notification component.
+Mock notifications (e.g., "Class schedule updated").
+Add a notification badge to the header.
+Day 12: Instructor-Specific Features
+Add an instructor dashboard view.
+Mock features like attendance tracking or class management.
+Day 13: Parent-Specific Features
+Add a parent dashboard view.
+Include student performance/attendance details.
+Day 14: API Integration
+Mock API calls for authentication and data fetching.
+Use libraries like Axios or Fetch API.
+Replace mock data with API calls (if available).
+Week 3: Polishing and Testing
+Day 15: Error Handling
+Add error messages for failed login/signup.
+Handle network errors gracefully in the app.
+Day 16: Testing
+Test the app across different browsers.
+Debug and fix layout or functional issues.
+Day 17: Optimization
+Optimize images and assets.
+Use code-splitting for faster load times.
+Day 18: Final Review
+Review all features for completeness.
+Make minor adjustments to UI and UX.
+Day 19: Deployment
+Deploy the app using platforms like Vercel or Netlify.
+Test the deployed version for any issues.
+Day 20: Documentation
+Write a README with instructions for setup and usage.
+Document the codebase for easier future updates.
