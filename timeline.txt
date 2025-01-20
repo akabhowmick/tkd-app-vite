@@ -1,7 +1,3 @@
-Day 2: Header and Footer
-Build and style the Header component with navigation links using Material Tailwind React and React Router.
-Create and style the Footer component.
-Ensure consistent layout across pages.
 Day 3: Authentication Context
 Implement AuthContext with login and logout functionality.
 Mock a user object with roles like "parent," "student," or "instructor."
