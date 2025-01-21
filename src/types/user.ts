@@ -3,6 +3,7 @@ export interface BaseUser {
   id: string; // Unique identifier
   name: string; // Full name of the user
   email: string; // Email address
+  phone: string; // Phone number
   role: UserRole; // Role of the user: 'parent', 'student', or 'instructor'
   profilePicture?: string; // Optional profile picture URL
   createdAt: Date; // Account creation timestamp
@@ -65,7 +66,6 @@ export interface Availability {
   endTime: string; // End time in HH:mm format (e.g., "12:00")
 }
 
-
 export interface School {
   id: string; // Unique identifier
   name: string; // School name
@@ -73,3 +73,4 @@ export interface School {
   logo?: string; // Optional logo URL
   createdAt: Date; // Creation timestamp
 }
+
