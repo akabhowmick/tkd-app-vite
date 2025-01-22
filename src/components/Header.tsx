@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { AiOutlineClose, AiOutlineMenu } from "react-icons/ai";
-import { Link } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 export const Header = () => {
-  // State to manage the navbar's visibility
   const [nav, setNav] = useState(false);
 
   // Toggle function to handle the navbar's display
@@ -11,15 +11,25 @@ export const Header = () => {
     setNav(!nav);
   };
 
-  // Array containing navigation items
-  const navItems = [
-    { id: 1, text: "Home", to: "/" },
-    { id: 2, text: "Dashboard", to: "/dashboard" },
-    { id: 3, text: "Resources", to: "/resources" },
-    { id: 4, text: "About", to: "/about" },
-    { id: 5, text: "Contact", to: "/contact" },
-    { id: 6, text: "Login", to: "/login" },
-  ];
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  // Handle user logout
+  const handleLogout = () => {
+    logout();
+    navigate("/login"); // Redirect to login after logout
+  };
+
+  // Navigation items based on user's authentication status
+  const navItems = user
+    ? [
+        { id: 1, text: "Home", to: "/" },
+        { id: 2, text: "Dashboard", to: "/dashboard" },
+      ]
+    : [
+        { id: 1, text: "Home", to: "/" },
+        { id: 2, text: "Login", to: "/login" },
+      ];
 
   return (
     <div className="bg-black flex justify-between items-center h-24 max-w-[1240px] mx-auto px-4 text-white">
@@ -29,14 +39,26 @@ export const Header = () => {
       {/* Desktop Navigation */}
       <ul className="hidden md:flex">
         {navItems.map((item) => (
-          <Link
+          <NavLink
             key={item.id}
             to={item.to}
-            className="p-4 text-red rounded-xl m-2 cursor-pointer duration-300 hover:text-red-500"
+            className={({ isActive }) =>
+              `p-4 rounded-xl m-2 cursor-pointer duration-300 ${
+                isActive ? "text-red-500 font-bold" : "text-red hover:text-red-500"
+              }`
+            }
           >
             {item.text}
-          </Link>
+          </NavLink>
         ))}
+        {user && (
+          <button
+            onClick={handleLogout}
+            className="p-4 bg-red-500 text-white rounded-xl m-2 cursor-pointer duration-300 hover:bg-red-600"
+          >
+            Logout
+          </button>
+        )}
       </ul>
 
       {/* Mobile Navigation Icon */}
@@ -53,17 +75,34 @@ export const Header = () => {
         }
       >
         {/* Mobile Logo */}
-        <h1 className="w-full text-5xl font-bold text-red-500 m-4">REACT.</h1>
+        <h1 className="w-full text-5xl font-bold text-red-500 m-4">Taekwondo Chat App</h1>
 
         {/* Mobile Navigation Items */}
         {navItems.map((item) => (
-          <li
+          <NavLink
             key={item.id}
-            className="p-4 border-b rounded-xl text-red-500 duration-300 hover:text-black cursor-pointer border-gray-600"
+            to={item.to}
+            onClick={handleNav} // Close menu on navigation
+            className={({ isActive }) =>
+              `block p-4 rounded-xl m-2 cursor-pointer duration-300 ${
+                isActive ? "text-red-500 font-bold" : "text-red hover:text-red-500"
+              }`
+            }
           >
             {item.text}
-          </li>
+          </NavLink>
         ))}
+        {user && (
+          <button
+            onClick={() => {
+              handleLogout();
+              handleNav(); // Close menu after logout
+            }}
+            className="block w-full p-4 bg-red-500 text-white rounded-xl m-2 cursor-pointer duration-300 hover:bg-red-600"
+          >
+            Logout
+          </button>
+        )}
       </ul>
     </div>
   );

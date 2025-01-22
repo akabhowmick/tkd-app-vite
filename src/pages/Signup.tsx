@@ -82,7 +82,7 @@ const SignUp: React.FC = () => {
               value={formData[input.name as keyof typeof formData]}
               onChange={handleChange}
               placeholder={input.placeholder}
-              className="border p-2 rounded w-full bg-gray-300 text-black"
+              className="border p-2 rounded w-full bg-gray-100 text-black"
             />
           </div>
         ))}
@@ -97,7 +97,7 @@ const SignUp: React.FC = () => {
             name="role"
             value={formData.role}
             onChange={handleChange}
-            className="border p-2 rounded w-full bg-gray-300 text-black"
+            className="border p-2 rounded w-full bg-gray-100 text-black"
           >
             <option value={UserRole.Parent}>Parent</option>
             <option value={UserRole.Student}>Student</option>

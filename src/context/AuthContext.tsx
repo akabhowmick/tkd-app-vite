@@ -5,6 +5,7 @@ interface AuthContextType {
   user: BaseUser | null;
   school: School | null;
   login: (email: string, password: string) => Promise<void>;
+  signup: (newUser: BaseUser) => void;
   logout: () => void;
 }
 
@@ -14,6 +15,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [user, setUser] = useState<BaseUser | null>(null);
   const [school, setSchool] = useState<School | null>(null);
 
+  // Login function
   const login = async (email: string, password: string) => {
     // Mock login logic (replace with actual backend logic)
     const mockSchool: School = {
@@ -27,33 +29,65 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       id: "user-456",
       name: "John Doe",
       email,
-      phone: "1234567890",
+      phone: "",
       role: UserRole.Student,
       createdAt: new Date(),
       schoolId: mockSchool.id,
     };
+
     console.log(password);
 
+    // Save user and school to state
     setSchool(mockSchool);
     setUser(mockUser);
+
+    // Persist user in localStorage
+    localStorage.setItem("authUser", JSON.stringify(mockUser));
+    localStorage.setItem("authSchool", JSON.stringify(mockSchool));
   };
 
-     // Persist user state in localStorage
-     useEffect(() => {
-      const storedUser = localStorage.getItem("authUser");
-      if (storedUser) {
-        setUser(JSON.parse(storedUser));
-      }
-    }, []);
-
-    // Logout function
-    const logout = () => {
-      setUser(null);
-      localStorage.removeItem("authUser");
+  // Signup function
+  const signup = (newUser: BaseUser) => {
+    // Mock signup logic (replace with actual backend logic)
+    const mockSchool: School = {
+      id: "school-123",
+      name: "Best Taekwondo Academy",
+      address: "123 Martial Arts Lane",
+      createdAt: new Date(),
     };
 
+    // Save user and school to state
+    setUser(newUser);
+    setSchool(mockSchool);
+
+    // Persist user in localStorage
+    localStorage.setItem("authUser", JSON.stringify(newUser));
+    localStorage.setItem("authSchool", JSON.stringify(mockSchool));
+  };
+
+  // Logout function
+  const logout = () => {
+    setUser(null);
+    setSchool(null);
+
+    // Clear localStorage
+    localStorage.removeItem("authUser");
+    localStorage.removeItem("authSchool");
+  };
+
+  // Load user and school from localStorage on app start
+  useEffect(() => {
+    const storedUser = localStorage.getItem("authUser");
+    const storedSchool = localStorage.getItem("authSchool");
+
+    if (storedUser) setUser(JSON.parse(storedUser));
+    if (storedSchool) setSchool(JSON.parse(storedSchool));
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, school, login, logout }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ user, school, login, signup, logout }}>
+      {children}
+    </AuthContext.Provider>
   );
 };
 

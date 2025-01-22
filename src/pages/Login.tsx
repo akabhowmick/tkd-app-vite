@@ -58,7 +58,7 @@ const Login: React.FC = () => {
             value={formData.email}
             onChange={handleChange}
             placeholder="Email"
-            className="border p-2 rounded w-full bg-gray-300 text-black"
+            className="border p-2 rounded w-full bg-gray-100 text-black"
           />
         </div>
         <div className="flex flex-col gap-2">
@@ -72,7 +72,7 @@ const Login: React.FC = () => {
             value={formData.password}
             onChange={handleChange}
             placeholder="Password"
-            className="border p-2 rounded w-full bg-gray-300 text-black"
+            className="border p-2 rounded w-full bg-gray-100 text-black"
           />
         </div>
 
