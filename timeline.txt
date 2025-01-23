@@ -4,12 +4,20 @@ Implement AuthContext with login and logout functionality.
 Mock a user object with roles like "parent," "student," or "instructor."
 Add a function to persist authentication state (e.g., localStorage).
 
-In progress:
 Day 4: Routing
 => Add active link highlighting to the navigation.
 => once you are logged in make a logout btn 
 => once you are logged out make get login
+
+Day 5: Home Page
+Add links/buttons for Login and SignUp.
+
+In progress:
+Day 4: Routing
 => after successful sign in or login => redirect to dashboard
+
+Day 5: Home Page
+Design the Home page with a welcome message and a brief description of the app.
 
 
 To do: 

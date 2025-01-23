@@ -15,35 +15,36 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [user, setUser] = useState<BaseUser | null>(null);
   const [school, setSchool] = useState<School | null>(null);
 
+  const mockSchool: School = {
+    id: "school-123",
+    name: "Best Taekwondo Academy",
+    address: "123 Martial Arts Lane",
+    createdAt: new Date(),
+  };
+
+  const mockUser: BaseUser = {
+    id: "user-456",
+    name: "John Doe",
+    email: "a@b.com",
+    phone: "",
+    role: UserRole.Student,
+    createdAt: new Date(),
+    schoolId: mockSchool.id,
+  };
+
   // Login function
   const login = async (email: string, password: string) => {
     // Mock login logic (replace with actual backend logic)
-    const mockSchool: School = {
-      id: "school-123",
-      name: "Best Taekwondo Academy",
-      address: "123 Martial Arts Lane",
-      createdAt: new Date(),
-    };
 
-    const mockUser: BaseUser = {
-      id: "user-456",
-      name: "John Doe",
-      email,
-      phone: "",
-      role: UserRole.Student,
-      createdAt: new Date(),
-      schoolId: mockSchool.id,
-    };
+    if (email === mockUser.email && password === "1234") {
+      // Save user and school to state
+      setSchool(mockSchool);
+      setUser(mockUser);
 
-    console.log(password);
-
-    // Save user and school to state
-    setSchool(mockSchool);
-    setUser(mockUser);
-
-    // Persist user in localStorage
-    localStorage.setItem("authUser", JSON.stringify(mockUser));
-    localStorage.setItem("authSchool", JSON.stringify(mockSchool));
+      // Persist user in localStorage
+      localStorage.setItem("authUser", JSON.stringify(mockUser));
+      localStorage.setItem("authSchool", JSON.stringify(mockSchool));
+    } 
   };
 
   // Signup function
