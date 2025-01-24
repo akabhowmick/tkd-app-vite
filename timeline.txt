@@ -11,19 +11,14 @@ Day 4: Routing
 
 Day 5: Home Page
 Add links/buttons for Login and SignUp.
+Design the Home page with a welcome message and a brief description of the app.
 
 In progress:
 Day 4: Routing
 => after successful sign in or login => redirect to dashboard
 
-Day 5: Home Page
-Design the Home page with a welcome message and a brief description of the app.
-
 
 To do: 
-Day 5: Home Page
-Design the Home page with a welcome message and a brief description of the app.
-Add links/buttons for Login and SignUp.
 Day 6: Login and SignUp Pages
 Build the login form with email and password fields.
 Build the signup form with additional fields (name, role, etc.).
