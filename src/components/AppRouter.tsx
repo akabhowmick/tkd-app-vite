@@ -4,7 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import Home from "../pages/Home";
 import Login from "../pages/Login";
 import SignUp from "../pages/Signup";
-import { Dashboard } from "./Dashboard";
+import { Dashboard } from "../pages/Dashboard";
 import { Header } from "./Header";
 
 const AppRouter: React.FC = () => {
