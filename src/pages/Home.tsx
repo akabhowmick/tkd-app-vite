@@ -1,4 +1,5 @@
 import React from "react";
+// import { KickingAnimation } from "../components/dotLottie";
 
 const Home: React.FC = () => {
   return (
@@ -12,6 +13,7 @@ const Home: React.FC = () => {
       </div>
 
       {/* Main Content */}
+      {/* <KickingAnimation /> */}
       <div className="relative z-10 flex flex-col items-center justify-center h-full text-black">
         <h1 className="text-4xl font-bold text-red-500 mb-4">
           Welcome to Taekwondo Chat App

@@ -4,7 +4,7 @@ import { BaseUser, School, UserRole } from "../types/user";
 interface AuthContextType {
   user: BaseUser | null;
   school: School | null;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<boolean>;
   signup: (newUser: BaseUser) => void;
   logout: () => void;
 }
@@ -35,16 +35,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Login function
   const login = async (email: string, password: string) => {
     // Mock login logic (replace with actual backend logic)
+    const mockLoginUser = { email: "test@example.com", password: "123456" };
 
-    if (email === mockUser.email && password === "1234") {
-      // Save user and school to state
-      setSchool(mockSchool);
+    if (email === mockLoginUser.email && password === mockLoginUser.password) {
+      // Save user to state and localStorage
       setUser(mockUser);
-
-      // Persist user in localStorage
       localStorage.setItem("authUser", JSON.stringify(mockUser));
       localStorage.setItem("authSchool", JSON.stringify(mockSchool));
-    } 
+      return true; // Login successful
+    }
+
+    return false; // Invalid credentials
   };
 
   // Signup function

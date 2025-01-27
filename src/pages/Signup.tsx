@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { UserRole } from "../types/user";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const SignUp: React.FC = () => {
-  const { login } = useAuth(); // Optional: If you want to auto-login after sign-up
+  const { login } = useAuth(); // Optional: Auto-login after sign-up
+  const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -24,20 +26,54 @@ const SignUp: React.FC = () => {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const validateInput = () => {
+    const { name, email, password, schoolId } = formData;
 
-    // Basic validation
-    if (!formData.name || !formData.email || !formData.password || !formData.schoolId) {
+    // Check required fields
+    if (!name || !email || !password || !schoolId) {
       setError("Please fill in all required fields.");
-      return;
+      return false;
     }
 
-    // Save user data (Replace with API call or database logic)
-    console.log("User signed up:", formData);
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError("Please enter a valid email address.");
+      return false;
+    }
 
-    // Optional: Auto-login after sign-up
-    login(formData.email, formData.role);
+    // Validate password length
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters long.");
+      return false;
+    }
+
+    // Validation passed
+    return true;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Clear previous errors
+    setError("");
+
+    // Validate inputs
+    if (!validateInput()) return;
+
+    try {
+      // Simulate backend sign-up logic (replace with actual API call)
+      console.log("User signed up:", formData);
+
+      // Optional: Auto-login after successful sign-up
+      await login(formData.email, formData.password);
+
+      // Redirect to dashboard
+      navigate("/dashboard");
+    } catch (err) {
+      // Handle backend errors
+      setError("Sign-up failed. Please try again later. " + err);
+    }
 
     // Reset form
     setFormData({
@@ -48,8 +84,6 @@ const SignUp: React.FC = () => {
       schoolId: "",
       contactNumber: "",
     });
-
-    setError("");
   };
 
   // Input configuration array
@@ -107,6 +141,7 @@ const SignUp: React.FC = () => {
         </div>
 
         {error && <p className="text-red-500 text-sm">{error}</p>}
+
         <button
           type="submit"
           className="w-full px-4 py-2 text-white bg-blue-500 rounded hover:bg-blue-700"

@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import { useAuth } from "../context/AuthContext";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const Login: React.FC = () => {
   const { login } = useAuth();
+  const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -19,28 +21,48 @@ const Login: React.FC = () => {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const validateInput = () => {
+    const { email, password } = formData;
+
+    // Simple email format validation (using regex)
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError("Please enter a valid email address.");
+      return false;
+    }
+
+    // Ensure password is at least 6 characters long
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Basic validation
-    if (!formData.email || !formData.password) {
-      setError("Please fill in all required fields.");
-      return;
-    }
-
-    // Call login function
-    const success = login(formData.email, formData.password);
-    if (!success) {
-      setError("Invalid email or password. Please try again.");
-      return;
-    }
-
-    // Clear form and error
-    setFormData({
-      email: "",
-      password: "",
-    });
+    // Clear any previous errors
     setError("");
+
+    // Validate input
+    if (!validateInput()) return;
+
+    try {
+      // Call the login function (backend validation occurs here)
+      const success = await login(formData.email, formData.password);
+      if (!success) {
+        setError("Invalid email or password. Please try again.");
+        return;
+      }
+
+      // Redirect to the dashboard after successful login
+      navigate("/dashboard");
+    } catch (err) {
+      // Handle unexpected backend errors
+      setError("Something went wrong. Please try again later. " + err);
+    }
   };
 
   return (
@@ -78,7 +100,10 @@ const Login: React.FC = () => {
 
         {error && <p className="text-red-500 text-sm">{error}</p>}
 
-        <button type="submit" className="w-full px-4 py-2 text-white bg-blue-500 rounded hover:bg-blue-700">
+        <button
+          type="submit"
+          className="w-full px-4 py-2 text-white bg-blue-500 rounded hover:bg-blue-700"
+        >
           Login
         </button>
       </form>

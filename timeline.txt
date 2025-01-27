@@ -8,21 +8,32 @@ Day 4: Routing
 => Add active link highlighting to the navigation.
 => once you are logged in make a logout btn 
 => once you are logged out make get login
+=> after successful sign in or login => redirect to dashboard
 
 Day 5: Home Page
 Add links/buttons for Login and SignUp.
 Design the Home page with a welcome message and a brief description of the app.
 
-In progress:
-Day 4: Routing
-=> after successful sign in or login => redirect to dashboard
-
-
-To do: 
 Day 6: Login and SignUp Pages
 Build the login form with email and password fields.
 Build the signup form with additional fields (name, role, etc.).
+
+Day 20: Documentation
+Write a README with instructions for setup and usage.
+Document the codebase for easier future updates.
+
+
+
+
+
+
+
+In progress:
+Day 6: Login and SignUp Pages
 Add form validation using a library like yup or custom logic.
+
+
+To do: 
 Day 7: Dashboard Base
 Create a basic Dashboard layout.
 Add placeholders for school-based content (e.g., announcements, student details).
@@ -36,9 +47,8 @@ Day 9: Schools Feature
 Add functionality to differentiate schools (e.g., school ID in the user object).
 Update AuthContext to include the selected school.
 Create a dropdown or modal to select/change schools.
-Day 10: Chat Feature
+Day 10: FAQ Feature
 Set up a basic chat component.
-Mock data for chat messages.
 Style the chat interface with Tailwind.
 Day 11: Notifications
 Build a notification component.
@@ -68,8 +78,9 @@ Day 18: Final Review
 Review all features for completeness.
 Make minor adjustments to UI and UX.
 Day 19: Deployment
-Deploy the app using platforms like Vercel or Netlify.
+Deploy the app using platforms like Netlify.
 Test the deployed version for any issues.
-Day 20: Documentation
-Write a README with instructions for setup and usage.
-Document the codebase for easier future updates.
+
+
+Todo: 
+the kicking animation does not work
