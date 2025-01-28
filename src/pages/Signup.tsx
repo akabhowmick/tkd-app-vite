@@ -136,7 +136,7 @@ const SignUp: React.FC = () => {
             <option value={UserRole.Parent}>Parent</option>
             <option value={UserRole.Student}>Student</option>
             <option value={UserRole.Instructor}>Instructor</option>
-            <option value={UserRole.SchoolAdmin}>School Admin</option>
+            <option value={UserRole.Admin}>School Admin</option>
           </select>
         </div>
 

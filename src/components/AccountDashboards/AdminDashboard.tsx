@@ -1,10 +1,11 @@
 import { Link } from "react-router-dom";
-
+import { useAuth } from "../../context/AuthContext";
 
 const AdminDashboard = () => {
+  const { user } = useAuth();
   return (
     <div>
-      <h1>Admin Dashboard</h1>
+      <h1>Admin Dashboard: {user?.name}</h1>
       <section>
         <h2>School Management</h2>
         <ul>

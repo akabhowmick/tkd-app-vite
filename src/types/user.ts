@@ -15,7 +15,7 @@ export enum UserRole {
   Parent = "parent",
   Student = "student",
   Instructor = "instructor",
-  SchoolAdmin = "schoolAdmin",
+  Admin = "admin",
 }
 
 // Parent Interface

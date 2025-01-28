@@ -1,9 +1,11 @@
 import { Link } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 
 const StudentDashboard = () => {
+  const { user } = useAuth();
   return (
     <div>
-      <h1>Student Dashboard</h1>
+      <h1>Student Dashboard: {user?.name}</h1>
       <section>
         <h2>Class Schedule</h2>
         <ul>

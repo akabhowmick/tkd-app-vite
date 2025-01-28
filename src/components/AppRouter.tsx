@@ -4,8 +4,8 @@ import { useAuth } from "../context/AuthContext";
 import Home from "../pages/Home";
 import Login from "../pages/Login";
 import SignUp from "../pages/Signup";
-import { Dashboard } from "../pages/Dashboard";
 import { Header } from "./Header";
+import Dashboard from "../pages/Dashboard";
 
 const AppRouter: React.FC = () => {
   const { user } = useAuth();
@@ -42,7 +42,7 @@ const AppRouter: React.FC = () => {
           path="/dashboard"
           element={
             <PrivateRoute>
-              <Dashboard />
+              <Dashboard/>
             </PrivateRoute>
           }
         />
