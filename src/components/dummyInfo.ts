@@ -1,96 +1,71 @@
-export interface User {
-  id: number;
-  name: string;
-  email: string;
-  role: 'admin' | 'instructor' | 'parent' | 'student';
-  parentId?: number;
-}
-
-export interface School {
-  id: number;
-  name: string;
-  address: string;
-}
-
-export interface Class {
-  id: number;
-  name: string;
-  instructorId: number;
-  schoolId: number;
-}
-
-export interface Announcement {
-  id: number;
-  title: string;
-  content: string;
-  schoolId: number;
-}
+import { Announcement, Class, School, User } from "../types/user";
 
 export const users: User[] = [
   {
     id: 1,
-    name: 'John Doe',
-    email: 'johndoe@example.com',
-    role: 'admin',
+    name: "John Doe",
+    email: "johndoe@example.com",
+    role: "admin",
   },
   {
     id: 2,
-    name: 'Jane Smith',
-    email: 'janesmith@example.com',
-    role: 'instructor',
+    name: "Jane Smith",
+    email: "janesmith@example.com",
+    role: "instructor",
   },
   {
     id: 3,
-    name: 'Bob Johnson',
-    email: 'bobjohnson@example.com',
-    role: 'instructor',
+    name: "Bob Johnson",
+    email: "bobjohnson@example.com",
+    role: "instructor",
   },
   {
     id: 4,
-    name: 'Alice Brown',
-    email: 'alicebrown@example.com',
-    role: 'parent',
+    name: "Alice Brown",
+    email: "alicebrown@example.com",
+    role: "parent",
   },
   {
     id: 5,
-    name: 'Mike Davis',
-    email: 'mikedavis@example.com',
-    role: 'parent',
+    name: "Mike Davis",
+    email: "mikedavis@example.com",
+    role: "parent",
   },
   {
     id: 6,
-    name: 'Emily Chen',
-    email: 'emilychen@example.com',
-    role: 'student',
+    name: "Emily Chen",
+    email: "emilychen@example.com",
+    role: "student",
     parentId: 4,
   },
   {
     id: 7,
-    name: 'David Lee',
-    email: 'davidlee@example.com',
-    role: 'student',
+    name: "David Lee",
+    email: "davidlee@example.com",
+    role: "student",
     parentId: 5,
   },
 ];
 
 export const schools: School[] = [
   {
-    id: 1,
-    name: 'Taekwondo School',
-    address: '123 Main St, Anytown, USA',
+    id: "1",
+    name: "Taekwondo School",
+    address: "123 Main St, Anytown, USA",
+    createdAt: new Date(),
   },
 ];
 
 export const classes: Class[] = [
   {
     id: 1,
-    name: 'Beginner\'s Class',
+    name: "Beginner's Class",
     instructorId: 2,
     schoolId: 1,
   },
   {
     id: 2,
-    name: 'Intermediate Class',
+    name: "Intermediate Class",
     instructorId: 3,
     schoolId: 1,
   },
@@ -99,14 +74,14 @@ export const classes: Class[] = [
 export const announcements: Announcement[] = [
   {
     id: 1,
-    title: 'Upcoming Tournament',
-    content: 'We will be hosting a tournament on March 12th.',
+    title: "Upcoming Tournament",
+    content: "We will be hosting a tournament on March 12th.",
     schoolId: 1,
   },
   {
     id: 2,
-    title: 'New Class Schedule',
-    content: 'We have updated our class schedule. Please check the website for more information.',
+    title: "New Class Schedule",
+    content: "We have updated our class schedule. Please check the website for more information.",
     schoolId: 1,
   },
 ];

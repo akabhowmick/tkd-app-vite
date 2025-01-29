@@ -1,4 +1,27 @@
 // Base User Interface (Shared properties)
+export interface User {
+  id: number;
+  name: string;
+  email: string;
+  role: 'admin' | 'instructor' | 'parent' | 'student';
+  parentId?: number;
+}
+
+export interface Class {
+  id: number;
+  name: string;
+  instructorId: number;
+  schoolId: number;
+}
+
+export interface Announcement {
+  id: number;
+  title: string;
+  content: string;
+  schoolId: number;
+}
+
+
 export interface BaseUser {
   id: string; // Unique identifier
   name: string; // Full name of the user
