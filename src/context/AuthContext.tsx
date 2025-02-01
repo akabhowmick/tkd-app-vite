@@ -1,11 +1,13 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
+
 import { BaseUser, School, UserRole } from "../types/user";
+import { supabase } from "../api/supabase";
 
 interface AuthContextType {
   user: BaseUser | null;
   school: School | null;
   login: (email: string, password: string) => Promise<boolean>;
-  signup: (newUser: BaseUser) => void;
+  signup: (newUser: BaseUser, password: string) => Promise<boolean>;
   logout: () => void;
 }
 
@@ -15,76 +17,88 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [user, setUser] = useState<BaseUser | null>(null);
   const [school, setSchool] = useState<School | null>(null);
 
-  const mockSchool: School = {
-    id: "school-123",
-    name: "Best Taekwondo Academy",
-    address: "123 Martial Arts Lane",
-    createdAt: new Date(),
-  };
+  // Load user session from Supabase on app start
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data, error } = await supabase.auth.getUser();
+      if (data?.user && !error) {
+        const userMetadata = data.user.user_metadata;
+        const storedSchool = localStorage.getItem("authSchool");
 
-  const mockUser: BaseUser = {
-    id: "user-456",
-    name: "John Doe",
-    email: "a@b.com",
-    phone: "",
-    role: UserRole.Student,
-    createdAt: new Date(),
-    schoolId: mockSchool.id,
-  };
+        setUser({
+          id: data.user.id,
+          name: userMetadata?.name || "Unknown User",
+          email: data.user.email || "",
+          phone: userMetadata?.phone || "",
+          role: userMetadata?.role || UserRole.Student,
+          createdAt: new Date(data.user.created_at),
+          schoolId: userMetadata?.schoolId || null,
+        });
 
-  // Login function
-  const login = async (email: string, password: string) => {
-    // Mock login logic (replace with actual backend logic)
-    const mockLoginUser = { email: "test@example.com", password: "123456" };
-
-    if (email === mockLoginUser.email && password === mockLoginUser.password) {
-      // Save user to state and localStorage
-      setUser(mockUser);
-      localStorage.setItem("authUser", JSON.stringify(mockUser));
-      localStorage.setItem("authSchool", JSON.stringify(mockSchool));
-      return true; // Login successful
-    }
-
-    return false; // Invalid credentials
-  };
-
-  // Signup function
-  const signup = (newUser: BaseUser) => {
-    // Mock signup logic (replace with actual backend logic)
-    const mockSchool: School = {
-      id: "school-123",
-      name: "Best Taekwondo Academy",
-      address: "123 Martial Arts Lane",
-      createdAt: new Date(),
+        if (storedSchool) setSchool(JSON.parse(storedSchool));
+      }
     };
 
-    // Save user and school to state
-    setUser(newUser);
-    setSchool(mockSchool);
+    fetchUser();
+  }, []);
 
-    // Persist user in localStorage
-    localStorage.setItem("authUser", JSON.stringify(newUser));
-    localStorage.setItem("authSchool", JSON.stringify(mockSchool));
+  // 🔹 Login Function using Supabase
+  const login = async (email: string, password: string) => {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    console.log("log in error: ", error); 
+    if (error) return false;
+
+    const userMetadata = data.user?.user_metadata;
+    setUser({
+      id: data.user.id,
+      name: userMetadata?.name || "Unknown User",
+      email: data.user.email || "",
+      phone: userMetadata?.phone || "",
+      role: userMetadata?.role || UserRole.Student,
+      createdAt: new Date(data.user.created_at),
+      schoolId: userMetadata?.schoolId || null,
+    });
+
+    return true;
   };
 
-  // Logout function
-  const logout = () => {
+  // 🔹 Signup Function using Supabase
+  const signup = async (newUser: BaseUser, password: string) => {
+    const { data, error } = await supabase.auth.signUp({
+      email: newUser.email,
+      password,
+      options: {
+        data: {
+          name: newUser.name,
+          phone: newUser.phone,
+          role: newUser.role,
+          schoolId: newUser.schoolId,
+        },
+      },
+    });
+
+    if (error) return false;
+
+    setUser({
+      id: data.user!.id,
+      name: newUser.name,
+      email: newUser.email,
+      phone: newUser.phone,
+      role: newUser.role,
+      createdAt: new Date(),
+      schoolId: newUser.schoolId,
+    });
+
+    return true;
+  };
+
+  // 🔹 Logout Function
+  const logout = async () => {
+    await supabase.auth.signOut();
     setUser(null);
     setSchool(null);
-
-    // Clear localStorage
-    localStorage.removeItem("authUser");
     localStorage.removeItem("authSchool");
   };
-
-  // Load user and school from localStorage on app start
-  useEffect(() => {
-    const storedUser = localStorage.getItem("authUser");
-    const storedSchool = localStorage.getItem("authSchool");
-
-    if (storedUser) setUser(JSON.parse(storedUser));
-    if (storedSchool) setSchool(JSON.parse(storedSchool));
-  }, []);
 
   return (
     <AuthContext.Provider value={{ user, school, login, signup, logout }}>

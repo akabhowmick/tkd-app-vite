@@ -1,86 +1,36 @@
-Completed: 
-Day 3: Authentication Context
-Implement AuthContext with login and logout functionality.
-Mock a user object with roles like "parent," "student," or "instructor."
-Add a function to persist authentication state (e.g., localStorage).
+MVP Phase (Phase 1) - Core Features
+User Authentication
+  Users can sign up and log in using Supabase.
+    School Admins create schools during sign-up.
+    Instructors, Parents, and Students must select an existing school to join.
+  Announcements Feature
+    Admins & Instructors can create announcements.
+    Parents & Students can only view announcements.
 
-Day 4: Routing
-=> Add active link highlighting to the navigation.
-=> once you are logged in make a logout btn 
-=> once you are logged out make get login
-=> after successful sign in or login => redirect to dashboard
+Phase 2: Payment & Scheduling
+  Parents can make payments (for classes, uniforms, etc.).
+  Instructors & Admins can set class schedules.
+  Parents & Students can view schedules.
 
-Day 5: Home Page
-Add links/buttons for Login and SignUp.
-Design the Home page with a welcome message and a brief description of the app.
+Phase 3: Advanced Features & Customization
+  Implement notifications (email/SMS).
+  Multi-school support for organizations with multiple locations.
+  User profiles & progress tracking for students.
 
-Day 6: Login and SignUp Pages
-Build the login form with email and password fields.
-Build the signup form with additional fields (name, role, etc.).
+Final Phase (Phase 4) - Messaging System
+  Admin Messaging
+    Admins can send messages to instructors and parents.
+    Admins can view incoming messages from instructors/parents.
+  Instructor Messaging
+    Instructors can message Admins & Students.
+    Parent Messaging
 
-Day 20: Documentation
-Write a README with instructions for setup and usage.
-Document the codebase for easier future updates.
-
-
-
-
-
-
-
-In progress:
-Day 6: Login and SignUp Pages
-Add form validation using a library like yup or custom logic.
+  Parents can message Admins & Instructors.
+    If needed, Parents can send payments through an integrated payment system.
 
 
-To do: 
-Day 7: Dashboard Base
-Create a basic Dashboard layout.
-Add placeholders for school-based content (e.g., announcements, student details).
-Link to other pages from the dashboard.
-Week 2: Core Features and Styling
-Day 8: Tailwind Enhancements
-Add global styling with Tailwind.
-Apply consistent button and form styles.
-Enhance responsive design for mobile and desktop views.
-Day 9: Schools Feature
-Add functionality to differentiate schools (e.g., school ID in the user object).
-Update AuthContext to include the selected school.
-Create a dropdown or modal to select/change schools.
-Day 10: FAQ Feature
-Set up a basic chat component.
-Style the chat interface with Tailwind.
-Day 11: Notifications
-Build a notification component.
-Mock notifications (e.g., "Class schedule updated").
-Add a notification badge to the header.
-Day 12: Instructor-Specific Features
-Add an instructor dashboard view.
-Mock features like attendance tracking or class management.
-Day 13: Parent-Specific Features
-Add a parent dashboard view.
-Include student performance/attendance details.
-Day 14: API Integration
-Mock API calls for authentication and data fetching.
-Use libraries like Axios or Fetch API.
-Replace mock data with API calls (if available).
-Week 3: Polishing and Testing
-Day 15: Error Handling
-Add error messages for failed login/signup.
-Handle network errors gracefully in the app.
-Day 16: Testing
-Test the app across different browsers.
-Debug and fix layout or functional issues.
-Day 17: Optimization
-Optimize images and assets.
-Use code-splitting for faster load times.
-Day 18: Final Review
-Review all features for completeness.
-Make minor adjustments to UI and UX.
-Day 19: Deployment
-Deploy the app using platforms like Netlify.
-Test the deployed version for any issues.
-
-
-Todo: 
-the kicking animation does not work
+Next Steps
+  Implement MVP Phase (User Authentication & Announcements).
+  Define Database Schema in Supabase (Users, Schools, Announcements).
+  Set up Supabase Auth with Role-based Access Control.
+  Build Frontend Components for Sign-up, Login, and Announcements.

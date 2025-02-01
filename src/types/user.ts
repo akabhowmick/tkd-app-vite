@@ -9,9 +9,10 @@ export interface User {
 
 export interface Class {
   id: number;
-  name: string;
-  instructorId: number;
   schoolId: number;
+  name: string;
+  endTime: string;
+  startTime: string; 
 }
 
 export interface Announcement {
@@ -20,7 +21,6 @@ export interface Announcement {
   content: string;
   schoolId: number;
 }
-
 
 export interface BaseUser {
   id: string; // Unique identifier
@@ -77,7 +77,7 @@ export interface Instructor extends BaseUser {
 // Enum for Certification Levels
 export enum CertificationLevel {
   Assistant = "Assistant",
-  Certified = "Certified",
+  Instructor = "Instructor",
   Master = "Master",
   Grandmaster = "Grandmaster",
 }
