@@ -60,13 +60,15 @@ export const classes: Class[] = [
   {
     id: 1,
     name: "Beginner's Class",
-    instructorId: 2,
+    startTime: "",
+    endTime: "",
     schoolId: 1,
   },
   {
     id: 2,
     name: "Intermediate Class",
-    instructorId: 3,
+    startTime: "",
+    endTime: "",
     schoolId: 1,
   },
 ];
