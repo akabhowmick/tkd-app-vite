@@ -1,7 +1,8 @@
 MVP Phase (Phase 1) - Core Features
+
 User Authentication
   Users can sign up and log in using Supabase.
-    School Admins create schools during sign-up.
+    School Admins create schools during sign-up. (kind of difficult...)
     Instructors, Parents, and Students must select an existing school to join.
   Announcements Feature
     Admins & Instructors can create announcements.
