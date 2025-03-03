@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useAuth } from "../context/AuthContext";
+import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 
 const Login: React.FC = () => {
@@ -66,7 +67,12 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col items-center p-6 gap-6 bg-white text-black">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }} // Start slightly below and invisible
+      animate={{ opacity: 1, y: 0 }} // Fade in and move to normal position
+      transition={{ duration: 0.5, ease: "easeOut" }} // Smooth transition
+      className="flex flex-col items-center p-6 gap-6 bg-white text-black"
+    >
       <h1 className="text-2xl font-bold">Login</h1>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4 w-full max-w-md">
         <div className="flex flex-col gap-2">
@@ -114,8 +120,9 @@ const Login: React.FC = () => {
           Sign Up
         </Link>
       </p>
-    </div>
+    </motion.div>
   );
+
 };
 
 export default Login;
