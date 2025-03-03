@@ -2,9 +2,10 @@ import React, { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { UserRole } from "../types/user";
 import { Link, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 
 const SignUp: React.FC = () => {
-  const { login } = useAuth(); // Optional: Auto-login after sign-up
+  const { login } = useAuth(); 
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -101,61 +102,68 @@ const SignUp: React.FC = () => {
   ];
 
   return (
-    <div className="flex flex-col items-center p-6 gap-6 bg-white text-black">
-      <h1 className="text-2xl font-bold">Sign Up</h1>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4 w-full max-w-md">
-        {inputs.map((input) => (
-          <div key={input.name} className="flex flex-col gap-2">
-            <label htmlFor={input.name} className="text-md font-medium">
-              {input.label}
+    <motion.div
+      initial={{ opacity: 0, y: 20 }} // Start slightly below and invisible
+      animate={{ opacity: 1, y: 0 }} // Fade in and move to normal position
+      transition={{ duration: 0.5, ease: "easeOut" }} // Smooth transition
+     
+    >
+      <div className="flex flex-col items-center p-6 gap-6 bg-white text-black">
+        <h1 className="text-2xl font-bold">Sign Up</h1>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4 w-full max-w-md">
+          {inputs.map((input) => (
+            <div key={input.name} className="flex flex-col gap-2">
+              <label htmlFor={input.name} className="text-md font-medium">
+                {input.label}
+              </label>
+              <input
+                id={input.name}
+                type={input.type}
+                name={input.name}
+                value={formData[input.name as keyof typeof formData]}
+                onChange={handleChange}
+                placeholder={input.placeholder}
+                className="border p-2 rounded w-full bg-gray-100 text-black"
+              />
+            </div>
+          ))}
+
+          {/* Role Selection */}
+          <div className="flex flex-col gap-2">
+            <label htmlFor="role" className="text-sm font-medium">
+              Role
             </label>
-            <input
-              id={input.name}
-              type={input.type}
-              name={input.name}
-              value={formData[input.name as keyof typeof formData]}
+            <select
+              id="role"
+              name="role"
+              value={formData.role}
               onChange={handleChange}
-              placeholder={input.placeholder}
               className="border p-2 rounded w-full bg-gray-100 text-black"
-            />
+            >
+              <option value={UserRole.Parent}>Parent</option>
+              <option value={UserRole.Student}>Student</option>
+              <option value={UserRole.Instructor}>Instructor</option>
+              <option value={UserRole.Admin}>School Admin</option>
+            </select>
           </div>
-        ))}
 
-        {/* Role Selection */}
-        <div className="flex flex-col gap-2">
-          <label htmlFor="role" className="text-sm font-medium">
-            Role
-          </label>
-          <select
-            id="role"
-            name="role"
-            value={formData.role}
-            onChange={handleChange}
-            className="border p-2 rounded w-full bg-gray-100 text-black"
+          {error && <p className="text-red-500 text-sm">{error}</p>}
+
+          <button
+            type="submit"
+            className="w-full px-4 py-2 text-white bg-blue-500 rounded hover:bg-blue-700"
           >
-            <option value={UserRole.Parent}>Parent</option>
-            <option value={UserRole.Student}>Student</option>
-            <option value={UserRole.Instructor}>Instructor</option>
-            <option value={UserRole.Admin}>School Admin</option>
-          </select>
-        </div>
-
-        {error && <p className="text-red-500 text-sm">{error}</p>}
-
-        <button
-          type="submit"
-          className="w-full px-4 py-2 text-white bg-blue-500 rounded hover:bg-blue-700"
-        >
-          Sign Up
-        </button>
-      </form>
-      <p className="text-sm">
-        Already have an account?{" "}
-        <Link to="/login" className="text-blue-500 hover:underline">
-          Log In
-        </Link>
-      </p>
-    </div>
+            Sign Up
+          </button>
+        </form>
+        <p className="text-sm">
+          Already have an account?{" "}
+          <Link to="/login" className="text-blue-500 hover:underline">
+            Log In
+          </Link>
+        </p>
+      </div>
+    </motion.div>
   );
 };
 

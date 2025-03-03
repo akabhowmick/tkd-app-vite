@@ -17,7 +17,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [user, setUser] = useState<BaseUser | null>(null);
   const [school, setSchool] = useState<School | null>(null);
 
-  // Load user session from Supabase on app start
   useEffect(() => {
     const fetchUser = async () => {
       const { data, error } = await supabase.auth.getUser();
