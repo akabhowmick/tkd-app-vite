@@ -5,7 +5,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 
 const SignUp: React.FC = () => {
-  const { login } = useAuth(); 
+  const { signup } = useAuth();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -15,6 +15,7 @@ const SignUp: React.FC = () => {
     role: UserRole.Parent,
     schoolId: "",
     contactNumber: "",
+    phone: "",
   });
 
   const [error, setError] = useState("");
@@ -28,10 +29,10 @@ const SignUp: React.FC = () => {
   };
 
   const validateInput = () => {
-    const { name, email, password, schoolId } = formData;
+    const { name, email, password } = formData;
 
     // Check required fields
-    if (!name || !email || !password || !schoolId) {
+    if (!name || !email || !password) {
       setError("Please fill in all required fields.");
       return false;
     }
@@ -55,36 +56,23 @@ const SignUp: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Clear previous errors
     setError("");
 
-    // Validate inputs
-    if (!validateInput()) return;
-
-    try {
-      // Simulate backend sign-up logic (replace with actual API call)
-      console.log("User signed up:", formData);
-
-      // Optional: Auto-login after successful sign-up
-      await login(formData.email, formData.password);
-
-      // Redirect to dashboard
-      navigate("/dashboard");
-    } catch (err) {
-      // Handle backend errors
-      setError("Sign-up failed. Please try again later. " + err);
+    // Validate input (implement your validation logic)
+    if (!validateInput()) {
+      setError("Please fill in all required fields.");
+      return;
     }
 
-    // Reset form
-    setFormData({
-      name: "",
-      email: "",
-      password: "",
-      role: UserRole.Parent,
-      schoolId: "",
-      contactNumber: "",
-    });
+    try {
+      const isSignedUp = await signup(formData, formData.password);
+      if (isSignedUp) {
+        navigate("/dashboard");
+      }
+    } catch (err) {
+      setError("Sign-up failed. Please try again.");
+      console.error(err);
+    }
   };
 
   // Input configuration array
@@ -106,7 +94,6 @@ const SignUp: React.FC = () => {
       initial={{ opacity: 0, y: 20 }} // Start slightly below and invisible
       animate={{ opacity: 1, y: 0 }} // Fade in and move to normal position
       transition={{ duration: 0.5, ease: "easeOut" }} // Smooth transition
-     
     >
       <div className="flex flex-col items-center p-6 gap-6 bg-white text-black">
         <h1 className="text-2xl font-bold">Sign Up</h1>

@@ -41,7 +41,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     fetchUser();
   }, []);
 
-  // 🔹 Login Function using Supabase
+  // Login Function using Supabase
   const login = async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     console.log("log in error: ", error); 
@@ -75,6 +75,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         },
       },
     });
+    console.log("checking return", data, error);
 
     if (error) return false;
 
@@ -91,7 +92,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return true;
   };
 
-  // 🔹 Logout Function
+  // Logout Function
   const logout = async () => {
     await supabase.auth.signOut();
     setUser(null);

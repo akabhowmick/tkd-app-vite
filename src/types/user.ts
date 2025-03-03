@@ -23,14 +23,14 @@ export interface Announcement {
 }
 
 export interface BaseUser {
-  id: string; // Unique identifier
+  id?: string; // Unique identifier
   name: string; // Full name of the user
   email: string; // Email address
   phone: string; // Phone number
   role: UserRole; // Role of the user: 'parent', 'student', or 'instructor'
   profilePicture?: string; // Optional profile picture URL
-  createdAt: Date; // Account creation timestamp
-  schoolId: string; // Reference to the school the user belongs to
+  createdAt?: Date; // Account creation timestamp
+  schoolId?: string; // Reference to the school the user belongs to
 }
 
 // Enum for User Roles
