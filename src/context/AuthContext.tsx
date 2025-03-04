@@ -2,12 +2,13 @@ import React, { createContext, useContext, useState, ReactNode, useEffect } from
 
 import { BaseUser, School, UserRole } from "../types/user";
 import { supabase } from "../api/supabase";
+import { UserSignIn } from "../types/auth";
 
 interface AuthContextType {
   user: BaseUser | null;
   school: School | null;
   login: (email: string, password: string) => Promise<boolean>;
-  signup: (newUser: BaseUser, password: string) => Promise<boolean>;
+  signup: (newUser: UserSignIn, password: string) => Promise<boolean>;
   logout: () => void;
 }
 
@@ -44,7 +45,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Login Function using Supabase
   const login = async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    console.log("log in error: ", error); 
+    console.log("log in error: ", error);
     if (error) return false;
 
     const userMetadata = data.user?.user_metadata;
@@ -62,16 +63,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   // 🔹 Signup Function using Supabase
-  const signup = async (newUser: BaseUser, password: string) => {
+  const signup = async (newUser: UserSignIn, password: string) => {
     const { data, error } = await supabase.auth.signUp({
       email: newUser.email,
       password,
       options: {
         data: {
-          name: newUser.name,
-          phone: newUser.phone,
           role: newUser.role,
-          schoolId: newUser.schoolId,
         },
       },
     });
@@ -81,12 +79,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     setUser({
       id: data.user!.id,
-      name: newUser.name,
+      name: "",
       email: newUser.email,
-      phone: newUser.phone,
+      phone: "",
       role: newUser.role,
       createdAt: new Date(),
-      schoolId: newUser.schoolId,
+      schoolId: "",
     });
 
     return true;

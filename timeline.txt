@@ -35,3 +35,12 @@ Next Steps
   Define Database Schema in Supabase (Users, Schools, Announcements).
   Set up Supabase Auth with Role-based Access Control.
   Build Frontend Components for Sign-up, Login, and Announcements.
+
+
+03/03/25 
+  Basic sign up works with supabase
+  => After login there should be a way for a user to establish what kind of user they are 
+  => teacher 
+  => Admin
+  => Parent 
+  => Student

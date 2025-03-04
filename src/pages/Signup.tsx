@@ -3,19 +3,16 @@ import { useAuth } from "../context/AuthContext";
 import { UserRole } from "../types/user";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { supabase } from "../api/supabase";
 
 const SignUp: React.FC = () => {
   const { signup } = useAuth();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
-    name: "",
     email: "",
     password: "",
-    role: UserRole.Parent,
-    schoolId: "",
-    contactNumber: "",
-    phone: "",
+    role: UserRole.Admin, // Default role
   });
 
   const [error, setError] = useState("");
@@ -28,98 +25,74 @@ const SignUp: React.FC = () => {
     }));
   };
 
-  const validateInput = () => {
-    const { name, email, password } = formData;
-
-    // Check required fields
-    if (!name || !email || !password) {
-      setError("Please fill in all required fields.");
-      return false;
-    }
-
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      setError("Please enter a valid email address.");
-      return false;
-    }
-
-    // Validate password length
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters long.");
-      return false;
-    }
-
-    // Validation passed
-    return true;
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    // Validate input (implement your validation logic)
-    if (!validateInput()) {
-      setError("Please fill in all required fields.");
+    // Validate input
+    if (!formData.email || !formData.password) {
+      setError("Please enter both email and password.");
       return;
     }
 
     try {
       const isSignedUp = await signup(formData, formData.password);
-      if (isSignedUp) {
-        navigate("/dashboard");
-      }
+      if (isSignedUp) navigate("/dashboard");
     } catch (err) {
       setError("Sign-up failed. Please try again.");
       console.error(err);
     }
   };
 
-  // Input configuration array
-  const inputs = [
-    { label: "Full Name", type: "text", name: "name", placeholder: "Full Name" },
-    { label: "Email", type: "email", name: "email", placeholder: "Email" },
-    { label: "Password", type: "password", name: "password", placeholder: "Password" },
-    { label: "School ID", type: "text", name: "schoolId", placeholder: "School ID" },
-    {
-      label: "Contact Number",
-      type: "text",
-      name: "contactNumber",
-      placeholder: "Contact Number (optional)",
-    },
-  ];
+  const handleGoogleSignUp = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+    });
+
+    if (error) {
+      setError("Google Sign-in failed. Please try again.");
+      console.error(error);
+    }
+  };
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }} // Start slightly below and invisible
-      animate={{ opacity: 1, y: 0 }} // Fade in and move to normal position
-      transition={{ duration: 0.5, ease: "easeOut" }} // Smooth transition
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
     >
       <div className="flex flex-col items-center p-6 gap-6 bg-white text-black">
         <h1 className="text-2xl font-bold">Sign Up</h1>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 w-full max-w-md">
-          {inputs.map((input) => (
-            <div key={input.name} className="flex flex-col gap-2">
-              <label htmlFor={input.name} className="text-md font-medium">
-                {input.label}
-              </label>
-              <input
-                id={input.name}
-                type={input.type}
-                name={input.name}
-                value={formData[input.name as keyof typeof formData]}
-                onChange={handleChange}
-                placeholder={input.placeholder}
-                className="border p-2 rounded w-full bg-gray-100 text-black"
-              />
-            </div>
-          ))}
+          <div className="flex flex-col gap-2">
+            <label htmlFor="email" className="text-md font-medium">Email</label>
+            <input
+              id="email"
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              placeholder="Enter your email"
+              className="border p-2 rounded w-full bg-gray-100 text-black"
+            />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label htmlFor="password" className="text-md font-medium">Password</label>
+            <input
+              id="password"
+              type="password"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              placeholder="Enter your password"
+              className="border p-2 rounded w-full bg-gray-100 text-black"
+            />
+          </div>
 
           {/* Role Selection */}
           <div className="flex flex-col gap-2">
-            <label htmlFor="role" className="text-sm font-medium">
-              Role
-            </label>
+            <label htmlFor="role" className="text-md font-medium">Are you an Admin?</label>
             <select
               id="role"
               name="role"
@@ -127,27 +100,25 @@ const SignUp: React.FC = () => {
               onChange={handleChange}
               className="border p-2 rounded w-full bg-gray-100 text-black"
             >
-              <option value={UserRole.Parent}>Parent</option>
-              <option value={UserRole.Student}>Student</option>
-              <option value={UserRole.Instructor}>Instructor</option>
-              <option value={UserRole.Admin}>School Admin</option>
+              <option value={UserRole.Admin}>Yes, I am an Admin</option>
+              <option value={UserRole.Parent}>No, I am another user</option>
             </select>
           </div>
 
           {error && <p className="text-red-500 text-sm">{error}</p>}
 
-          <button
-            type="submit"
-            className="w-full px-4 py-2 text-white bg-blue-500 rounded hover:bg-blue-700"
-          >
+          <button type="submit" className="w-full px-4 py-2 text-white bg-blue-500 rounded hover:bg-blue-700">
             Sign Up
           </button>
         </form>
+
+        <button onClick={handleGoogleSignUp} className="w-full px-4 py-2 bg-red-500 text-white rounded hover:bg-red-700">
+          Sign Up with Google
+        </button>
+
         <p className="text-sm">
           Already have an account?{" "}
-          <Link to="/login" className="text-blue-500 hover:underline">
-            Log In
-          </Link>
+          <Link to="/login" className="text-blue-500 hover:underline">Log In</Link>
         </p>
       </div>
     </motion.div>
