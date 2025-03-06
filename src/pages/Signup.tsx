@@ -110,11 +110,12 @@ const SignUp: React.FC = () => {
           <button type="submit" className="w-full px-4 py-2 text-white bg-blue-500 rounded hover:bg-blue-700">
             Sign Up
           </button>
-        </form>
-
-        <button onClick={handleGoogleSignUp} className="w-full px-4 py-2 bg-red-500 text-white rounded hover:bg-red-700">
+          <button onClick={handleGoogleSignUp} className="w-full px-4 py-2 text-white bg-blue-500 rounded hover:bg-blue-700">
           Sign Up with Google
         </button>
+        </form>
+
+      
 
         <p className="text-sm">
           Already have an account?{" "}
