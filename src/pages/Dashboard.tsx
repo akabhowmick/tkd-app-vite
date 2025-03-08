@@ -11,7 +11,7 @@ const Dashboard = () => {
 
   switch (user?.role) {
     case UserRole.Admin:
-      return <AdminDashboard />;
+      return <RegularDashboard />;
     case UserRole.Instructor:
       return <InstructorDashboard />;
     case UserRole.Parent:
@@ -19,7 +19,7 @@ const Dashboard = () => {
     case UserRole.Student:
       return <StudentDashboard />;
     default:
-      return <RegularDashboard />;
+      return <AdminDashboard />;
     // return <div>Invalid user role</div>;
   }
 };
