@@ -1,5 +1,5 @@
 const Sidebar = () => (
-  <div className="w-64 bg-white h-screen shadow-md">
+  <div className="w-64 bg-white h-screen shadow-md text-black">
     <div className="p-6">
       <h1 className="text-xl font-bold">Material Tailwind React</h1>
     </div>
@@ -20,28 +20,12 @@ const Sidebar = () => (
         </a>
       ))}
 
-      <div className="mt-6">
-        <h2 className="text-gray-600 px-4">AUTH PAGES</h2>
-        {[
-          { icon: "fas fa-sign-in-alt", label: "Sign In" },
-          { icon: "fas fa-user-plus", label: "Sign Up" },
-        ].map((item, index) => (
-          <a
-            key={index}
-            className="flex items-center p-4 text-gray-600 hover:bg-gray-200 rounded-lg"
-            href="#"
-          >
-            <i className={`${item.icon} mr-3`}></i>
-            <span>{item.label}</span>
-          </a>
-        ))}
-      </div>
     </nav>
   </div>
 );
 
 const Header = () => (
-  <div className="flex justify-between items-center mb-6">
+  <div className="flex justify-between items-center mb-6 text-black">
     <div>
       <h2 className="text-gray-600">Dashboard / Home</h2>
       <h1 className="text-2xl font-bold">Home</h1>
@@ -58,7 +42,6 @@ const Header = () => (
         </button>
       </div>
       <i className="fas fa-user text-gray-600"></i>
-      <span className="text-gray-600">Sign In</span>
       <i className="fas fa-bell text-gray-600"></i>
       <i className="fas fa-cog text-gray-600"></i>
     </div>
@@ -78,9 +61,9 @@ const StatCard = ({
   change: string;
   isPositive: boolean;
 }) => (
-  <div className="bg-white p-6 rounded-lg shadow-md">
+  <div className="bg-white p-6 rounded-lg shadow-md text-black">
     <div className="flex items-center mb-4">
-      <div className="bg-black p-3 rounded-full text-white">
+      <div className="bg-black p-3 rounded-full">
         <i className={icon}></i>
       </div>
       <div className="ml-4">

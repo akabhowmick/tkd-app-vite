@@ -32,19 +32,19 @@ export const Header = () => {
       ];
 
   return (
-    <div className="bg-black flex justify-between items-center h-24 max-w-[1240px] mx-auto px-4 text-white">
+    <div className="bg-red-900 flex justify-between items-center h-24 w-full px-6 text-white shadow-md">
       {/* Logo */}
-      <h1 className="w-full text-3xl font-bold text-red-500">Taekwondo Chat App</h1>
+      <h1 className="text-3xl font-bold">Taekwondo Chat App</h1>
 
       {/* Desktop Navigation */}
-      <ul className="hidden md:flex">
+      <ul className="hidden md:flex space-x-6">
         {navItems.map((item) => (
           <NavLink
             key={item.id}
             to={item.to}
             className={({ isActive }) =>
-              `p-4 rounded-xl m-2 cursor-pointer duration-300 ${
-                isActive ? "text-red-500 font-bold" : "text-red hover:text-red-500"
+              `p-2 rounded-lg transition duration-300 ${
+                isActive ? "text-gray-300 font-bold" : "hover:text-gray-300"
               }`
             }
           >
@@ -54,7 +54,7 @@ export const Header = () => {
         {user && (
           <button
             onClick={handleLogout}
-            className="p-4 bg-red-500 text-white rounded-xl m-2 cursor-pointer duration-300 hover:bg-red-600"
+            className="p-2 text-white rounded-lg transition duration-300 hover:text-gray-300"
           >
             Logout
           </button>
@@ -63,19 +63,17 @@ export const Header = () => {
 
       {/* Mobile Navigation Icon */}
       <div onClick={handleNav} className="block md:hidden">
-        {nav ? <AiOutlineClose size={20} /> : <AiOutlineMenu size={20} />}
+        {nav ? <AiOutlineClose size={24} /> : <AiOutlineMenu size={24} />}
       </div>
 
       {/* Mobile Navigation Menu */}
       <ul
-        className={
-          nav
-            ? "fixed md:hidden left-0 top-0 w-[60%] h-full border-r border-r-gray-900 bg-[#000300] ease-in-out duration-500"
-            : "ease-in-out w-[60%] duration-500 fixed top-0 bottom-0 left-[-100%]"
-        }
+        className={`fixed md:hidden left-0 top-0 w-[60%] h-full bg-red-900 shadow-lg transition-transform duration-500 ${
+          nav ? "translate-x-0" : "-translate-x-full"
+        }`}
       >
         {/* Mobile Logo */}
-        <h1 className="w-full text-5xl font-bold text-red-500 m-4">Taekwondo Chat App</h1>
+        <h1 className="text-3xl font-bold text-white m-4">Taekwondo Chat App</h1>
 
         {/* Mobile Navigation Items */}
         {navItems.map((item) => (
@@ -84,8 +82,8 @@ export const Header = () => {
             to={item.to}
             onClick={handleNav} // Close menu on navigation
             className={({ isActive }) =>
-              `block p-4 rounded-xl m-2 cursor-pointer duration-300 ${
-                isActive ? "text-red-500 font-bold" : "text-red hover:text-red-500"
+              `block p-4 rounded-lg transition duration-300 ${
+                isActive ? "text-gray-300 font-bold" : "hover:text-gray-300"
               }`
             }
           >
@@ -98,7 +96,7 @@ export const Header = () => {
               handleLogout();
               handleNav(); // Close menu after logout
             }}
-            className="block w-full p-4 bg-red-500 text-white rounded-xl m-2 cursor-pointer duration-300 hover:bg-red-600"
+            className="block w-full p-4 bg-gray-700 text-white rounded-lg transition duration-300 hover:bg-gray-600"
           >
             Logout
           </button>
