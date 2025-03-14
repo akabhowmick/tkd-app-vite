@@ -1,25 +1,28 @@
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faBell, faHome, faMoneyBill, faUser } from "@fortawesome/free-solid-svg-icons";
+
 const Sidebar = () => (
   <div className="w-64 bg-white h-screen shadow-md text-black">
     <div className="p-6">
-      <h1 className="text-xl font-bold">Material Tailwind React</h1>
+      <h1 className="text-xl font-bold">Taekwondo School Name</h1>
     </div>
     <nav className="mt-6">
       {[
-        { icon: "fas fa-home", label: "Dashboard" },
-        { icon: "fas fa-user", label: "Profile" },
-        { icon: "fas fa-table", label: "Tables" },
-        { icon: "fas fa-bell", label: "Notifications" },
+        { icon: faHome, label: "Dashboard" },
+        { icon: faUser, label: "Profile" },
+        { icon: faMoneyBill, label: "Renewals" },
+        { icon: faBell, label: "Notifications" },
       ].map((item, index) => (
         <a
           key={index}
           className="flex items-center p-4 text-gray-600 hover:bg-gray-200 rounded-lg"
           href="#"
         >
+          <FontAwesomeIcon icon={item.icon} />
           <i className={`${item.icon} mr-3`}></i>
           <span>{item.label}</span>
         </a>
       ))}
-
     </nav>
   </div>
 );
@@ -33,7 +36,7 @@ const Header = () => (
     <div className="flex items-center space-x-4">
       <div className="relative">
         <input
-          className="bg-white h-10 px-5 pr-10 rounded-full text-sm focus:outline-none"
+          className="bg-gray-100 h-10 px-5 pr-10 rounded-full text-sm focus:outline-none"
           placeholder="Search"
           type="text"
         />

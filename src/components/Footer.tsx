@@ -1,7 +1,7 @@
 import { FaFacebook, FaTwitter, FaInstagram, FaLinkedin } from 'react-icons/fa';
 
 const footerData = {
-  companyName: "Taekwondo App",
+  companyName: "Taekwondo Chat App",
   contacts: {
     phone: "+1 234 567 890",
     email: "info@taekwondoapp.com",
