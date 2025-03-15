@@ -107,7 +107,7 @@ const SignUp: React.FC = () => {
               className="border p-2 rounded w-full bg-gray-100 text-black"
             >
               <option value={UserRole.Admin}>Yes, I am an Admin</option>
-              <option value={UserRole.Parent}>No, I am another user</option>
+              <option value={UserRole.Other}>No, I am another user</option>
             </select>
           </div>
 

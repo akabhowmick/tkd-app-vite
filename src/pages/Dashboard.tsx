@@ -1,6 +1,7 @@
-import AdminDashboard from "../components/AccountDashboards/AdminDashboard";
+// import AdminDashboard from "../components/AccountDashboards/AdminDashboard";
 import InstructorDashboard from "../components/AccountDashboards/InstructorDashboard";
 import ParentDashboard from "../components/AccountDashboards/ParentDashboard";
+import { Profile } from "../components/AccountDashboards/Profile";
 import RegularDashboard from "../components/AccountDashboards/RegularDashboard";
 import StudentDashboard from "../components/AccountDashboards/StudentDashboard";
 import { useAuth } from "../context/AuthContext";
@@ -19,7 +20,7 @@ const Dashboard = () => {
     case UserRole.Student:
       return <StudentDashboard />;
     default:
-      return <AdminDashboard />;
+      return <Profile />;
     // return <div>Invalid user role</div>;
   }
 };
