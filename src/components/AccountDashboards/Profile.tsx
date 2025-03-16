@@ -18,9 +18,9 @@ export const Profile = () => {
     const fetchProfile = async () => {
       if (!user) return;
       const { data, error } = await supabase
-        .from("profiles")
+        .from("users")
         .select("*")
-        .eq("user_id", user.id)
+        .eq("id", user.id)
         .single();
 
       if (error) console.error("Error fetching profile:", error);
@@ -39,16 +39,14 @@ export const Profile = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
-
     // const { error } = await supabase
     //   .from("profiles")
-
     // if (error) console.error("Error updating profile:", error);
     else alert("Profile updated successfully!");
   };
 
   return (
-    <div className="max-w-lg mx-auto bg-red-900 text-white p-6 rounded-2xl shadow-lg">
+    <div className="max-w-lg mx-auto text-black p-6 ">
       <h2 className="text-2xl font-bold text-center mb-6">User Profile</h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -60,7 +58,7 @@ export const Profile = () => {
             name="name"
             value={profile.name}
             onChange={handleChange}
-            className="w-full p-2 rounded-xl text-black"
+            className="w-full p-2 bg-slate-100 rounded-xl text-black"
             required
           />
         </div>
@@ -73,7 +71,7 @@ export const Profile = () => {
             name="phone"
             value={profile.phone}
             onChange={handleChange}
-            className="w-full p-2 rounded-xl text-black"
+            className="w-full bg-slate-100 p-2 rounded-xl text-black"
             required
           />
         </div>
@@ -86,7 +84,7 @@ export const Profile = () => {
             name="schoolId"
             value={profile.schoolId}
             onChange={handleChange}
-            className="w-full p-2 rounded-xl text-black"
+            className="w-full p-2 bg-slate-100 rounded-xl text-black"
             required
           />
         </div>
@@ -98,7 +96,7 @@ export const Profile = () => {
             name="userType"
             value={profile.userType}
             onChange={handleChange}
-            className="w-full p-2 rounded-xl text-black"
+            className="w-full p-2  bg-slate-100 rounded-xl text-black"
             required
           >
             <option value="">Select User Type</option>
@@ -113,7 +111,7 @@ export const Profile = () => {
         {/* Submit Button */}
         <button
           type="submit"
-          className="w-full bg-white text-red-900 font-bold p-2 rounded-xl hover:bg-gray-200"
+          className="w-full bg-red-900 text-white font-bold p-2 rounded-xl hover:bg-gray-200"
         >
           Save Profile
         </button>
