@@ -13,13 +13,20 @@ export const Profile = () => {
     userType: "",
   });
 
-  // Fetch user profile from Supabase
+  // Input fields configuration
+  const inputFields = [
+    { name: "name", label: "Name", type: "text" },
+    { name: "phone", label: "Phone", type: "tel" },
+    { name: "schoolId", label: "School ID", type: "text" },
+  ];
+
+  // Fetch user details from the "users" table
   useEffect(() => {
     const fetchProfile = async () => {
       if (!user) return;
       const { data, error } = await supabase
-        .from("users")
-        .select("*")
+        .from("users") // Using the existing "users" table
+        .select("name, phone, schoolId, userType")
         .eq("id", user.id)
         .single();
 
@@ -35,59 +42,39 @@ export const Profile = () => {
     setProfile({ ...profile, [e.target.name]: e.target.value });
   };
 
-  // Handle form submission
+  // Handle form submission (Update user in Supabase)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
-    // const { error } = await supabase
-    //   .from("profiles")
-    // if (error) console.error("Error updating profile:", error);
+
+    const { error } = await supabase
+      .from("users") // Updating "users" table
+      .update(profile)
+      .eq("id", user.id);
+
+    if (error) console.error("Error updating profile:", error);
     else alert("Profile updated successfully!");
   };
 
   return (
-    <div className="max-w-lg mx-auto text-black p-6 ">
+    <div className="max-w-lg mx-auto text-black p-6">
       <h2 className="text-2xl font-bold text-center mb-6">User Profile</h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Name Input */}
-        <div>
-          <label className="block font-semibold">Name</label>
-          <input
-            type="text"
-            name="name"
-            value={profile.name}
-            onChange={handleChange}
-            className="w-full p-2 bg-slate-100 rounded-xl text-black"
-            required
-          />
-        </div>
-
-        {/* Phone Input */}
-        <div>
-          <label className="block font-semibold">Phone</label>
-          <input
-            type="tel"
-            name="phone"
-            value={profile.phone}
-            onChange={handleChange}
-            className="w-full bg-slate-100 p-2 rounded-xl text-black"
-            required
-          />
-        </div>
-
-        {/* School ID Input */}
-        <div>
-          <label className="block font-semibold">School ID</label>
-          <input
-            type="text"
-            name="schoolId"
-            value={profile.schoolId}
-            onChange={handleChange}
-            className="w-full p-2 bg-slate-100 rounded-xl text-black"
-            required
-          />
-        </div>
+        {/* Dynamically Render Input Fields */}
+        {inputFields.map(({ name, label, type }) => (
+          <div key={name}>
+            <label className="block font-semibold">{label}</label>
+            <input
+              type={type}
+              name={name}
+              value={profile[name as keyof typeof profile]}
+              onChange={handleChange}
+              className="w-full p-2 rounded-xl bg-slate-100 text-black"
+              required
+            />
+          </div>
+        ))}
 
         {/* User Type Dropdown */}
         <div>
@@ -96,7 +83,7 @@ export const Profile = () => {
             name="userType"
             value={profile.userType}
             onChange={handleChange}
-            className="w-full p-2  bg-slate-100 rounded-xl text-black"
+            className="w-full p-2 rounded-xl bg-slate-100 text-black"
             required
           >
             <option value="">Select User Type</option>
@@ -111,7 +98,7 @@ export const Profile = () => {
         {/* Submit Button */}
         <button
           type="submit"
-          className="w-full bg-red-900 text-white font-bold p-2 rounded-xl hover:bg-gray-200"
+          className="w-full bg-red-900 text-slate-100 font-bold p-2 rounded-xl hover:bg-gray-200"
         >
           Save Profile
         </button>
