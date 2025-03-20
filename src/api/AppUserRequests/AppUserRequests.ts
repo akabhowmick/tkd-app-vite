@@ -7,7 +7,7 @@ export interface User {
   name: string;
   phone: string;
   schoolId: string;
-  userType: "Student" | "Instructor" | "Parent" | "Admin"; // Adjust based on your app
+  userType: "Student" | "Instructor" | "Parent" | "Admin"; 
 }
 
 // ✅ Create a new user
