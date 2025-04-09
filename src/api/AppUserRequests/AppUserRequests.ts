@@ -10,7 +10,7 @@ export interface User {
   userType: "Student" | "Instructor" | "Parent" | "Admin"; 
 }
 
-// ✅ Create a new user
+// Create a new user
 export const createUser = async (userData: Omit<User, "id">): Promise<User | null> => {
   const { data, error } = await supabase.from("users").insert([userData]).select().single();
 
@@ -21,7 +21,7 @@ export const createUser = async (userData: Omit<User, "id">): Promise<User | nul
   return data;
 };
 
-// ✅ Get user by ID
+// Get user by ID
 export const getUserById = async (userId: string): Promise<User | null> => {
   const { data, error } = await supabase.from("users").select("*").eq("id", userId).single();
 
@@ -32,7 +32,7 @@ export const getUserById = async (userId: string): Promise<User | null> => {
   return data;
 };
 
-// ✅ Update user profile
+// Update user profile
 export const updateUser = async (userId: string, updatedData: Partial<User>): Promise<User | null> => {
   const { data, error } = await supabase.from("users").update(updatedData).eq("id", userId).select().single();
 
@@ -43,7 +43,7 @@ export const updateUser = async (userId: string, updatedData: Partial<User>): Pr
   return data;
 };
 
-// ✅ Delete user by ID
+// Delete user by ID
 export const deleteUser = async (userId: string): Promise<boolean> => {
   const { error } = await supabase.from("users").delete().eq("id", userId);
 

@@ -98,3 +98,13 @@ export interface School {
   createdAt: Date; // Creation timestamp
 }
 
+
+
+export interface UserProfile {
+  id?: string;
+  name: string;
+  phone: string;
+  school_id: string;
+  role: 'student' | 'parent' | 'instructor' | 'admin';
+  created_at?: string;
+}

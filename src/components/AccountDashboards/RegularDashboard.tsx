@@ -8,10 +8,10 @@ const Sidebar = () => (
     </div>
     <nav className="mt-6">
       {[
-        { icon: faHome, label: "Dashboard" },
-        { icon: faUser, label: "Profile" },
-        { icon: faMoneyBill, label: "Renewals" },
-        { icon: faBell, label: "Notifications" },
+        { icon: faHome, label: "Dashboard", link: "/dashboard" },
+        { icon: faUser, label: "Profile", link: "/profile" },
+        { icon: faMoneyBill, label: "Renewals", link: "/renewals" },
+        { icon: faBell, label: "Notifications", link: "notifications" },
       ].map((item, index) => (
         <a
           key={index}
