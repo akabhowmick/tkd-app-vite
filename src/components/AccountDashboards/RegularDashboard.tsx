@@ -1,5 +1,5 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faBell, faHome, faMoneyBill, faUser } from "@fortawesome/free-solid-svg-icons";
+import { faAdd, faBell, faHome, faMoneyBill, faUser } from "@fortawesome/free-solid-svg-icons";
 
 const Sidebar = () => (
   <div className="w-64 bg-white h-screen shadow-md text-black">
@@ -11,12 +11,13 @@ const Sidebar = () => (
         { icon: faHome, label: "Dashboard", link: "/dashboard" },
         { icon: faUser, label: "Profile", link: "/profile" },
         { icon: faMoneyBill, label: "Renewals", link: "/renewals" },
-        { icon: faBell, label: "Notifications", link: "notifications" },
+        { icon: faBell, label: "Notifications", link: "/notifications" },
+        { icon: faAdd, label: "Add a student", link: "/add-student" },
       ].map((item, index) => (
         <a
           key={index}
           className="flex items-center p-4 text-gray-600 hover:bg-gray-200 rounded-lg"
-          href="#"
+          href={item.link}
         >
           <FontAwesomeIcon icon={item.icon} />
           <i className={`${item.icon} mr-3`}></i>

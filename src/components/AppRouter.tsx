@@ -6,10 +6,10 @@ import Login from "../pages/Login";
 import SignUp from "../pages/Signup";
 import { Header } from "./Header";
 import Dashboard from "../pages/Dashboard";
+import { AddStudentPage } from "../pages/AddStudentPage";
 
 const AppRouter: React.FC = () => {
   const { user } = useAuth();
-  
 
   const activeClassName = "text-blue-500 font-bold"; // Define active link style
 
@@ -42,10 +42,11 @@ const AppRouter: React.FC = () => {
           path="/dashboard"
           element={
             <PrivateRoute>
-              <Dashboard/>
+              <Dashboard />
             </PrivateRoute>
           }
         />
+        <Route path="/add-student" element={<AddStudentPage/>} />
       </Routes>
     </Router>
   );
