@@ -1,11 +1,10 @@
-import { UserProfile } from "../../types/user";
 import { supabase } from "../supabase";
+import { UserProfile } from "../../types/user";
 
-
-// Create a new user (e.g., student)
-export const createUser = async (user: UserProfile) => {
+// Create a new user
+export const createUser = async (user: Omit<UserProfile, "id" | "created_at">) => {
   const { data, error } = await supabase
-    .from('users')
+    .from("users")
     .insert(user)
     .select()
     .single();
@@ -14,13 +13,10 @@ export const createUser = async (user: UserProfile) => {
   return data;
 };
 
-// Read all users (or filter by role)
-export const getUsers = async (role?: string) => {
-  const query = supabase.from('users').select('*');
-
-  if (role) {
-    query.eq('role', role);
-  }
+// Get all users, or filter by role
+export const getUsers = async (role?: UserProfile["userType"]) => {
+  let query = supabase.from("users").select("*");
+  if (role) query = query.eq("role", role);
 
   const { data, error } = await query;
 
@@ -28,12 +24,12 @@ export const getUsers = async (role?: string) => {
   return data;
 };
 
-// Update a user
+// Update an existing user
 export const updateUser = async (id: string, updates: Partial<UserProfile>) => {
   const { data, error } = await supabase
-    .from('users')
+    .from("users")
     .update(updates)
-    .eq('id', id)
+    .eq("id", id)
     .select()
     .single();
 
@@ -44,9 +40,9 @@ export const updateUser = async (id: string, updates: Partial<UserProfile>) => {
 // Delete a user
 export const deleteUser = async (id: string) => {
   const { error } = await supabase
-    .from('users')
+    .from("users")
     .delete()
-    .eq('id', id);
+    .eq("id", id);
 
   if (error) throw error;
   return true;

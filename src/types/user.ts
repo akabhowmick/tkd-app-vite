@@ -1,18 +1,21 @@
 // Base User Interface (Shared properties)
+
 export interface User {
-  id: number;
+  id: string;
   name: string;
-  email: string;
-  role: 'admin' | 'instructor' | 'parent' | 'student';
-  parentId?: number;
+  phone: string;
+  schoolId: string;
+  userType: "student" | "parent" | "instructor" | "admin";
 }
+
+export type CreateUser = Omit<User, "id">;
 
 export interface Class {
   id: number;
   schoolId: number;
   name: string;
   endTime: string;
-  startTime: string; 
+  startTime: string;
 }
 
 export interface Announcement {
@@ -98,13 +101,13 @@ export interface School {
   createdAt: Date; // Creation timestamp
 }
 
-
-
 export interface UserProfile {
   id?: string;
   name: string;
   phone: string;
-  school_id: string;
-  role: 'student' | 'parent' | 'instructor' | 'admin';
+  schoolId: string;
+  userType: "Student" | "Parent" | "Instructor" | "Admin";
   created_at?: string;
 }
+
+export type CreateUserProfile = Omit<User, "id">;
