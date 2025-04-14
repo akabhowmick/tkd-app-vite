@@ -59,9 +59,9 @@ export const AdminStudentForm: React.FC<AdminStudentFormProps> = ({ existingUser
   return (
     <form
       onSubmit={handleSubmit}
-      className="bg-white p-6 rounded-lg shadow-md space-y-4 w-full max-w-md"
+      className="bg-white p-6 rounded-lg mx-auto space-y-4 w-full max-w-md"
     >
-      <h2 className="text-2xl font-bold mb-4">{formData.id ? "Edit Student" : "Add Student"}</h2>
+      <h2 className="text-2xl text-black font-bold mb-4">{formData.id ? "Edit Student" : "Add Student"}</h2>
 
       {fieldConfigs.map((field) => (
         <div key={field.name}>
@@ -74,7 +74,8 @@ export const AdminStudentForm: React.FC<AdminStudentFormProps> = ({ existingUser
             type={field.type}
             value={formData[field.name as keyof UserProfile] || ""}
             onChange={handleChange}
-            className="w-full border border-gray-300 p-2 rounded-md"
+            className="w-full border bg-slate-100 border-gray-300 p-2 rounded transition duration-200 
+             hover:border-gray-500 focus:outline-none focus:ring-3 focus:ring-red-200"
             required
           />
         </div>
@@ -87,7 +88,7 @@ export const AdminStudentForm: React.FC<AdminStudentFormProps> = ({ existingUser
           name="role"
           value={formData.userType}
           onChange={handleChange}
-          className="w-full p-2 border border-gray-300 rounded"
+          className="w-full p-2 border text-black border-gray-300 rounded bg-slate-100 focus:outline-none focus:ring-0"
           required
         >
           <option value="">Select role</option>
