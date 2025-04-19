@@ -103,7 +103,7 @@ export const AdminStudentForm: React.FC<AdminStudentFormProps> = ({ existingUser
       <button
         type="submit"
         disabled={loading}
-        className="w-full bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 transition"
+        className="w-full bg-red-700 text-white py-2 px-4 rounded-md hover:bg-red-800 transition"
       >
         {loading ? "Saving..." : formData.id ? "Update Student" : "Add Student"}
       </button>
