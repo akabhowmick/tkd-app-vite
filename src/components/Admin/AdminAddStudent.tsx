@@ -75,7 +75,7 @@ export const AdminStudentForm: React.FC<AdminStudentFormProps> = ({ existingUser
             value={formData[field.name as keyof UserProfile] || ""}
             onChange={handleChange}
             className="w-full border bg-slate-100 border-gray-300 p-2 rounded transition duration-200 
-             hover:border-gray-500 focus:outline-none focus:ring-3 focus:ring-red-200"
+             hover:border-gray-500 focus:outline-none focus:ring-3 focus:ring-red-200 text-black"
             required
           />
         </div>
