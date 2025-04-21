@@ -16,6 +16,7 @@ const userTypes = [
 
 const fieldConfigs = [
   { name: "name", label: "Full Name", type: "text" },
+  { name: "email", label: "Email Address", type: "text" },
   { name: "phone", label: "Phone Number", type: "tel" },
   { name: "school_id", label: "School ID", type: "text" },
 ];
@@ -61,7 +62,9 @@ export const AdminStudentForm: React.FC<AdminStudentFormProps> = ({ existingUser
       onSubmit={handleSubmit}
       className="bg-white p-6 rounded-lg mx-auto space-y-4 w-full max-w-md"
     >
-      <h2 className="text-2xl text-black font-bold mb-4">{formData.id ? "Edit Student" : "Add Student"}</h2>
+      <h2 className="text-2xl text-black font-bold mb-4">
+        {formData.id ? "Edit Student" : "Add Student"}
+      </h2>
 
       {fieldConfigs.map((field) => (
         <div key={field.name}>
@@ -82,7 +85,9 @@ export const AdminStudentForm: React.FC<AdminStudentFormProps> = ({ existingUser
       ))}
 
       <div>
-        <label htmlFor="role" className="block mb-1 font-medium text-gray-700">User Type</label>
+        <label htmlFor="role" className="block mb-1 font-medium text-gray-700">
+          User Type
+        </label>
         <select
           id="role"
           name="role"
@@ -93,7 +98,9 @@ export const AdminStudentForm: React.FC<AdminStudentFormProps> = ({ existingUser
         >
           <option value="">Select role</option>
           {userTypes.map(({ label, value }) => (
-            <option key={value} value={value}>{label}</option>
+            <option key={value} value={value}>
+              {label}
+            </option>
           ))}
         </select>
       </div>
