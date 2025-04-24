@@ -87,28 +87,28 @@ const RegularDashboard = () => (
         <StatCard
           icon="fas fa-wallet"
           title="Today's Money"
-          value="$53k"
+          value="$53"
           change="+55% than last week"
           isPositive={true}
         />
         <StatCard
           icon="fas fa-users"
-          title="Today's Users"
+          title="Today's Attendance"
           value="2,300"
-          change="+3% than last month"
+          change="+3% than last week"
           isPositive={true}
         />
         <StatCard
           icon="fas fa-user-plus"
           title="New Clients"
           value="3,462"
-          change="-2% than yesterday"
+          change="-2% than last month"
           isPositive={false}
         />
         <StatCard
           icon="fas fa-chart-line"
           title="Sales"
-          value="$103,430"
+          value="$103"
           change="+5% than yesterday"
           isPositive={true}
         />
