@@ -1,5 +1,5 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faAdd, faBell, faHome, faMoneyBill, faUser, faListUl } from "@fortawesome/free-solid-svg-icons";
+import { faAdd, faHome, faMoneyBill, faListUl } from "@fortawesome/free-solid-svg-icons";
 
 const Sidebar = () => (
   <div className="w-64 bg-white h-screen shadow-md text-black">
@@ -9,9 +9,7 @@ const Sidebar = () => (
     <nav className="mt-6">
       {[
         { icon: faHome, label: "Dashboard", link: "/dashboard" },
-        { icon: faUser, label: "Profile", link: "/profile" },
         { icon: faMoneyBill, label: "Renewals", link: "/renewals" },
-        { icon: faBell, label: "Notifications", link: "/notifications" },
         { icon: faAdd, label: "Add a student", link: "/add-student" },
         { icon: faListUl, label: "Student List", link: "/students" },
       ].map((item, index) => (
