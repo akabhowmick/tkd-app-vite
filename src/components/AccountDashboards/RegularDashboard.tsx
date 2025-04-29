@@ -1,5 +1,6 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faAdd, faHome, faMoneyBill, faListUl } from "@fortawesome/free-solid-svg-icons";
+import { useSchool } from "../../context/SchoolContext";
 
 const Sidebar = () => (
   <div className="w-64 bg-white h-screen shadow-md text-black">
@@ -78,43 +79,47 @@ const StatCard = ({
   </div>
 );
 
-const RegularDashboard = () => (
-  <div className="flex">
-    <Sidebar />
-    <div className="flex-1 p-6">
-      <Header />
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-        <StatCard
-          icon="fas fa-wallet"
-          title="Today's Money"
-          value="$53"
-          change="+55% than last week"
-          isPositive={true}
-        />
-        <StatCard
-          icon="fas fa-users"
-          title="Today's Attendance"
-          value="2,300"
-          change="+3% than last week"
-          isPositive={true}
-        />
-        <StatCard
-          icon="fas fa-user-plus"
-          title="New Clients"
-          value="3,462"
-          change="-2% than last month"
-          isPositive={false}
-        />
-        <StatCard
-          icon="fas fa-chart-line"
-          title="Sales"
-          value="$103"
-          change="+5% than yesterday"
-          isPositive={true}
-        />
+const RegularDashboard = () => {
+  const { sales, clients, attendance } = useSchool();
+
+  return (
+    <div className="flex">
+      <Sidebar />
+      <div className="flex-1 p-6">
+        <Header />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+          <StatCard
+            icon="fas fa-wallet"
+            title="Today's Money"
+            value={`${sales}`}
+            change="+55% than last week"
+            isPositive={true}
+          />
+          <StatCard
+            icon="fas fa-users"
+            title="Today's Attendance"
+            value={`${attendance}}`}
+            change="+3% than last week"
+            isPositive={true}
+          />
+          <StatCard
+            icon="fas fa-user-plus"
+            title="New Clients"
+            value={`${clients}`}
+            change="-2% than last month"
+            isPositive={false}
+          />
+          <StatCard
+            icon="fas fa-chart-line"
+            title="Sales"
+            value="$103"
+            change="+5% than yesterday"
+            isPositive={true}
+          />
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 export default RegularDashboard;
