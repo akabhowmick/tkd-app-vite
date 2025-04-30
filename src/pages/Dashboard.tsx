@@ -5,6 +5,7 @@ import { Profile } from "../components/AccountDashboards/Profile";
 import RegularDashboard from "../components/AccountDashboards/RegularDashboard";
 import StudentDashboard from "../components/AccountDashboards/StudentDashboard";
 import { useAuth } from "../context/AuthContext";
+import { SchoolProvider } from "../context/SchoolContext";
 import { UserRole } from "../types/user";
 
 const Dashboard = () => {
@@ -12,7 +13,11 @@ const Dashboard = () => {
 
   switch (user?.role) {
     case UserRole.Admin:
-      return <RegularDashboard />;
+      return (
+        <SchoolProvider>
+          <RegularDashboard />;
+        </SchoolProvider>
+      );
     case UserRole.Instructor:
       return <InstructorDashboard />;
     case UserRole.Parent:
