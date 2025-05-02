@@ -98,7 +98,7 @@ const RegularDashboard = () => {
           <StatCard
             icon="fas fa-users"
             title="Today's Attendance"
-            value={`${attendance}}`}
+            value={`${attendance}`}
             change="+3% than last week"
             isPositive={true}
           />
