@@ -10,8 +10,8 @@ interface SchoolContextType {
 const SchoolContext = createContext<SchoolContextType | undefined>(undefined);
 
 export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [sales, setUser] = useState(0);
-  const [attendance, setSchool] = useState(0);
+  const [sales, setSales] = useState(0);
+  const [attendance, setAttendance] = useState(0);
   const [clients, setClients] = useState(0);
 
   // derive from supabase
