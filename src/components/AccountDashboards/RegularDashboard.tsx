@@ -1,5 +1,5 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faAdd, faHome, faMoneyBill, faListUl } from "@fortawesome/free-solid-svg-icons";
+import { faAdd, faHome, faMoneyBill, faListUl, faListCheck } from "@fortawesome/free-solid-svg-icons";
 import { useSchool } from "../../context/SchoolContext";
 
 const Sidebar = () => (
@@ -13,7 +13,7 @@ const Sidebar = () => (
         { icon: faMoneyBill, label: "Renewals", link: "/renewals" },
         { icon: faAdd, label: "Add a student", link: "/add-student" },
         { icon: faListUl, label: "Student List", link: "/students" },
-        { icon: faListUl, label: "Attendance", link: "/attendance" },
+        { icon: faListCheck, label: "Attendance", link: "/attendance" },
       ].map((item, index) => (
         <a
           key={index}
