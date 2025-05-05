@@ -1,7 +1,5 @@
-import React from 'react'
-
 export const TakeAttendance = () => {
   return (
-    <div>TakeAttendance</div>
+    <div className="text-black">TakeAttendance</div>
   )
 }

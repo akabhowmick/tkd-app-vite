@@ -7,6 +7,7 @@ import SignUp from "../pages/Signup";
 import { Header } from "./Header";
 import Dashboard from "../pages/Dashboard";
 import { AddStudentPage } from "../pages/AddStudentPage";
+import { TakeAttendance } from "./AccountDashboards/AdminFeatures/TakeAttendance";
 
 const AppRouter: React.FC = () => {
   const { user } = useAuth();
@@ -46,7 +47,15 @@ const AppRouter: React.FC = () => {
             </PrivateRoute>
           }
         />
-        <Route path="/add-student" element={<AddStudentPage/>} />
+        <Route
+          path="/dashboard/take-attendance"
+          element={
+            <PrivateRoute>
+              <TakeAttendance />
+            </PrivateRoute>
+          }
+        />
+        <Route path="/add-student" element={<AddStudentPage />} />
       </Routes>
     </Router>
   );

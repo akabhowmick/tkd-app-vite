@@ -13,7 +13,7 @@ const Sidebar = () => (
         { icon: faMoneyBill, label: "Renewals", link: "/renewals" },
         { icon: faAdd, label: "Add a student", link: "/add-student" },
         { icon: faListUl, label: "Student List", link: "/students" },
-        { icon: faListCheck, label: "Attendance", link: "/attendance" },
+        { icon: faListCheck, label: "Attendance", link: "/dashboard/take-attendance" },
       ].map((item, index) => (
         <a
           key={index}
