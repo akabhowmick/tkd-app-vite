@@ -77,7 +77,7 @@ export const TakeAttendance = () => {
   };
 
   return (
-    <div className="max-w-xl mx-auto mt-8 p-4 bg-white shadow rounded-lg">
+    <div className="max-w-xl mx-auto mt-8 p-4 bg-white shadow rounded-lg text-black">
       <h2 className="text-xl font-semibold mb-4">Take Attendance - {today}</h2>
 
       <form onSubmit={(e) => e.preventDefault()}>
