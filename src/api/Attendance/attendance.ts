@@ -1,31 +1,33 @@
 import { supabase } from "../supabase";
 
-
-export async function createAttendance(records: {
+export interface AttendanceRecord {
+  id?: string;
   student_id: string;
   status: "present" | "absent";
   schoolId: string;
-  date: string; // YYYY-MM-DD
-}[]) {
-  const { data, error } = await supabase.from("attendance").insert(records);
-  return { data, error };
+  date: string; //
 }
 
-export async function getAttendanceByDate(schoolId: string, date: string) {
+export const createAttendance = async (records: AttendanceRecord[]) => {
+  const { data, error } = await supabase.from("attendance").upsert(records);
+  return { data, error };
+};
+
+export const getAttendanceByDate = async (
+  schoolId: string,
+  date: string
+): Promise<{ data: AttendanceRecord[] | null; error: unknown }> => {
   const { data, error } = await supabase
     .from("attendance")
-    .select("*, users(full_name)")
+    .select("*")
     .eq("school_id", schoolId)
     .eq("date", date);
 
-  return { data, error };
-}
+  return { data: data as AttendanceRecord[] | null, error };
+};
 
 export async function updateAttendance(id: string, status: "present" | "absent") {
-  const { data, error } = await supabase
-    .from("attendance")
-    .update({ status })
-    .eq("id", id);
+  const { data, error } = await supabase.from("attendance").update({ status }).eq("id", id);
 
   return { data, error };
 }

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../../context/AuthContext";
 import { supabase } from "../../../api/supabase";
-import { createAttendance, getAttendanceByDate } from "../../../api/Attendance/attendance";
+import { AttendanceRecord, createAttendance, getAttendanceByDate } from "../../../api/Attendance/attendance";
 
 type AttendanceStatus = "present" | "absent";
 
@@ -36,7 +36,7 @@ export const TakeAttendance = () => {
       if (!user?.schoolId) return;
       const { data, error } = await getAttendanceByDate(user.schoolId, today);
       if (data) {
-        const existing = data.reduce((acc: Record<string, AttendanceStatus>, record: any) => {
+        const existing = data.reduce((acc: Record<string, AttendanceStatus>, record: AttendanceRecord) => {
           acc[record.student_id] = record.status;
           return acc;
         }, {});
@@ -58,10 +58,15 @@ export const TakeAttendance = () => {
     if (!user?.schoolId) return;
     setIsSubmitting(true);
 
+    if (!user?.schoolId) {
+      console.error("Missing school ID");
+      return;
+    }
+
     const records = Object.entries(attendance).map(([student_id, status]) => ({
       student_id,
       status,
-      schoolId: user.schoolId,
+      schoolId: user.schoolId!,
       date: today,
     }));
 
