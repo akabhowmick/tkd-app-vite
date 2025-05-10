@@ -4,18 +4,18 @@ import { supabase } from "../supabase";
 export async function createAttendance(records: {
   student_id: string;
   status: "present" | "absent";
-  school_id: string;
+  schoolId: string;
   date: string; // YYYY-MM-DD
 }[]) {
   const { data, error } = await supabase.from("attendance").insert(records);
   return { data, error };
 }
 
-export async function getAttendanceByDate(school_id: string, date: string) {
+export async function getAttendanceByDate(schoolId: string, date: string) {
   const { data, error } = await supabase
     .from("attendance")
     .select("*, users(full_name)")
-    .eq("school_id", school_id)
+    .eq("school_id", schoolId)
     .eq("date", date);
 
   return { data, error };

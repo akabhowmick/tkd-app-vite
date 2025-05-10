@@ -1,110 +1,128 @@
 import { useEffect, useState } from "react";
-import { supabase } from "../../../api/supabase";
 import { useAuth } from "../../../context/AuthContext";
+import { supabase } from "../../../api/supabase";
+import { createAttendance, getAttendanceByDate } from "../../../api/Attendance/attendance";
 
-type Student = {
+type AttendanceStatus = "present" | "absent";
+
+interface Student {
   id: string;
   full_name: string;
-};
+}
 
 export const TakeAttendance = () => {
-  const { user } = useAuth();
+  const { user } = useAuth(); // assumes user has schoolId
   const [students, setStudents] = useState<Student[]>([]);
-  const [attendance, setAttendance] = useState<Record<string, boolean>>({});
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
+  const [attendance, setAttendance] = useState<Record<string, AttendanceStatus>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const today = new Date().toISOString().split("T")[0];
 
   useEffect(() => {
     const fetchStudents = async () => {
-      if (!user?.schoolId) return;
-
       const { data, error } = await supabase
         .from("users")
         .select("id, full_name")
-        .eq("role", "student")
-        .eq("school_id", user.schoolId);
+        .eq("school_id", user?.schoolId)
+        .eq("role", "student");
 
-      if (error) {
-        console.error("Error fetching students:", error.message);
+      if (data) {
+        setStudents(data);
       } else {
-        setStudents(data || []);
-        const defaultAttendance = data?.reduce((acc, student) => {
-          acc[student.id] = true; // default to present
+        console.error(error);
+      }
+    };
+
+    const fetchExistingAttendance = async () => {
+      if (!user?.schoolId) return;
+      const { data, error } = await getAttendanceByDate(user.schoolId, today);
+      if (data) {
+        const existing = data.reduce((acc: Record<string, AttendanceStatus>, record: any) => {
+          acc[record.student_id] = record.status;
           return acc;
-        }, {} as Record<string, boolean>);
-        setAttendance(defaultAttendance);
+        }, {});
+        setAttendance(existing);
+      } else {
+        console.error(error);
       }
     };
 
     fetchStudents();
-  }, [user?.schoolId]);
+    fetchExistingAttendance();
+  }, [today, user?.schoolId]);
 
-  const handleCheckboxChange = (id: string) => {
-    setAttendance((prev) => ({ ...prev, [id]: !prev[id] }));
+  const handleChange = (studentId: string, status: AttendanceStatus) => {
+    setAttendance((prev) => ({ ...prev, [studentId]: status }));
   };
 
   const handleSubmit = async () => {
-    setLoading(true);
-    setMessage("");
+    if (!user?.schoolId) return;
+    setIsSubmitting(true);
 
-    const entries = Object.entries(attendance).map(([student_id, isPresent]) => ({
+    const records = Object.entries(attendance).map(([student_id, status]) => ({
       student_id,
-      status: isPresent ? "present" : "absent",
-      date: new Date().toISOString().split("T")[0],
-      school_id: user?.schoolId,
+      status,
+      schoolId: user.schoolId,
+      date: today,
     }));
 
-    const { error } = await supabase.from("attendance").insert(entries);
-
+    const { error } = await createAttendance(records);
     if (error) {
+      alert("Failed to save attendance.");
       console.error(error);
-      setMessage("Error saving attendance.");
     } else {
-      setMessage("Attendance saved successfully!");
+      alert("Attendance saved.");
     }
 
-    setLoading(false);
+    setIsSubmitting(false);
   };
 
   return (
-    <div className="max-w-xl mx-auto p-4 bg-white rounded shadow">
-      <h2 className="text-xl font-semibold mb-4">Take Attendance</h2>
+    <div className="max-w-xl mx-auto mt-8 p-4 bg-white shadow rounded-lg">
+      <h2 className="text-xl font-semibold mb-4">Take Attendance - {today}</h2>
 
-      {students.length === 0 && <p>No students found.</p>}
-
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          handleSubmit();
-        }}
-      >
-        <ul className="space-y-2">
-          {students.map((student) => (
-            <li key={student.id} className="flex justify-between items-center">
-              <span>{student.full_name}</span>
-              <label className="flex items-center gap-2">
+      <form onSubmit={(e) => e.preventDefault()}>
+        {students.map((student) => (
+          <div
+            key={student.id}
+            className="flex items-center justify-between border-b py-2"
+          >
+            <span>{student.full_name}</span>
+            <div className="space-x-4">
+              <label className="inline-flex items-center">
                 <input
-                  type="checkbox"
-                  checked={attendance[student.id]}
-                  onChange={() => handleCheckboxChange(student.id)}
-                  className="form-checkbox h-5 w-5 text-blue-600"
+                  type="radio"
+                  name={student.id}
+                  value="present"
+                  checked={attendance[student.id] === "present"}
+                  onChange={() => handleChange(student.id, "present")}
+                  className="form-radio text-green-500"
                 />
-                <span>{attendance[student.id] ? "Present" : "Absent"}</span>
+                <span className="ml-1">Present</span>
               </label>
-            </li>
-          ))}
-        </ul>
+              <label className="inline-flex items-center">
+                <input
+                  type="radio"
+                  name={student.id}
+                  value="absent"
+                  checked={attendance[student.id] === "absent"}
+                  onChange={() => handleChange(student.id, "absent")}
+                  className="form-radio text-red-500"
+                />
+                <span className="ml-1">Absent</span>
+              </label>
+            </div>
+          </div>
+        ))}
 
         <button
-          type="submit"
-          disabled={loading}
-          className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          type="button"
+          onClick={handleSubmit}
+          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          disabled={isSubmitting}
         >
-          {loading ? "Saving..." : "Submit Attendance"}
+          {isSubmitting ? "Saving..." : "Save Attendance"}
         </button>
       </form>
-
-      {message && <p className="mt-2 text-green-600">{message}</p>}
     </div>
   );
 };
