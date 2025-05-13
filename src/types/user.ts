@@ -104,6 +104,7 @@ export interface School {
 export interface UserProfile {
   id?: string;
   name: string;
+  email: string;
   phone: string;
   schoolId: string;
   userType: "Student" | "Parent" | "Instructor" | "Admin";
