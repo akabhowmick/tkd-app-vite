@@ -2,6 +2,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faAdd, faHome, faMoneyBill, faListUl, faListCheck } from "@fortawesome/free-solid-svg-icons";
 import { useSchool } from "../../context/SchoolContext";
 
+
 const Sidebar = () => (
   <div className="w-64 bg-white h-screen shadow-md text-black">
     <div className="p-6">

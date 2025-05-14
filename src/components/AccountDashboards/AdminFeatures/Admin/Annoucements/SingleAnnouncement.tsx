@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../../context/AuthContext';
-import { Announcement } from '../../../types/user';
+import { useAuth } from '../../../../../context/AuthContext';
+import { Announcement } from '../../../../../types/user';
 
 
 interface Props {

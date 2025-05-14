@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import React, { useState } from "react";
+import { useAuth } from "../../../../../context/AuthContext";
 
 export const CreateSchoolProfileProfile = () => {
   const { user } = useAuth();
-  const [name, setName] = useState('');
-  const [address, setAddress] = useState('');
-  const [logo, setLogo] = useState('');
+  const [name, setName] = useState("");
+  const [address, setAddress] = useState("");
+  const [logo, setLogo] = useState("");
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -16,7 +16,7 @@ export const CreateSchoolProfileProfile = () => {
   return (
     <div>
       <h1>Create School</h1>
-      {user?.role === 'admin' ? (
+      {user?.role === "admin" ? (
         <form onSubmit={handleSubmit}>
           <label>
             Name:

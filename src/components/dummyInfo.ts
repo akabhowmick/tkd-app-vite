@@ -1,51 +1,51 @@
-import { Announcement, Class, School, User } from "../types/user";
+import { Announcement, Class, School} from "../types/user";
 
-export const users: User[] = [
-  {
-    id: 1,
-    name: "John Doe",
-    email: "johndoe@example.com",
-    role: "admin",
-  },
-  {
-    id: 2,
-    name: "Janes Smithson",
-    email: "janesmith@example.com",
-    role: "instructor",
-  },
-  {
-    id: 3,
-    name: "Bob Johnson",
-    email: "bobjohnson@example.com",
-    role: "instructor",
-  },
-  {
-    id: 4,
-    name: "Alice Brown",
-    email: "alicebrown@example.com",
-    role: "parent",
-  },
-  {
-    id: 5,
-    name: "Mike Davis",
-    email: "mikedavis@example.com",
-    role: "parent",
-  },
-  {
-    id: 6,
-    name: "Emily Chen",
-    email: "emilychen@example.com",
-    role: "student",
-    parentId: 4,
-  },
-  {
-    id: 7,
-    name: "David Lee",
-    email: "davidlee@example.com",
-    role: "student",
-    parentId: 5,
-  },
-];
+// export const users: User[] = [
+//   {
+//     id: "1",
+//     name: "John Doe",
+//     email: "johndoe@example.com",
+//     role: "admin",
+//   },
+//   {
+//     id: "2",
+//     name: "Janes Smithson",
+//     email: "janesmith@example.com",
+//     role: "instructor",
+//   },
+//   {
+//     id: "3",
+//     name: "Bob Johnson",
+//     email: "bobjohnson@example.com",
+//     role: "instructor",
+//   },
+//   {
+//     id: 4,
+//     name: "Alice Brown",
+//     email: "alicebrown@example.com",
+//     role: "parent",
+//   },
+//   {
+//     id: 5,
+//     name: "Mike Davis",
+//     email: "mikedavis@example.com",
+//     role: "parent",
+//   },
+//   {
+//     id: 6,
+//     name: "Emily Chen",
+//     email: "emilychen@example.com",
+//     role: "student",
+//     parentId: 4,
+//   },
+//   {
+//     id: 7,
+//     name: "David Lee",
+//     email: "davidlee@example.com",
+//     role: "student",
+//     parentId: 5,
+//   },
+// ];
 
 export const schools: School[] = [
   {

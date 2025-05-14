@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 import { UserProfile } from "../../../types/user";
 import { deleteUser, getUsers } from "../../../api/StudentRequests/studentRequests";
-import { AdminStudentForm } from "../../Admin/AdminAddStudent";
+import { AdminStudentForm } from "./AdminAddStudent";
 
 export const StudentListPage = () => {
   const [students, setStudents] = useState<UserProfile[]>([]);

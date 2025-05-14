@@ -1,6 +1,6 @@
 // import AdminDashboard from "../components/AccountDashboards/AdminDashboard";
-import InstructorDashboard from "../components/AccountDashboards/InstructorDashboard";
-import ParentDashboard from "../components/AccountDashboards/ParentDashboard";
+import InstructorDashboard from "../components/AccountDashboards/OtherUserDashboards/InstructorDashboard";
+import ParentDashboard from "../components/AccountDashboards/OtherUserDashboards/ParentDashboard";
 import { Profile } from "../components/AccountDashboards/Profile";
 import RegularDashboard from "../components/AccountDashboards/RegularDashboard";
 import StudentDashboard from "../components/AccountDashboards/StudentDashboard";

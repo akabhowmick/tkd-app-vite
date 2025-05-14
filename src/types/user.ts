@@ -4,6 +4,7 @@ export interface User {
   id: string;
   name: string;
   phone: string;
+  email: string;
   schoolId: string;
   userType: "student" | "parent" | "instructor" | "admin";
 }

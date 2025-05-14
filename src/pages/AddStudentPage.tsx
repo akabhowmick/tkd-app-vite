@@ -1,4 +1,5 @@
-import { AdminStudentForm } from "../components/Admin/AdminAddStudent"
+import { AdminStudentForm } from "../components/AccountDashboards/AdminFeatures/AdminAddStudent"
+
 
 export const AddStudentPage = () => {
   return (
