@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { createUser, updateUser } from "../../../api/AppUserRequests/AppUserRequests";
 import { UserProfile } from "../../../types/user";
+import { createStudent, updateStudent } from "../../../api/StudentRequests/studentRequests";
 
 interface AdminStudentFormProps {
   existingUser?: UserProfile;
@@ -46,9 +46,9 @@ export const AdminStudentForm: React.FC<AdminStudentFormProps> = ({ existingUser
 
     try {
       if (formData.id) {
-        await updateUser(formData.id, formData);
+        await updateStudent(formData.id, formData);
       } else {
-        await createUser(formData);
+        await createStudent(formData);
       }
       onSuccess();
     } catch (err) {

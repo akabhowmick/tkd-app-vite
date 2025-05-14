@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 
 import { UserProfile } from "../../../types/user";
-import { deleteUser, getUsers } from "../../../api/StudentRequests/studentRequests";
 import { AdminStudentForm } from "./AdminAddStudent";
+import { deleteStudent, getStudents } from "../../../api/StudentRequests/studentRequests";
 
 export const StudentListPage = () => {
   const [students, setStudents] = useState<UserProfile[]>([]);
@@ -12,7 +12,7 @@ export const StudentListPage = () => {
   const loadStudents = async () => {
     setLoading(true);
     try {
-      const allUsers = await getUsers();
+      const allUsers = await getStudents();
       const filtered = allUsers.filter((user) => user.userType === "Student");
       setStudents(filtered);
     } finally {
@@ -24,7 +24,7 @@ export const StudentListPage = () => {
     const confirmed = window.confirm("Are you sure you want to delete this student?");
     if (!confirmed) return;
 
-    await deleteUser(id);
+    await deleteStudent(id);
     await loadStudents();
   };
 

@@ -11,10 +11,10 @@ const Sidebar = () => (
     <nav className="mt-6">
       {[
         { icon: faHome, label: "Dashboard", link: "/dashboard" },
-        { icon: faMoneyBill, label: "Renewals", link: "/renewals" },
-        { icon: faAdd, label: "Add a student", link: "/add-student" },
-        { icon: faListUl, label: "Student List", link: "/students" },
-        { icon: faListCheck, label: "Attendance", link: "/dashboard/take-attendance" },
+        { icon: faMoneyBill, label: "Renewals", link: "/dashboard/admin/renewals" },
+        { icon: faAdd, label: "Add a student", link: "/dashboard/admin/add-student" },
+        { icon: faListUl, label: "Student List", link: "/dashboard/admin/students" },
+        { icon: faListCheck, label: "Attendance", link: "/dashboard/admin/take-attendance" },
       ].map((item, index) => (
         <a
           key={index}
