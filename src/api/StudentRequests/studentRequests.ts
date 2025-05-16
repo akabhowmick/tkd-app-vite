@@ -1,4 +1,3 @@
-
 import { supabase } from "../supabase";
 import { UserProfile } from "../../types/user";
 
@@ -9,7 +8,7 @@ export const createStudent = async (student: Omit<UserProfile, "id">): Promise<v
 };
 
 // READ all students by schoolId (optional filter)
-export const getStudents= async (schoolId?: string): Promise<UserProfile[]> => {
+export const getStudents = async (schoolId?: string): Promise<UserProfile[]> => {
   let query = supabase.from("users").select("*");
   if (schoolId) query = query.eq("school_id", schoolId);
 
