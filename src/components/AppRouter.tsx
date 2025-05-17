@@ -9,6 +9,7 @@ import Dashboard from "../pages/Dashboard";
 import { AddStudentPage } from "../pages/AddStudentPage";
 import { TakeAttendance } from "./AccountDashboards/AdminFeatures/TakeAttendance";
 import { StudentListPage } from "./AccountDashboards/AdminFeatures/StudentListPage";
+import { SchoolManagement } from "./AccountDashboards/AdminFeatures/SchoolManagement";
 
 const AppRouter: React.FC = () => {
   const { user } = useAuth();
@@ -69,6 +70,14 @@ const AppRouter: React.FC = () => {
           element={
             <PrivateRoute>
               <StudentListPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/dashboard/admin/school"
+          element={
+            <PrivateRoute>
+              <SchoolManagement />
             </PrivateRoute>
           }
         />
