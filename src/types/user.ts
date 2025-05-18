@@ -98,6 +98,8 @@ export interface School {
   id: string; // Unique identifier
   name: string; // School name
   address: string; // School address
+  admin_id?: string;
+  created_at?: string;
   logo?: string; // Optional logo URL
   createdAt: Date; // Creation timestamp
 }
