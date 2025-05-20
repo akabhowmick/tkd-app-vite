@@ -1,8 +1,10 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
 
-import { BaseUser, School, UserRole } from "../types/user";
-import { supabase } from "../api/supabase";
+import { BaseUser, UserRole } from "../types/user";
 import { UserSignIn } from "../types/auth";
+import { School } from "../types/school";
+
+import { supabase } from "../api/supabase";
 
 interface AuthContextType {
   user: BaseUser | null;

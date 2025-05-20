@@ -1,92 +1,76 @@
-import { useState } from "react";
-import { School } from "../../../../types/user";
-import { supabase } from "../../../../api/supabase";
-import { useAuth } from "../../../../context/AuthContext";
+import React, { useState } from "react";
+import { School, SchoolInput } from "../../../../types/school";
 
-interface Props {
-  existingSchool?: School;
-  onSuccess: () => void;
+const fields = [
+  { name: "name", label: "School Name", type: "text", required: true },
+  { name: "address", label: "Address", type: "text", required: true },
+  { name: "email", label: "Email", type: "email" },
+  { name: "phone", label: "Phone Number", type: "tel" },
+  { name: "website", label: "Website", type: "url" },
+  { name: "logo_url", label: "Logo URL", type: "url" },
+  { name: "description", label: "Description", type: "text" },
+  { name: "established_at", label: "Established Year", type: "text" },
+];
+
+interface SchoolFormProps {
+  existingSchool?: School | null;
+  onSubmit: (schoolData: Omit<School, "id" | "created_at">) => Promise<void>;
 }
 
-export const SchoolForm: React.FC<Props> = ({ existingSchool, onSuccess }) => {
-  const { user } = useAuth();
-  const [name, setName] = useState(existingSchool?.name || "");
-  const [address, setAddress] = useState(existingSchool?.address || "");
-  const [loading, setLoading] = useState(false);
+export const SchoolForm: React.FC<SchoolFormProps> = ({ existingSchool, onSubmit }) => {
+  const [formData, setFormData] = useState<SchoolInput>(
+    existingSchool || { name: "", address: "" }
+  );
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const isEditing = !!existingSchool;
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError("");
-
-    if (!user) return;
-
+    if (!formData.name || !formData.address) {
+      setError("Name and address are required.");
+      return;
+    }
     try {
-      if (existingSchool) {
-        const { error } = await supabase
-          .from("schools")
-          .update({ name, address })
-          .eq("id", existingSchool.id);
-
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from("schools").insert({
-          name,
-          address,
-          admin_id: user.id,
-        });
-
-        if (error) throw error;
-      }
-
-      onSuccess();
+      setLoading(true);
+      await onSubmit(formData);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong.");
+      setError(`Submission failed. ${err}`);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="bg-white text-black p-6 rounded shadow max-w-md mx-auto space-y-4"
-    >
-      <h2 className="text-2xl font-bold mb-2">
-        {existingSchool ? "Edit School" : "Create School"}
-      </h2>
-
-      <div>
-        <label className="block mb-1">School Name</label>
-        <input
-          type="text"
-          className="w-full p-2 border bg-slate-100 border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-red-300"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
-        />
-      </div>
-
-      <div>
-        <label className="block mb-1">Address</label>
-        <input
-          type="text"
-          className="w-full p-2 border bg-slate-100 border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-red-300"
-          value={address}
-          onChange={(e) => setAddress(e.target.value)}
-          required
-        />
-      </div>
-
+    <form onSubmit={handleSubmit} className="space-y-4 p-4 bg-white rounded shadow">
+      <h2 className="text-xl font-bold text-black">{isEditing ? "Edit School" : "Create School"}</h2>
+      {fields.map(({ name, label, type, required }) => (
+        <div key={name}>
+          <label htmlFor={name} className="block text-sm font-medium text-gray-700">
+            {label} {required && <span className="text-red-500">*</span>}
+          </label>
+          <input
+            type={type}
+            name={name}
+            value={formData[name as keyof SchoolInput] || ""}
+            onChange={handleChange}
+            required={required}
+            className="w-full mt-1 p-2 border rounded text-black bg-slate-100"
+          />
+        </div>
+      ))}
       {error && <p className="text-red-500 text-sm">{error}</p>}
-
       <button
         type="submit"
         disabled={loading}
-        className="w-full bg-red-700 text-white py-2 px-4 rounded hover:bg-red-800 transition"
+        className="bg-red-700 text-white px-4 py-2 rounded hover:bg-red-800"
       >
-        {loading ? "Saving..." : existingSchool ? "Update School" : "Create School"}
+        {loading ? "Saving..." : isEditing ? "Update School" : "Create School"}
       </button>
     </form>
   );

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { SchoolForm } from "./SchoolForm";
-import { School } from "../../../../types/user";
+import { School } from "../../../../types/school";
 import { supabase } from "../../../../api/supabase";
 import { useAuth } from "../../../../context/AuthContext";
 
@@ -32,6 +32,19 @@ export const SchoolManagement = () => {
     }
   };
 
+  const handleUpdateOrCreate = async (formData: Omit<School, "id" | "created_at">) => {
+    if (school?.id) {
+      // Update
+      await supabase.from("schools").update(formData).eq("id", school.id);
+    } else {
+      // Create
+      await supabase.from("schools").insert([{ ...formData, admin_id: user?.id }]);
+    }
+
+    setEditing(false);
+    fetchSchool();
+  };
+
   useEffect(() => {
     fetchSchool();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -40,15 +53,7 @@ export const SchoolManagement = () => {
   if (loading) return <p className="text-black">Loading...</p>;
 
   if (!school || editing) {
-    return (
-      <SchoolForm
-        existingSchool={editing ? school ?? undefined : undefined}
-        onSuccess={() => {
-          setEditing(false);
-          fetchSchool();
-        }}
-      />
-    );
+    return <SchoolForm existingSchool={school} onSubmit={handleUpdateOrCreate} />;
   }
 
   return (
