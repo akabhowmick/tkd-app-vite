@@ -9,7 +9,7 @@ import Dashboard from "../pages/Dashboard";
 import { AddStudentPage } from "../pages/AddStudentPage";
 import { TakeAttendance } from "./AccountDashboards/AdminFeatures/TakeAttendance";
 import { StudentListPage } from "./AccountDashboards/AdminFeatures/StudentListPage";
-import { SchoolManagement } from "./AccountDashboards/AdminFeatures/SchoolManagement";
+import { SchoolManagement } from "./AccountDashboards/AdminFeatures/SchoolManagement/SchoolManagement";
 
 const AppRouter: React.FC = () => {
   const { user } = useAuth();

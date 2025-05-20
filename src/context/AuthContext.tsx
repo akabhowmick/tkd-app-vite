@@ -26,7 +26,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const storedSchool = localStorage.getItem("authSchool");
 
         setUser({
-          id: data.user.id,
+          id: data.user.id!,
           name: userMetadata?.name || "Unknown User",
           email: data.user.email || "",
           phone: userMetadata?.phone || "",
