@@ -1,5 +1,5 @@
 import { Announcement } from "../../../../../types/user";
-import { announcements } from "../../../../dummyInfo";
+import { announcements } from "../../../../../utils/dummyInfo";
 import { SingleAnnouncement } from "./SingleAnnouncement";
 
 const AnnouncementList = () => {

@@ -13,6 +13,7 @@ export interface School {
 }
 
 export type SchoolInput = {
+  admin_id?: string;
   name: string;
   address: string;
   email?: string;

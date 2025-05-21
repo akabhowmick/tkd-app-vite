@@ -16,10 +16,10 @@ export const SchoolManagement = () => {
       .from("schools")
       .select("*")
       .eq("admin_id", user.id)
-      .single();
-
-    if (!error) {
-      setSchool(data);
+    if (!error && data) {
+      setSchool(data[0]);
+    } else {
+      console.error(error)
     }
     setLoading(false);
   };
@@ -40,7 +40,6 @@ export const SchoolManagement = () => {
       // Create
       await supabase.from("schools").insert([{ ...formData, admin_id: user?.id }]);
     }
-
     setEditing(false);
     fetchSchool();
   };

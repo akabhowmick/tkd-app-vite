@@ -34,7 +34,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           phone: userMetadata?.phone || "",
           role: userMetadata?.role || UserRole.Student,
           createdAt: new Date(data.user.created_at),
-          schoolId: userMetadata?.schoolId || null,
+          schoolId: userMetadata?.schoolId || "",
         });
 
         if (storedSchool) setSchool(JSON.parse(storedSchool));

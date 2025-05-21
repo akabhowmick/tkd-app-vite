@@ -1,7 +1,7 @@
 // updated SchoolContext.tsx
 import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { supabase } from "../api/supabase";
-import { School } from "../types/user";
+import { School } from "../types/school";
 
 interface SchoolContextType {
   sales: number;

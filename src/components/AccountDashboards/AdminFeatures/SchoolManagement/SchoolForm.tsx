@@ -56,11 +56,13 @@ export const SchoolForm: React.FC<SchoolFormProps> = ({ existingSchool, onSubmit
           </label>
           <input
             type={type}
+            id={name}
             name={name}
             value={formData[name as keyof SchoolInput] || ""}
             onChange={handleChange}
             required={required}
             className="w-full mt-1 p-2 border rounded text-black bg-slate-100"
+            autoComplete="true"
           />
         </div>
       ))}
