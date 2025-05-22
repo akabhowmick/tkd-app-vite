@@ -16,6 +16,7 @@ export const SchoolManagement = () => {
     if (!user) return;
     const { data, error } = await supabase.from("schools").select("*").eq("admin_id", user.id);
     if (!error && data) {
+      console.log(data);
       setCurrentSchool(data[0]);
       setSchoolId(data[0].id);
     } else {
