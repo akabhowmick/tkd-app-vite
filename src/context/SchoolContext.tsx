@@ -9,6 +9,7 @@ interface SchoolContextType {
   clients: number;
   school: School | null;
   loading: boolean;
+  setSchoolId: React.Dispatch<React.SetStateAction<string>>;
   createSchool: (school: Omit<School, "id" | "created_at">) => Promise<void>;
   updateSchool: (id: string, updates: Partial<Omit<School, "id" | "created_at">>) => Promise<void>;
   deleteSchool: (id: string) => Promise<void>;
@@ -22,53 +23,54 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const [clients, setClients] = useState<number>(0);
   const [school, setSchool] = useState<School | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-
-  const schoolId = "YOUR_SCHOOL_ID_HERE"; // Replace with logic to fetch current user's schoolId
+  const [schoolId, setSchoolId] = useState<string>("");
 
   useEffect(() => {
     const fetchMetrics = async () => {
-      try {
-        setLoading(true);
+      if (schoolId !== "") {
+        try {
+          setLoading(true);
 
-        const { data: schoolData, error: schoolError } = await supabase
-          .from("schools")
-          .select("*")
-          .eq("id", schoolId)
-          .single();
+          const { data: schoolData, error: schoolError } = await supabase
+            .from("schools")
+            .select("*")
+            .eq("id", schoolId)
+            .single();
 
-        if (schoolError) throw schoolError;
-        setSchool(schoolData);
+          if (schoolError) throw schoolError;
+          setSchool(schoolData);
 
-        const { count: userCount, error: userError } = await supabase
-          .from("users")
-          .select("*", { count: "exact", head: true })
-          .eq("school_id", schoolId);
+          const { count: userCount, error: userError } = await supabase
+            .from("users")
+            .select("*", { count: "exact", head: true })
+            .eq("school_id", schoolId);
 
-        if (userError) throw userError;
-        setClients(userCount ?? 0);
+          if (userError) throw userError;
+          setClients(userCount ?? 0);
 
-        const { data: salesData, error: salesError } = await supabase
-          .from("sales")
-          .select("amount")
-          .eq("school_id", schoolId);
+          const { data: salesData, error: salesError } = await supabase
+            .from("sales")
+            .select("amount")
+            .eq("school_id", schoolId);
 
-        if (salesError) throw salesError;
+          if (salesError) throw salesError;
 
-        const totalSales =
-          salesData?.reduce((sum, record) => sum + parseFloat(record.amount), 0) ?? 0;
-        setSales(totalSales);
+          const totalSales =
+            salesData?.reduce((sum, record) => sum + parseFloat(record.amount), 0) ?? 0;
+          setSales(totalSales);
 
-        const { count: attendanceCount, error: attendanceError } = await supabase
-          .from("attendance")
-          .select("*", { count: "exact", head: true })
-          .eq("school_id", schoolId);
+          const { count: attendanceCount, error: attendanceError } = await supabase
+            .from("attendance")
+            .select("*", { count: "exact", head: true })
+            .eq("school_id", schoolId);
 
-        if (attendanceError) throw attendanceError;
-        setAttendance(attendanceCount ?? 0);
-      } catch (err) {
-        console.error("Error fetching school dashboard:", err);
-      } finally {
-        setLoading(false);
+          if (attendanceError) throw attendanceError;
+          setAttendance(attendanceCount ?? 0);
+        } catch (err) {
+          console.error("Error fetching school dashboard:", err);
+        } finally {
+          setLoading(false);
+        }
       }
     };
 
@@ -107,6 +109,7 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         clients,
         school,
         loading,
+        setSchoolId,
         createSchool,
         updateSchool,
         deleteSchool,

@@ -9,7 +9,7 @@ const fields = [
   { name: "website", label: "Website", type: "url" },
   { name: "logo_url", label: "Logo URL", type: "url" },
   { name: "description", label: "Description", type: "text" },
-  { name: "established_at", label: "Established Year", type: "text" },
+  { name: "established_at", label: "Established Year", type: "date" },
 ];
 
 interface SchoolFormProps {
