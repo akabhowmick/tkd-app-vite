@@ -1,41 +1,52 @@
+import { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faAdd, faHome, faMoneyBill, faListUl, faListCheck, faSchool } from "@fortawesome/free-solid-svg-icons";
+import {
+  faAdd,
+  faHome,
+  faMoneyBill,
+  faListUl,
+  faListCheck,
+  faSchool,
+} from "@fortawesome/free-solid-svg-icons";
 import { useSchool } from "../../context/SchoolContext";
+import { SchoolManagement } from "./AdminFeatures/SchoolManagement/SchoolManagement";
+import { TakeAttendance } from "./AdminFeatures/TakeAttendance";
+import { StudentListPage } from "./AdminFeatures/StudentListPage";
+import { AddStudentPage } from "../../pages/AddStudentPage";
+// import other feature components...
 
-
-const Sidebar = () => (
+const Sidebar = ({ setActive }: { setActive: (view: string) => void }) => (
   <div className="w-64 bg-white h-screen shadow-md text-black">
     <div className="p-6">
-      <h1 className="text-xl font-bold">Taekwondo School Name</h1>
+      <h1 className="text-xl font-bold">Taekwondo School</h1>
     </div>
-    <nav className="mt-6">
+    <nav className="mt-6 space-y-2">
       {[
-        { icon: faHome, label: "Dashboard", link: "/dashboard" },
-        { icon: faMoneyBill, label: "Renewals", link: "/dashboard/admin/renewals" },
-        { icon: faAdd, label: "Add a student", link: "/dashboard/admin/add-student" },
-        { icon: faListUl, label: "Student List", link: "/dashboard/admin/students" },
-        { icon: faListCheck, label: "Attendance", link: "/dashboard/admin/take-attendance" },
-        { icon: faSchool, label: "School Profile", link: "/dashboard/admin/school" },
+        { icon: faHome, label: "Dashboard", view: "home" },
+        { icon: faMoneyBill, label: "Renewals", view: "renewals" },
+        { icon: faAdd, label: "Add Student", view: "add-student" },
+        { icon: faListUl, label: "Student List", view: "students" },
+        { icon: faListCheck, label: "Attendance", view: "attendance" },
+        { icon: faSchool, label: "School Profile", view: "school" },
       ].map((item, index) => (
-        <a
+        <button
           key={index}
-          className="flex items-center p-4 text-gray-600 hover:bg-gray-200 rounded-lg"
-          href={item.link}
+          onClick={() => setActive(item.view)}
+          className="flex items-center gap-3 p-4 text-gray-700 hover:bg-gray-200 w-full text-left"
         >
           <FontAwesomeIcon icon={item.icon} />
-          <i className={`${item.icon} mr-3`}></i>
           <span>{item.label}</span>
-        </a>
+        </button>
       ))}
     </nav>
   </div>
 );
 
-const Header = () => (
+const Header = ({ title }: { title: string }) => (
   <div className="flex justify-between items-center mb-6 text-black">
     <div>
-      <h2 className="text-gray-600">Dashboard / Home</h2>
-      <h1 className="text-2xl font-bold">Home</h1>
+      <h2 className="text-gray-600">Dashboard / {title}</h2>
+      <h1 className="text-2xl font-bold">{title}</h1>
     </div>
     <div className="flex items-center space-x-4">
       <div className="relative">
@@ -84,42 +95,64 @@ const StatCard = ({
 
 const RegularDashboard = () => {
   const { sales, clients, attendance } = useSchool();
+  const [activeView, setActiveView] = useState("home");
+
+  const renderMainContent = () => {
+    switch (activeView) {
+      case "home":
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            <StatCard
+              icon="fas fa-wallet"
+              title="Today's Money"
+              value={`${sales}`}
+              change="+55% than last week"
+              isPositive={true}
+            />
+            <StatCard
+              icon="fas fa-users"
+              title="Today's Attendance"
+              value={`${attendance}`}
+              change="+3% than last week"
+              isPositive={true}
+            />
+            <StatCard
+              icon="fas fa-user-plus"
+              title="New Clients"
+              value={`${clients}`}
+              change="-2% than last month"
+              isPositive={false}
+            />
+            <StatCard
+              icon="fas fa-chart-line"
+              title="Sales"
+              value="$103"
+              change="+5% than yesterday"
+              isPositive={true}
+            />
+          </div>
+        );
+      case "school":
+        return <SchoolManagement />;
+      case "renewals":
+        return <div className="text-black">Renewals Component</div>;
+      case "add-student":
+        return <AddStudentPage />;
+      case "students":
+        return <StudentListPage />;
+      case "attendance":
+        return <TakeAttendance />;
+      default:
+        return <div className="text-black">Not implemented</div>;
+    }
+  };
 
   return (
     <div className="flex">
-      <Sidebar />
+      <Sidebar setActive={setActiveView} />
       <div className="flex-1 p-6">
-        <Header />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-          <StatCard
-            icon="fas fa-wallet"
-            title="Today's Money"
-            value={`${sales}`}
-            change="+55% than last week"
-            isPositive={true}
-          />
-          <StatCard
-            icon="fas fa-users"
-            title="Today's Attendance"
-            value={`${attendance}`}
-            change="+3% than last week"
-            isPositive={true}
-          />
-          <StatCard
-            icon="fas fa-user-plus"
-            title="New Clients"
-            value={`${clients}`}
-            change="-2% than last month"
-            isPositive={false}
-          />
-          <StatCard
-            icon="fas fa-chart-line"
-            title="Sales"
-            value="$103"
-            change="+5% than yesterday"
-            isPositive={true}
-          />
-        </div>
+        <Header title={activeView.replace("-", " ").toUpperCase()} />
+        {renderMainContent()}
       </div>
     </div>
   );
