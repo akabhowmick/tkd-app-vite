@@ -2,6 +2,8 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { supabase } from "../api/supabase";
 import { School } from "../types/school";
+import { getSchoolByAdmin } from "../api/SchoolRequests/schoolRequests";
+import { useAuth } from "./AuthContext";
 
 interface SchoolContextType {
   sales: number;
@@ -19,6 +21,7 @@ interface SchoolContextType {
 const SchoolContext = createContext<SchoolContextType | undefined>(undefined);
 
 export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const { user } = useAuth();
   const [sales, setSales] = useState<number>(0);
   const [attendance, setAttendance] = useState<number>(0);
   const [clients, setClients] = useState<number>(0);
@@ -77,6 +80,18 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
     fetchMetrics();
   }, [schoolId]);
+
+  const fetchSchool = async () => {
+    if (user) {
+      const fetchedSchool = await getSchoolByAdmin(user.id!);
+      console.log(fetchedSchool);
+    }
+  };
+
+  useEffect(() => {
+    fetchSchool();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // CRUD operations
   const createSchool = async (school: Omit<School, "id" | "created_at">) => {
