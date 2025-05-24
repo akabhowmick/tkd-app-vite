@@ -8,6 +8,7 @@ interface SchoolContextType {
   attendance: number;
   clients: number;
   school: School | null;
+  schoolId: string;
   loading: boolean;
   setSchoolId: React.Dispatch<React.SetStateAction<string>>;
   createSchool: (school: Omit<School, "id" | "created_at">) => Promise<void>;
@@ -109,6 +110,7 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         clients,
         school,
         loading,
+        schoolId,
         setSchoolId,
         createSchool,
         updateSchool,

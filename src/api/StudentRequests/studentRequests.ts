@@ -7,7 +7,7 @@ export const createStudent = async (student: Omit<UserProfile, "id">): Promise<v
   if (error) throw error;
 };
 
-// READ all students by schoolId (optional filter)
+// READ all students by schoolId 
 export const getStudents = async (schoolId?: string): Promise<UserProfile[]> => {
   let query = supabase.from("users").select("*");
   if (schoolId) query = query.eq("school_id", schoolId);

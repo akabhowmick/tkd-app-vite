@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { UserProfile } from "../../../types/user";
 import { createStudent, updateStudent } from "../../../api/StudentRequests/studentRequests";
+import { useSchool } from "../../../context/SchoolContext";
 
 interface AdminStudentFormProps {
   existingUser?: UserProfile;
@@ -22,11 +23,13 @@ const fieldConfigs = [
 ];
 
 export const AdminStudentForm: React.FC<AdminStudentFormProps> = ({ existingUser, onSuccess }) => {
+  const { schoolId } = useSchool();
+
   const [formData, setFormData] = useState<UserProfile>({
     name: existingUser?.name ?? "",
     email: existingUser?.email ?? "",
     phone: existingUser?.phone ?? "",
-    schoolId: existingUser?.schoolId ?? "",
+    schoolId: existingUser?.schoolId ?? schoolId,
     userType: existingUser?.userType ?? "Student",
     id: existingUser?.id, // optional for edit
   });
