@@ -84,7 +84,7 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const fetchSchool = async () => {
     if (user) {
       const fetchedSchool = await getSchoolByAdmin(user.id!);
-      console.log(fetchedSchool);
+      setSchool(fetchedSchool)
     }
   };
 
