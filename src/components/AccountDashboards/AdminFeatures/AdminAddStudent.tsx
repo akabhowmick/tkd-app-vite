@@ -23,15 +23,15 @@ const fieldConfigs = [
 ];
 
 export const AdminStudentForm: React.FC<AdminStudentFormProps> = ({ existingUser, onSuccess }) => {
-  const { schoolId } = useSchool();
+  const { school } = useSchool();
 
   const [formData, setFormData] = useState<UserProfile>({
     name: existingUser?.name ?? "",
     email: existingUser?.email ?? "",
     phone: existingUser?.phone ?? "",
-    schoolId: existingUser?.schoolId ?? schoolId,
+    schoolId: existingUser?.schoolId != null ? existingUser.schoolId : school?.id ?? "",
     userType: existingUser?.userType ?? "Student",
-    id: existingUser?.id, // optional for edit
+    id: existingUser?.id, 
   });
 
   const [loading, setLoading] = useState(false);
