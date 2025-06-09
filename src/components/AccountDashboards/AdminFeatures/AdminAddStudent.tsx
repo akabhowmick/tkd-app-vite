@@ -34,8 +34,6 @@ export const AdminStudentForm: React.FC<AdminStudentFormProps> = ({ existingUser
     id: existingUser?.id,
   });
 
-  console.log(formData.schoolId);
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -44,21 +42,69 @@ export const AdminStudentForm: React.FC<AdminStudentFormProps> = ({ existingUser
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     setLoading(true);
     setError("");
-
+  
+    // Debug: Log form data before submission
+    console.log("🔍 Form submission started");
+    console.log("📝 Form data:", formData);
+    console.log("🆔 Update mode:", !!formData.id);
+  
     try {
+      let result: unknown;
+      
       if (formData.id) {
-        await updateStudent(formData.id, formData);
+        console.log("🔄 Updating existing student with ID:", formData.id);
+        result = await updateStudent(formData.id, formData);
+        console.log("✅ Update result:", result);
       } else {
-        await createStudent(formData);
+        console.log("➕ Creating new student");
+        // Remove any undefined/null id before creating
+        const { ...createData } = formData;
+        console.log("📤 Create data (without id):", createData);
+        result = await createStudent(createData);
+        console.log("✅ Create result:", result);
       }
+      
+      console.log("🎉 Operation successful, calling onSuccess");
       onSuccess();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong.");
+    } catch (err: unknown) {
+      console.error("❌ Error during submission:", err);
+      
+      // Enhanced error logging for Supabase
+      if (err && typeof err === 'object') {
+        const error = err as Record<string, unknown>;
+        console.error("📋 Error details:");
+        console.error("- Message:", error.message);
+        console.error("- Code:", error.code);
+        console.error("- Details:", error.details);
+        console.error("- Hint:", error.hint);
+        console.error("- Full error object:", err);
+      }
+      
+      // Set user-friendly error message
+      let errorMessage: string = "Something went wrong.";
+      
+      if (err instanceof Error) {
+        errorMessage = err.message;
+        
+        // Handle common Supabase errors
+        if (err.message.includes('duplicate key')) {
+          errorMessage = "A record with this information already exists.";
+        } else if (err.message.includes('permission denied')) {
+          errorMessage = "You don't have permission to perform this operation.";
+        } else if (err.message.includes('violates foreign key constraint')) {
+          errorMessage = "Invalid reference data provided.";
+        } else if (err.message.includes('violates not-null constraint')) {
+          errorMessage = "Required fields are missing.";
+        }
+      }
+      
+      setError(errorMessage);
     } finally {
+      console.log("🏁 Form submission completed");
       setLoading(false);
     }
   };
