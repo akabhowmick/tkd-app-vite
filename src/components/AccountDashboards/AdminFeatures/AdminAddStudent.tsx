@@ -29,10 +29,12 @@ export const AdminStudentForm: React.FC<AdminStudentFormProps> = ({ existingUser
     name: existingUser?.name ?? "",
     email: existingUser?.email ?? "",
     phone: existingUser?.phone ?? "",
-    schoolId: existingUser?.schoolId != null ? existingUser.schoolId : school?.id ?? "",
+    schoolId: (school && school.id!) || "",
     userType: existingUser?.userType ?? "Student",
-    id: existingUser?.id, 
+    id: existingUser?.id,
   });
+
+  console.log(formData.schoolId);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -70,23 +72,25 @@ export const AdminStudentForm: React.FC<AdminStudentFormProps> = ({ existingUser
         {formData.id ? "Edit Student" : "Add Student"}
       </h2>
 
-      {fieldConfigs.map((field) => (
-        <div key={field.name}>
-          <label htmlFor={field.name} className="block mb-1 font-medium text-gray-700">
-            {field.label}
-          </label>
-          <input
-            id={field.name}
-            name={field.name}
-            type={field.type}
-            value={formData[field.name as keyof UserProfile] || ""}
-            onChange={handleChange}
-            className="w-full border bg-slate-100 border-gray-300 p-2 rounded transition duration-200 
-             hover:border-gray-500 focus:outline-none focus:ring-3 focus:ring-red-200 text-black"
-            required
-          />
-        </div>
-      ))}
+      {fieldConfigs
+        .filter((field) => field.name !== "school_id")
+        .map((field) => (
+          <div key={field.name}>
+            <label htmlFor={field.name} className="block mb-1 font-medium text-gray-700">
+              {field.label}
+            </label>
+            <input
+              id={field.name}
+              name={field.name}
+              type={field.type}
+              value={formData[field.name as keyof UserProfile] || ""}
+              onChange={handleChange}
+              className="w-full border bg-slate-100 border-gray-300 p-2 rounded transition duration-200
+          hover:border-gray-500 focus:outline-none focus:ring-3 focus:ring-red-200 text-black"
+              required
+            />
+          </div>
+        ))}
 
       <div>
         <label htmlFor="role" className="block mb-1 font-medium text-gray-700">
