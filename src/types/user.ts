@@ -100,8 +100,8 @@ export interface UserProfile {
   name: string;
   email: string;
   phone: string;
-  schoolId: string;
-  userType: "Student" | "Parent" | "Instructor" | "Admin";
+  school_id: string;
+  role: "Student" | "Parent" | "Instructor" | "Admin";
   created_at?: string;
 }
 

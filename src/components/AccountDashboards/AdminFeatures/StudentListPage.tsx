@@ -13,7 +13,7 @@ export const StudentListPage = () => {
     setLoading(true);
     try {
       const allUsers = await getStudents();
-      const filtered = allUsers.filter((user) => user.userType === "Student");
+      const filtered = allUsers.filter((user) => user.role === "Student");
       setStudents(filtered);
     } finally {
       setLoading(false);

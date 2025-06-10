@@ -1,4 +1,5 @@
-import { Announcement, Class, School} from "../types/user";
+import { School } from "../types/school";
+import { Announcement, Class,} from "../types/user";
 
 // export const users: User[] = [
 //   {
@@ -52,7 +53,7 @@ export const schools: School[] = [
     id: "1",
     name: "Taekwondo School",
     address: "123 Main St, Anytown, USA",
-    createdAt: new Date(),
+    created_at: new Date() as unknown as string,
   },
 ];
 

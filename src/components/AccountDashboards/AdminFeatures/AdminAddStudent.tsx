@@ -29,9 +29,8 @@ export const AdminStudentForm: React.FC<AdminStudentFormProps> = ({ existingUser
     name: existingUser?.name ?? "",
     email: existingUser?.email ?? "",
     phone: existingUser?.phone ?? "",
-    schoolId: (school && school.id!) || "",
-    userType: existingUser?.userType ?? "Student",
-    id: existingUser?.id,
+    school_id: (school && school.id!) || "",
+    role: existingUser?.role ?? "Student",
   });
 
   const [loading, setLoading] = useState(false);
@@ -46,15 +45,15 @@ export const AdminStudentForm: React.FC<AdminStudentFormProps> = ({ existingUser
     e.preventDefault();
     setLoading(true);
     setError("");
-  
+
     // Debug: Log form data before submission
     console.log("🔍 Form submission started");
     console.log("📝 Form data:", formData);
     console.log("🆔 Update mode:", !!formData.id);
-  
+
     try {
       let result: unknown;
-      
+
       if (formData.id) {
         console.log("🔄 Updating existing student with ID:", formData.id);
         result = await updateStudent(formData.id, formData);
@@ -67,41 +66,38 @@ export const AdminStudentForm: React.FC<AdminStudentFormProps> = ({ existingUser
         result = await createStudent(createData);
         console.log("✅ Create result:", result);
       }
-      
+
       console.log("🎉 Operation successful, calling onSuccess");
       onSuccess();
     } catch (err: unknown) {
       console.error("❌ Error during submission:", err);
-      
+
       // Enhanced error logging for Supabase
-      if (err && typeof err === 'object') {
+      if (err && typeof err === "object") {
         const error = err as Record<string, unknown>;
         console.error("📋 Error details:");
         console.error("- Message:", error.message);
-        console.error("- Code:", error.code);
-        console.error("- Details:", error.details);
-        console.error("- Hint:", error.hint);
         console.error("- Full error object:", err);
       }
-      
+
       // Set user-friendly error message
       let errorMessage: string = "Something went wrong.";
-      
+
       if (err instanceof Error) {
         errorMessage = err.message;
-        
+
         // Handle common Supabase errors
-        if (err.message.includes('duplicate key')) {
+        if (err.message.includes("duplicate key")) {
           errorMessage = "A record with this information already exists.";
-        } else if (err.message.includes('permission denied')) {
+        } else if (err.message.includes("permission denied")) {
           errorMessage = "You don't have permission to perform this operation.";
-        } else if (err.message.includes('violates foreign key constraint')) {
+        } else if (err.message.includes("violates foreign key constraint")) {
           errorMessage = "Invalid reference data provided.";
-        } else if (err.message.includes('violates not-null constraint')) {
+        } else if (err.message.includes("violates not-null constraint")) {
           errorMessage = "Required fields are missing.";
         }
       }
-      
+
       setError(errorMessage);
     } finally {
       console.log("🏁 Form submission completed");
@@ -145,7 +141,7 @@ export const AdminStudentForm: React.FC<AdminStudentFormProps> = ({ existingUser
         <select
           id="role"
           name="role"
-          value={formData.userType}
+          value={formData.role}
           onChange={handleChange}
           className="w-full p-2 border text-black border-gray-300 rounded bg-slate-100 focus:outline-none focus:ring-0"
           required

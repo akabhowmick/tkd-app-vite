@@ -14,7 +14,7 @@ export const createUser = async (user: Omit<UserProfile, "id" | "created_at">) =
 };
 
 // Get all users, or filter by role
-export const getUsers = async (role?: UserProfile["userType"]) => {
+export const getUsers = async (role?: UserProfile["role"]) => {
   let query = supabase.from("users").select("*");
   if (role) query = query.eq("role", role);
 
