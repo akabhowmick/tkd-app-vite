@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { UserProfile } from "../../../types/user";
-import { createStudent, updateStudent } from "../../../api/StudentRequests/studentRequests";
+import { createStudent } from "../../../api/StudentRequests/studentRequests";
 import { useSchool } from "../../../context/SchoolContext";
 
 interface AdminStudentFormProps {
@@ -45,29 +45,9 @@ export const AdminStudentForm: React.FC<AdminStudentFormProps> = ({ existingUser
     e.preventDefault();
     setLoading(true);
     setError("");
-
-    // Debug: Log form data before submission
-    console.log("🔍 Form submission started");
-    console.log("📝 Form data:", formData);
-    console.log("🆔 Update mode:", !!formData.id);
-
     try {
-      let result: unknown;
-
-      if (formData.id) {
-        console.log("🔄 Updating existing student with ID:", formData.id);
-        result = await updateStudent(formData.id, formData);
-        console.log("✅ Update result:", result);
-      } else {
-        console.log("➕ Creating new student");
-        // Remove any undefined/null id before creating
-        const { ...createData } = formData;
-        console.log("📤 Create data (without id):", createData);
-        result = await createStudent(createData);
-        console.log("✅ Create result:", result);
-      }
-
-      console.log("🎉 Operation successful, calling onSuccess");
+      const { ...createData } = formData;
+      await createStudent(createData);
       onSuccess();
     } catch (err: unknown) {
       console.error("❌ Error during submission:", err);
@@ -75,9 +55,7 @@ export const AdminStudentForm: React.FC<AdminStudentFormProps> = ({ existingUser
       // Enhanced error logging for Supabase
       if (err && typeof err === "object") {
         const error = err as Record<string, unknown>;
-        console.error("📋 Error details:");
         console.error("- Message:", error.message);
-        console.error("- Full error object:", err);
       }
 
       // Set user-friendly error message
@@ -100,7 +78,6 @@ export const AdminStudentForm: React.FC<AdminStudentFormProps> = ({ existingUser
 
       setError(errorMessage);
     } finally {
-      console.log("🏁 Form submission completed");
       setLoading(false);
     }
   };
