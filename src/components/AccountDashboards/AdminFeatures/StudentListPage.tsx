@@ -4,6 +4,8 @@ import { UserProfile } from "../../../types/user";
 import { AdminStudentForm } from "./AdminAddStudent";
 import { deleteStudent, getStudents } from "../../../api/StudentRequests/studentRequests";
 
+import Swal from "sweetalert2";
+
 export const StudentListPage = () => {
   const [students, setStudents] = useState<UserProfile[]>([]);
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
@@ -21,11 +23,59 @@ export const StudentListPage = () => {
   };
 
   const handleDelete = async (id: string) => {
-    const confirmed = window.confirm("Are you sure you want to delete this student?");
-    if (!confirmed) return;
+    try {
+      // Show confirmation dialog
+      const result = await Swal.fire({
+        title: "Delete Student?",
+        text: "Are you sure you want to delete this student? This action cannot be undone.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#ef4444",
+        cancelButtonColor: "#6b7280",
+        confirmButtonText: "Yes, delete it!",
+        cancelButtonText: "Cancel",
+        reverseButtons: true,
+      });
 
-    await deleteStudent(id);
-    await loadStudents();
+      if (result.isConfirmed) {
+        // Show loading
+        Swal.fire({
+          title: "Deleting...",
+          text: "Please wait while we delete the student.",
+          allowOutsideClick: false,
+          allowEscapeKey: false,
+          showConfirmButton: false,
+          didOpen: () => {
+            Swal.showLoading();
+          },
+        });
+
+        try {
+          await deleteStudent(id);
+          await loadStudents();
+
+          // Success message
+          Swal.fire({
+            title: "Deleted!",
+            text: "The student has been successfully deleted.",
+            icon: "success",
+            confirmButtonColor: "#10b981",
+            timer: 2000,
+            timerProgressBar: true,
+          });
+        } catch (error) {
+          // Error message
+          Swal.fire({
+            title: "Error!",
+            text: `Failed to delete the student. Please try again. ${error}`,
+            icon: "error",
+            confirmButtonColor: "#ef4444",
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error in handleDelete:", error);
+    }
   };
 
   const handleEdit = (user: UserProfile) => {
