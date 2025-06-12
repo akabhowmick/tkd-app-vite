@@ -1,14 +1,14 @@
-import { useNavigate } from "react-router-dom";
-import { AdminStudentForm } from "../components/AccountDashboards/AdminFeatures/AdminAddStudent";
+import { createStudent } from "../api/StudentRequests/studentRequests";
+import { HandleAddOrEdit } from "../components/AccountDashboards/AdminFeatures/HandleAddOrEdit";
+import { useSchool } from "../context/SchoolContext";
 
 export const AddStudentPage = () => {
-  const navigate = useNavigate();
-
+  const { loadStudents } = useSchool();
   return (
-    <AdminStudentForm
-      onSuccess={function (): void {
-        navigate("/dashboard");
-      }}
+    <HandleAddOrEdit 
+      createStudent={createStudent}
+      loadStudents={loadStudents}
+      buttonText="Add New Student"
     />
   );
 };

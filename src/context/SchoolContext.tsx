@@ -4,6 +4,8 @@ import { supabase } from "../api/supabase";
 import { School } from "../types/school";
 import { getSchoolByAdmin } from "../api/SchoolRequests/schoolRequests";
 import { useAuth } from "./AuthContext";
+import { UserProfile } from "../types/user";
+import { getStudents } from "../api/StudentRequests/studentRequests";
 
 interface SchoolContextType {
   sales: number;
@@ -12,6 +14,8 @@ interface SchoolContextType {
   school: School | null;
   schoolId: string;
   loading: boolean;
+  students: UserProfile[];
+  loadStudents: () => Promise<void>;
   setSchoolId: React.Dispatch<React.SetStateAction<string>>;
   createSchool: (school: Omit<School, "id" | "created_at">) => Promise<void>;
   updateSchool: (id: string, updates: Partial<Omit<School, "id" | "created_at">>) => Promise<void>;
@@ -27,6 +31,7 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const [clients, setClients] = useState<number>(0);
   const [school, setSchool] = useState<School | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [students, setStudents] = useState<UserProfile[]>([]);
   const [schoolId, setSchoolId] = useState<string>("");
 
   useEffect(() => {
@@ -84,14 +89,25 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const fetchSchool = async () => {
     if (user) {
       const fetchedSchool = await getSchoolByAdmin(user.id!);
-      setSchool(fetchedSchool)
+      setSchool(fetchedSchool);
     }
   };
 
   useEffect(() => {
     fetchSchool();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const loadStudents = async () => {
+    setLoading(true);
+    try {
+      const allUsers = await getStudents();
+      const filtered = allUsers.filter((user) => user.role === "Student");
+      setStudents(filtered);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // CRUD operations
   const createSchool = async (school: Omit<School, "id" | "created_at">) => {
@@ -121,11 +137,13 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     <SchoolContext.Provider
       value={{
         sales,
+        students,
         attendance,
         clients,
         school,
         loading,
         schoolId,
+        loadStudents,
         setSchoolId,
         createSchool,
         updateSchool,
