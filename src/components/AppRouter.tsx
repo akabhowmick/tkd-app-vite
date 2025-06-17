@@ -7,7 +7,7 @@ import SignUp from "../pages/Signup";
 import { Header } from "./Header";
 import Dashboard from "../pages/Dashboard";
 import { AddStudentPage } from "../pages/AddStudentPage";
-import { TakeAttendance } from "./AccountDashboards/AdminFeatures/TakeAttendance";
+import { TakeAttendance } from "./AccountDashboards/AdminFeatures/AttendanceRecords/TakeAttendance";
 import { StudentListPage } from "./AccountDashboards/AdminFeatures/StudentListPage";
 import { SchoolManagement } from "./AccountDashboards/AdminFeatures/SchoolManagement/SchoolManagement";
 

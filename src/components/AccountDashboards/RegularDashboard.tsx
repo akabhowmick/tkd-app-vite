@@ -10,7 +10,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { useSchool } from "../../context/SchoolContext";
 import { SchoolManagement } from "./AdminFeatures/SchoolManagement/SchoolManagement";
-import { TakeAttendance } from "./AdminFeatures/TakeAttendance";
+import { TakeAttendance } from "./AdminFeatures/AttendanceRecords/TakeAttendance";
 import { StudentListPage } from "./AdminFeatures/StudentListPage";
 import { AddStudentPage } from "../../pages/AddStudentPage";
 // import other feature components...

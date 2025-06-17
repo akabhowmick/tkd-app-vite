@@ -15,6 +15,7 @@ interface SchoolContextType {
   schoolId: string;
   loading: boolean;
   students: UserProfile[];
+  fetchSchool: () => Promise<void>;
   loadStudents: () => Promise<void>;
   setSchoolId: React.Dispatch<React.SetStateAction<string>>;
   createSchool: (school: Omit<School, "id" | "created_at">) => Promise<void>;
@@ -136,6 +137,7 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   return (
     <SchoolContext.Provider
       value={{
+        fetchSchool,
         sales,
         students,
         attendance,
