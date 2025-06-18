@@ -2,15 +2,15 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../../../../context/AuthContext";
 import {
   AttendanceRecord,
-  createAttendance,
   getAttendanceByDate,
 } from "../../../../api/Attendance/attendanceRequests";
 import { useSchool } from "../../../../context/SchoolContext";
 import { calculateAttendanceStats } from "./AttendanceStats";
 import { LoadingSpinnerProps, AttendanceStatus } from "../../../../types/attendance";
-import { getTodayDate, formatDate } from "../../../../utils/AttendanceUtils/DateUtils";
+import { formatDate } from "../../../../utils/AttendanceUtils/DateUtils";
 import { Calendar } from "./AttendanceCalendar";
 import { StatCard, StudentAttendanceCard } from "./StudentAttendanceCard";
+import { useAttendance } from "../../../../context/AttendanceContext";
 
 const LoadingSpinner = ({ message = "Loading..." }: LoadingSpinnerProps) => (
   <div className="flex items-center justify-center min-h-64">
@@ -25,9 +25,9 @@ const LoadingSpinner = ({ message = "Loading..." }: LoadingSpinnerProps) => (
 export const TakeAttendance = () => {
   const { user } = useAuth();
   const { students } = useSchool();
+  const { handleDateChange, handleAttendanceChange, handleSubmit, selectedDate, isSubmitting } =
+    useAttendance();
   const [attendance, setAttendance] = useState<Record<string, AttendanceStatus>>({});
-  const [selectedDate, setSelectedDate] = useState<string>(getTodayDate());
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [showCalendar, setShowCalendar] = useState(false);
 
@@ -58,42 +58,6 @@ export const TakeAttendance = () => {
       fetchExistingAttendance();
     }
   }, [selectedDate, user?.schoolId!, students.length]);
-
-  const handleDateChange = (date: string) => {
-    setSelectedDate(date);
-    setShowCalendar(false);
-  };
-
-  const handleAttendanceChange = (studentId: string, status: AttendanceStatus) => {
-    setAttendance((prev) => ({ ...prev, [studentId]: status }));
-  };
-
-  const handleSubmit = async () => {
-    if (!user?.schoolId) return;
-    setIsSubmitting(true);
-
-    try {
-      const records = Object.entries(attendance).map(([student_id, status]) => ({
-        student_id,
-        status,
-        school_id: user.schoolId!,
-        date: selectedDate,
-      }));
-
-      const { error } = await createAttendance(records);
-      if (error) {
-        alert("Failed to save attendance.");
-        console.error("Save error:", error);
-      } else {
-        alert("Attendance saved successfully.");
-      }
-    } catch (error) {
-      console.error("Error saving attendance:", error);
-      alert("Failed to save attendance.");
-    }
-
-    setIsSubmitting(false);
-  };
 
   if (isLoading) {
     return <LoadingSpinner message="Loading students..." />;

@@ -45,7 +45,7 @@ export const Calendar = ({ selectedDate, onDateChange }: CalendarProps) => {
   const calendarDays = generateCalendarDays(selectedDate);
 
   return (
-    <div className="mt-4 p-4 border rounded-lg bg-white">
+    <div className="mt-4 p-4 border rounded-lg bg-white text-black">
       <div className="grid grid-cols-7 gap-1 mb-2">
         {WEEKDAYS.map((day) => (
           <div key={day} className="text-center font-medium text-gray-600 p-2 text-sm">

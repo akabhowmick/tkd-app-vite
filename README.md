@@ -34,7 +34,7 @@ The **Taekwondo Chat and Notification App** is a full-stack web application desi
 #### Additional Tools  
 - Notifications: [Firebase Cloud Messaging](https://firebase.google.com/products/cloud-messaging)  
 - Task Tracking: [Notion](https://www.notion.so/)  
-- Deployment: [Vercel](https://vercel.com/)  
+- Deployment: 
 
 ---
 
