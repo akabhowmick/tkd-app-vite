@@ -5,11 +5,9 @@ export interface AttendanceRecord {
   student_id: string;
   status: "present" | "absent";
   school_id: string;
-  date: string; //
+  date: string; 
 }
 
-// TODO 
-// make an attendance table 
 export const createAttendance = async (records: AttendanceRecord[]) => {
   const { data, error } = await supabase.from("attendance-records").upsert(records);
   return { data, error };

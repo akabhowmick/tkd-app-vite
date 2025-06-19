@@ -21,7 +21,6 @@ const LoadingSpinner = ({ message = "Loading..." }: LoadingSpinnerProps) => (
   </div>
 );
 
-// Main component
 export const TakeAttendance = () => {
   const { user } = useAuth();
   const { students } = useSchool();

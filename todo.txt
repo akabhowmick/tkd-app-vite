@@ -1,10 +1,11 @@
 Attendance:
-    1. on click make the get students appear
-    2. the handleAttendanceChange should work locally 
-    3. calendar display dates are all off by one 
+  1. on click make the get students appear
+  2. the handleAttendanceChange should work locally 
+  3. calendar display dates are all off by one 
 
 
 Renewals
   1. add as optional at first 
   2. make a table for them? 
-  
+  3. then display renewals, by day, week, month
+  4. add a check off like to do list vibe 
