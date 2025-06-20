@@ -1,7 +1,8 @@
 Attendance:
   1. on click make the get students appear
   2. the handleAttendanceChange should work locally 
-  3. calendar display dates are all off by one 
+  3. add attendance record 
+  4. 
 
 
 Renewals

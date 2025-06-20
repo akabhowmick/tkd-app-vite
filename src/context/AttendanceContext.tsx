@@ -13,7 +13,6 @@ type AttendanceStatus = "present" | "absent";
 export const useAttendance = () => {
   const { user } = useAuth();
   const { students } = useSchool();
-
   const [attendance, setAttendance] = useState<Record<string, AttendanceStatus>>({});
   const [selectedDate, setSelectedDate] = useState<string>(getTodayDate());
   const [isSubmitting, setIsSubmitting] = useState(false);
