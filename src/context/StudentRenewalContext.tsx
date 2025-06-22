@@ -219,13 +219,3 @@ export const useStudentRenewals = (): StudentRenewalsContextType => {
   
   return context;
 };
-
-
-
-/*
-const StudentDashboard = ({ studentId }: { studentId: number }) => (
-  <StudentRenewalsProvider autoLoadStudentId={studentId}>
-    <RenewalsComponent />
-  </StudentRenewalsProvider>
-);
-*/
