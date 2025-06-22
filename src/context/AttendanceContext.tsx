@@ -63,6 +63,7 @@ export const useAttendance = () => {
   const handleAttendanceChange = (studentId: string, status: AttendanceStatus) => {
     console.log(studentId, status);
     setAttendance((prev) => ({ ...prev, [studentId]: status }));
+    console.log(attendance)
   };
 
   const handleSubmit = async () => {

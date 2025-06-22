@@ -1,12 +1,7 @@
-import { useEffect, useState } from "react";
-import { useAuth } from "../../../../context/AuthContext";
-import {
-  AttendanceRecord,
-  getAttendanceByDate,
-} from "../../../../api/Attendance/attendanceRequests";
+import { useState } from "react";
 import { useSchool } from "../../../../context/SchoolContext";
 import { calculateAttendanceStats } from "./AttendanceStats";
-import { LoadingSpinnerProps, AttendanceStatus } from "../../../../types/attendance";
+import { LoadingSpinnerProps } from "../../../../types/attendance";
 import { formatDate } from "../../../../utils/AttendanceUtils/DateUtils";
 import { Calendar } from "./AttendanceCalendar";
 import { StatCard, StudentAttendanceCard } from "./StudentAttendanceCard";
@@ -22,41 +17,17 @@ const LoadingSpinner = ({ message = "Loading..." }: LoadingSpinnerProps) => (
 );
 
 export const TakeAttendance = () => {
-  const { user } = useAuth();
   const { students } = useSchool();
-  const { handleDateChange, handleAttendanceChange, handleSubmit, selectedDate, isSubmitting } =
-    useAttendance();
-  const [attendance, setAttendance] = useState<Record<string, AttendanceStatus>>({});
-  const [isLoading, setIsLoading] = useState(true);
+  const {
+    handleDateChange,
+    handleAttendanceChange,
+    handleSubmit,
+    selectedDate,
+    isSubmitting,
+    isLoading,
+    attendance,
+  } = useAttendance();
   const [showCalendar, setShowCalendar] = useState(false);
-
-  useEffect(() => {
-    const fetchExistingAttendance = async () => {
-      setIsLoading(false);
-      if (!user?.schoolId || !selectedDate) {
-        setIsLoading(false);
-        return;
-      }
-
-      const { data, error } = await getAttendanceByDate(user.schoolId, selectedDate);
-      if (data) {
-        const existing = data.reduce(
-          (acc: Record<string, AttendanceStatus>, record: AttendanceRecord) => {
-            acc[record.student_id] = record.status as AttendanceStatus;
-            return acc;
-          },
-          {}
-        );
-        setAttendance(existing);
-      } else if (error) {
-        console.error("Error fetching attendance:", error);
-        setAttendance({});
-      }
-    };
-    if (students.length > 0) {
-      fetchExistingAttendance();
-    }
-  }, [selectedDate, user?.schoolId!, students.length]);
 
   if (isLoading) {
     return <LoadingSpinner message="Loading students..." />;
