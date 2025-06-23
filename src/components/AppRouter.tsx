@@ -8,7 +8,7 @@ import { Header } from "./Header";
 import Dashboard from "../pages/Dashboard";
 import { AddStudentPage } from "../pages/AddStudentPage";
 import { TakeAttendance } from "./AccountDashboards/AdminFeatures/AttendanceRecords/TakeAttendance";
-import { StudentListPage } from "./AccountDashboards/AdminFeatures/StudentListPage";
+import { StudentListPage } from "./AccountDashboards/AdminFeatures/StudentView/StudentListPage";
 import { SchoolManagement } from "./AccountDashboards/AdminFeatures/SchoolManagement/SchoolManagement";
 
 const AppRouter: React.FC = () => {

@@ -1,5 +1,5 @@
 import { createStudent } from "../api/StudentRequests/studentRequests";
-import { HandleAddOrEdit } from "../components/AccountDashboards/AdminFeatures/HandleAddOrEdit";
+import { HandleAddOrEdit } from "../components/AccountDashboards/AdminFeatures/StudentView/HandleAddOrEdit";
 import { useSchool } from "../context/SchoolContext";
 
 export const AddStudentPage = () => {

@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { UserProfile } from "../../../types/user";
+import { UserProfile } from "../../../../types/user";
 import { HandleAddOrEdit } from "./HandleAddOrEdit";
-import { deleteStudent, updateStudent } from "../../../api/StudentRequests/studentRequests";
+import { deleteStudent, updateStudent } from "../../../../api/StudentRequests/studentRequests";
 import Swal from "sweetalert2";
-import { useSchool } from "../../../context/SchoolContext";
+import { useSchool } from "../../../../context/SchoolContext";
 
 export const StudentListPage = () => {
   const { loadStudents, students } = useSchool();
@@ -154,7 +154,7 @@ export const StudentListPage = () => {
         <HandleAddOrEdit
           createStudent={async (studentData) => {
             // You'll need to import createStudent here or pass it as prop
-            const { createStudent } = await import("../../../api/StudentRequests/studentRequests");
+            const { createStudent } = await import("../../../../api/StudentRequests/studentRequests");
             await createStudent(studentData);
           }}
           loadStudents={loadStudents}

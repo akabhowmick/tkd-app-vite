@@ -6,6 +6,7 @@ import RegularDashboard from "../components/AccountDashboards/RegularDashboard";
 import StudentDashboard from "../components/AccountDashboards/StudentDashboard";
 import { useAuth } from "../context/AuthContext";
 import { SchoolProvider } from "../context/SchoolContext";
+import { StudentRenewalsProvider } from "../context/StudentRenewalContext";
 import { UserRole } from "../types/user";
 
 const Dashboard = () => {
@@ -15,7 +16,9 @@ const Dashboard = () => {
     case UserRole.Admin:
       return (
         <SchoolProvider>
-          <RegularDashboard />;
+          <StudentRenewalsProvider>
+            <RegularDashboard />;
+          </StudentRenewalsProvider>
         </SchoolProvider>
       );
     case UserRole.Instructor:

@@ -1,6 +1,6 @@
 import React from "react";
 import Swal from "sweetalert2";
-import { UserProfile } from "../../../types/user";
+import { UserProfile } from "../../../../types/user";
 
 // Types for student data
 interface StudentData {

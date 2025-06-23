@@ -11,7 +11,7 @@ import {
 import { useSchool } from "../../context/SchoolContext";
 import { SchoolManagement } from "./AdminFeatures/SchoolManagement/SchoolManagement";
 import { TakeAttendance } from "./AdminFeatures/AttendanceRecords/TakeAttendance";
-import { StudentListPage } from "./AdminFeatures/StudentListPage";
+import { StudentListPage } from "./AdminFeatures/StudentView/StudentListPage";
 import { AddStudentPage } from "../../pages/AddStudentPage";
 // import other feature components...
 
