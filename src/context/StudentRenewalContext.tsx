@@ -31,7 +31,6 @@ export const StudentRenewalsProvider: React.FC<StudentRenewalsProviderProps> = (
   children, 
   autoLoadStudentId 
 }) => {
-  // State
   const [renewals, setRenewals] = useState<StudentRenewal[]>([]);
   const [selectedRenewal, setSelectedRenewal] = useState<StudentRenewal | null>(null);
   const [expiringRenewals, setExpiringRenewals] = useState<StudentRenewal[]>([]);
@@ -39,21 +38,19 @@ export const StudentRenewalsProvider: React.FC<StudentRenewalsProviderProps> = (
   const [error, setError] = useState<string | null>(null);
   const [currentStudentId, setCurrentStudentId] = useState<number | undefined>(autoLoadStudentId);
 
-  // Auto-load renewals on mount if studentId is provided
   useEffect(() => {
     if (autoLoadStudentId) {
       loadRenewals(autoLoadStudentId);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoLoadStudentId]);
 
-  // Helper function to handle errors
   const handleError = (error: unknown, action: string) => {
     const errorMessage = `Failed to ${action}`;
     setError(errorMessage);
     console.error(`Error ${action}:`, error);
   };
 
-  // Load renewals (optionally filtered by student)
   const loadRenewals = async (studentId?: number): Promise<void> => {
     setLoading(true);
     setError(null);
@@ -69,7 +66,6 @@ export const StudentRenewalsProvider: React.FC<StudentRenewalsProviderProps> = (
     }
   };
 
-  // Load a specific renewal by ID
   const loadRenewalById = async (renewalId: number): Promise<void> => {
     setLoading(true);
     setError(null);
@@ -84,7 +80,6 @@ export const StudentRenewalsProvider: React.FC<StudentRenewalsProviderProps> = (
     }
   };
 
-  // Load expiring renewals
   const loadExpiringRenewals = async (daysFromNow: number = 30): Promise<void> => {
     setLoading(true);
     setError(null);
@@ -99,7 +94,6 @@ export const StudentRenewalsProvider: React.FC<StudentRenewalsProviderProps> = (
     }
   };
 
-  // Create a new renewal
   const createRenewal = async (renewal: Omit<StudentRenewal, "renewal_id" | "created_at" | "updated_at">): Promise<void> => {
     setLoading(true);
     setError(null);
@@ -113,13 +107,12 @@ export const StudentRenewalsProvider: React.FC<StudentRenewalsProviderProps> = (
       }
     } catch (error) {
       handleError(error, 'create renewal');
-      throw error; // Re-throw so calling component can handle it
+      throw error; 
     } finally {
       setLoading(false);
     }
   };
 
-  // Update an existing renewal
   const updateRenewal = async (renewalId: number, renewalUpdate: Partial<StudentRenewal>): Promise<void> => {
     setLoading(true);
     setError(null);
@@ -127,7 +120,6 @@ export const StudentRenewalsProvider: React.FC<StudentRenewalsProviderProps> = (
     try {
       await updateStudentRenewal(renewalId, renewalUpdate);
       
-      // Update local state
       setRenewals(prev => 
         prev.map(renewal => 
           renewal.renewal_id === renewalId 
@@ -136,12 +128,10 @@ export const StudentRenewalsProvider: React.FC<StudentRenewalsProviderProps> = (
         )
       );
 
-      // Update selected renewal if it's the one being updated
       if (selectedRenewal?.renewal_id === renewalId) {
         setSelectedRenewal(prev => prev ? { ...prev, ...renewalUpdate } : null);
       }
 
-      // Update expiring renewals list
       setExpiringRenewals(prev => 
         prev.map(renewal => 
           renewal.renewal_id === renewalId 
@@ -157,7 +147,6 @@ export const StudentRenewalsProvider: React.FC<StudentRenewalsProviderProps> = (
     }
   };
 
-  // Delete a renewal
   const removeRenewal = async (renewalId: number): Promise<void> => {
     setLoading(true);
     setError(null);
@@ -165,11 +154,9 @@ export const StudentRenewalsProvider: React.FC<StudentRenewalsProviderProps> = (
     try {
       await deleteStudentRenewal(renewalId);
       
-      // Remove from local state
       setRenewals(prev => prev.filter(renewal => renewal.renewal_id !== renewalId));
       setExpiringRenewals(prev => prev.filter(renewal => renewal.renewal_id !== renewalId));
       
-      // Clear selected renewal if it's the one being deleted
       if (selectedRenewal?.renewal_id === renewalId) {
         setSelectedRenewal(null);
       }
@@ -198,14 +185,12 @@ export const StudentRenewalsProvider: React.FC<StudentRenewalsProviderProps> = (
 
   // Context value
   const contextValue: StudentRenewalsContextType = {
-    // State
     renewals,
     selectedRenewal,
     expiringRenewals,
     loading,
     error,
 
-    // Actions
     loadRenewals,
     loadRenewalById,
     loadExpiringRenewals,

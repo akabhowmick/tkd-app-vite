@@ -13,6 +13,7 @@ import { SchoolManagement } from "./AdminFeatures/SchoolManagement/SchoolManagem
 import { TakeAttendance } from "./AdminFeatures/AttendanceRecords/TakeAttendance";
 import { StudentListPage } from "./AdminFeatures/StudentView/StudentListPage";
 import { AddStudentPage } from "../../pages/AddStudentPage";
+import { StudentRenewalsPage } from "./AdminFeatures/StudentRenewals/StudentRenewalsPage";
 // import other feature components...
 
 const Sidebar = ({ setActive }: { setActive: (view: string) => void }) => (
@@ -135,7 +136,7 @@ const RegularDashboard = () => {
       case "school":
         return <SchoolManagement />;
       case "renewals":
-        return <div className="text-black">Renewals Component</div>;
+        return <StudentRenewalsPage/>
       case "add-student":
         return <AddStudentPage />;
       case "students":
