@@ -100,8 +100,6 @@ export const StudentRenewalsProvider: React.FC<StudentRenewalsProviderProps> = (
     
     try {
       await createStudentRenewal(renewal);
-      
-      // Refresh the renewals list
       if (currentStudentId === renewal.student_id || currentStudentId === undefined) {
         await loadRenewals(currentStudentId);
       }
@@ -153,10 +151,8 @@ export const StudentRenewalsProvider: React.FC<StudentRenewalsProviderProps> = (
     
     try {
       await deleteStudentRenewal(renewalId);
-      
       setRenewals(prev => prev.filter(renewal => renewal.renewal_id !== renewalId));
       setExpiringRenewals(prev => prev.filter(renewal => renewal.renewal_id !== renewalId));
-      
       if (selectedRenewal?.renewal_id === renewalId) {
         setSelectedRenewal(null);
       }
