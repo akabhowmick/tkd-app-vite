@@ -14,22 +14,85 @@ import { TakeAttendance } from "./AdminFeatures/AttendanceRecords/TakeAttendance
 import { StudentListPage } from "./AdminFeatures/StudentView/StudentListPage";
 import { AddStudentPage } from "../../pages/AddStudentPage";
 import { StudentRenewalsPage } from "./AdminFeatures/StudentRenewals/StudentRenewalsPage";
-// import other feature components...
 
-const Sidebar = ({ setActive }: { setActive: (view: string) => void }) => (
+// Constants
+const SIDEBAR_CONFIG = [
+  { icon: faHome, label: "Dashboard", view: "home" },
+  { icon: faMoneyBill, label: "Renewals", view: "renewals" },
+  { icon: faAdd, label: "Add Student", view: "add-student" },
+  { icon: faListUl, label: "Student List", view: "students" },
+  { icon: faListCheck, label: "Attendance", view: "attendance" },
+  { icon: faSchool, label: "School Profile", view: "school" },
+];
+
+const STAT_CARDS_CONFIG = [
+  {
+    icon: "fas fa-wallet",
+    title: "Today's Money",
+    valueKey: "sales" as const,
+    change: "+55% than last week",
+    isPositive: true,
+  },
+  {
+    icon: "fas fa-users",
+    title: "Today's Attendance",
+    valueKey: "attendance" as const,
+    change: "+3% than last week",
+    isPositive: true,
+  },
+  {
+    icon: "fas fa-user-plus",
+    title: "New Clients",
+    valueKey: "clients" as const,
+    change: "-2% than last month",
+    isPositive: false,
+  },
+  {
+    icon: "fas fa-chart-line",
+    title: "Sales",
+    value: "$103",
+    change: "+5% than yesterday",
+    isPositive: true,
+  },
+];
+
+const VIEW_COMPONENTS = {
+  school: SchoolManagement,
+  renewals: StudentRenewalsPage,
+  "add-student": AddStudentPage,
+  students: StudentListPage,
+  attendance: TakeAttendance,
+} as const;
+
+// Types
+interface SidebarProps {
+  setActive: (view: string) => void;
+}
+
+interface HeaderProps {
+  title: string;
+}
+
+interface StatCardProps {
+  icon: string;
+  title: string;
+  value: string;
+  change: string;
+  isPositive: boolean;
+}
+
+// Utility functions
+const formatTitle = (view: string): string => 
+  view.replace("-", " ").toUpperCase();
+
+// Components
+const Sidebar = ({ setActive }: SidebarProps) => (
   <div className="w-64 bg-white h-screen shadow-md text-black">
     <div className="p-6">
       <h1 className="text-xl font-bold">Taekwondo School</h1>
     </div>
     <nav className="mt-6 space-y-2">
-      {[
-        { icon: faHome, label: "Dashboard", view: "home" },
-        { icon: faMoneyBill, label: "Renewals", view: "renewals" },
-        { icon: faAdd, label: "Add Student", view: "add-student" },
-        { icon: faListUl, label: "Student List", view: "students" },
-        { icon: faListCheck, label: "Attendance", view: "attendance" },
-        { icon: faSchool, label: "School Profile", view: "school" },
-      ].map((item, index) => (
+      {SIDEBAR_CONFIG.map((item, index) => (
         <button
           key={index}
           onClick={() => setActive(item.view)}
@@ -43,7 +106,7 @@ const Sidebar = ({ setActive }: { setActive: (view: string) => void }) => (
   </div>
 );
 
-const Header = ({ title }: { title: string }) => (
+const Header = ({ title }: HeaderProps) => (
   <div className="flex justify-between items-center mb-6 text-black">
     <div>
       <h2 className="text-gray-600">Dashboard / {title}</h2>
@@ -67,19 +130,7 @@ const Header = ({ title }: { title: string }) => (
   </div>
 );
 
-const StatCard = ({
-  icon,
-  title,
-  value,
-  change,
-  isPositive,
-}: {
-  icon: string;
-  title: string;
-  value: string;
-  change: string;
-  isPositive: boolean;
-}) => (
+const StatCard = ({ icon, title, value, change, isPositive }: StatCardProps) => (
   <div className="bg-white p-6 rounded-lg shadow-md text-black">
     <div className="flex items-center mb-4">
       <div className="bg-black p-3 rounded-full">
@@ -95,64 +146,36 @@ const StatCard = ({
 );
 
 const RegularDashboard = () => {
-  const { sales, clients, attendance } = useSchool();
+  const schoolData = useSchool();
   const [activeView, setActiveView] = useState("home");
 
   const renderMainContent = () => {
-    switch (activeView) {
-      case "home":
-        return (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+    if (activeView === "home") {
+      return (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+          {STAT_CARDS_CONFIG.map((config, index) => (
             <StatCard
-              icon="fas fa-wallet"
-              title="Today's Money"
-              value={`${sales}`}
-              change="+55% than last week"
-              isPositive={true}
+              key={index}
+              icon={config.icon}
+              title={config.title}
+              value={config.valueKey ? `${schoolData[config.valueKey]}` : config.value!}
+              change={config.change}
+              isPositive={config.isPositive}
             />
-            <StatCard
-              icon="fas fa-users"
-              title="Today's Attendance"
-              value={`${attendance}`}
-              change="+3% than last week"
-              isPositive={true}
-            />
-            <StatCard
-              icon="fas fa-user-plus"
-              title="New Clients"
-              value={`${clients}`}
-              change="-2% than last month"
-              isPositive={false}
-            />
-            <StatCard
-              icon="fas fa-chart-line"
-              title="Sales"
-              value="$103"
-              change="+5% than yesterday"
-              isPositive={true}
-            />
-          </div>
-        );
-      case "school":
-        return <SchoolManagement />;
-      case "renewals":
-        return <StudentRenewalsPage/>
-      case "add-student":
-        return <AddStudentPage />;
-      case "students":
-        return <StudentListPage />;
-      case "attendance":
-        return <TakeAttendance />;
-      default:
-        return <div className="text-black">Not implemented</div>;
+          ))}
+        </div>
+      );
     }
+
+    const Component = VIEW_COMPONENTS[activeView as keyof typeof VIEW_COMPONENTS];
+    return Component ? <Component /> : <div className="text-black">Not implemented</div>;
   };
 
   return (
     <div className="flex">
       <Sidebar setActive={setActiveView} />
       <div className="flex-1 p-6">
-        <Header title={activeView.replace("-", " ").toUpperCase()} />
+        <Header title={formatTitle(activeView)} />
         {renderMainContent()}
       </div>
     </div>
