@@ -7,6 +7,11 @@ import {
   faListUl,
   faListCheck,
   faSchool,
+  faWallet,
+  faUser,
+  faUserPlus,
+  faChartLine,
+  IconDefinition,
 } from "@fortawesome/free-solid-svg-icons";
 import { useSchool } from "../../context/SchoolContext";
 import { SchoolManagement } from "./AdminFeatures/SchoolManagement/SchoolManagement";
@@ -27,28 +32,28 @@ const SIDEBAR_CONFIG = [
 
 const STAT_CARDS_CONFIG = [
   {
-    icon: "fas fa-wallet",
+    icon: faWallet,
     title: "Today's Money",
     valueKey: "sales" as const,
     change: "+55% than last week",
     isPositive: true,
   },
   {
-    icon: "fas fa-users",
+    icon: faUser,
     title: "Today's Attendance",
     valueKey: "attendance" as const,
     change: "+3% than last week",
     isPositive: true,
   },
   {
-    icon: "fas fa-user-plus",
+    icon: faUserPlus,
     title: "New Clients",
     valueKey: "clients" as const,
     change: "-2% than last month",
     isPositive: false,
   },
   {
-    icon: "fas fa-chart-line",
+    icon: faChartLine,
     title: "Sales",
     value: "$103",
     change: "+5% than yesterday",
@@ -69,12 +74,8 @@ interface SidebarProps {
   setActive: (view: string) => void;
 }
 
-interface HeaderProps {
-  title: string;
-}
-
 interface StatCardProps {
-  icon: string;
+  icon: IconDefinition;
   title: string;
   value: string;
   change: string;
@@ -82,8 +83,7 @@ interface StatCardProps {
 }
 
 // Utility functions
-const formatTitle = (view: string): string => 
-  view.replace("-", " ").toUpperCase();
+const formatTitle = (view: string): string => view.replace("-", " ").toUpperCase();
 
 // Components
 const Sidebar = ({ setActive }: SidebarProps) => (
@@ -106,7 +106,7 @@ const Sidebar = ({ setActive }: SidebarProps) => (
   </div>
 );
 
-const Header = ({ title }: HeaderProps) => (
+const Header = ({ title }: { title: string }) => (
   <div className="flex justify-between items-center mb-6 text-black">
     <div>
       <h2 className="text-gray-600">Dashboard / {title}</h2>
@@ -133,9 +133,7 @@ const Header = ({ title }: HeaderProps) => (
 const StatCard = ({ icon, title, value, change, isPositive }: StatCardProps) => (
   <div className="bg-white p-6 rounded-lg shadow-md text-black">
     <div className="flex items-center mb-4">
-      <div className="bg-black p-3 rounded-full">
-        <i className={icon}></i>
-      </div>
+      <FontAwesomeIcon icon={icon} />
       <div className="ml-4">
         <p className="text-gray-600">{title}</p>
         <p className="text-2xl font-bold">{value}</p>
