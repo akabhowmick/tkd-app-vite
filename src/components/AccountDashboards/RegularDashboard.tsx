@@ -24,7 +24,7 @@ import { StudentRenewalsPage } from "./AdminFeatures/StudentRenewals/StudentRene
 const SIDEBAR_CONFIG = [
   { icon: faHome, label: "Dashboard", view: "home" },
   { icon: faMoneyBill, label: "Renewals", view: "renewals" },
-  { icon: faAdd, label: "Add Student", view: "add-student" },
+  { icon: faAdd, label: "Add Student", view: "addStudent" },
   { icon: faListUl, label: "Student List", view: "students" },
   { icon: faListCheck, label: "Attendance", view: "attendance" },
   { icon: faSchool, label: "School Profile", view: "school" },
@@ -64,7 +64,7 @@ const STAT_CARDS_CONFIG = [
 const VIEW_COMPONENTS = {
   school: SchoolManagement,
   renewals: StudentRenewalsPage,
-  "add-student": AddStudentPage,
+  addStudent: AddStudentPage,
   students: StudentListPage,
   attendance: TakeAttendance,
 } as const;

@@ -58,7 +58,7 @@ const AppRouter: React.FC = () => {
           }
         />
         <Route
-          path="/dashboard/admin/add-student"
+          path="/dashboard/admin/addStudent"
           element={
             <PrivateRoute>
               <AddStudentPage />
