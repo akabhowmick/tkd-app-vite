@@ -52,6 +52,7 @@ export const StudentRenewalsProvider: React.FC<StudentRenewalsProviderProps> = (
     if (autoLoadStudentId) {
       loadRenewals(autoLoadStudentId);
     }
+    loadExpiringRenewals();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoLoadStudentId]);
 
@@ -201,7 +202,7 @@ export const StudentRenewalsProvider: React.FC<StudentRenewalsProviderProps> = (
 
   // Refresh renewals (reload current data)
   const refreshRenewals = async (): Promise<void> => {
-    await loadRenewals(currentStudentId);
+    await loadAllRenewals();
   };
 
   // Context value
