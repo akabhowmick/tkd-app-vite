@@ -1,4 +1,5 @@
-export interface StudentRenewal {
+// Core renewal interface with all fields
+export interface Renewal {
   renewal_id: number;
   student_id: number;
   duration_months: number;
@@ -13,7 +14,8 @@ export interface StudentRenewal {
   updated_at: string;
 }
 
-export interface CreateStudentRenewalRequest {
+// For creating new renewals (omits auto-generated fields)
+export interface CreateRenewalRequest {
   student_id: number;
   duration_months: number;
   payment_date: string;
@@ -25,7 +27,8 @@ export interface CreateStudentRenewalRequest {
   paid_to: string;
 }
 
-export interface UpdateStudentRenewalRequest {
+// For updating existing renewals (all fields optional except ID)
+export interface UpdateRenewalRequest {
   duration_months?: number;
   payment_date?: string;
   expiration_date?: string;
@@ -36,50 +39,7 @@ export interface UpdateStudentRenewalRequest {
   paid_to?: string;
 }
 
-export interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  message?: string;
-  error?: string;
-}
-
-export interface PaginatedResponse<T> {
-  success: boolean;
-  data: T[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
-}
-
-
-export interface Renewal {
-  renewal_id: number;
-  student_id: number;
-  duration_months: number;
-  payment_date: string;
-  expiration_date: string;
-  amount_due: number;
-  amount_paid: number;
-  number_of_payments: number;
-  number_of_classes: number;
-  paid_to: string;
-}
-
-export interface NewRenewalData {
-  student_id: number;
-  duration_months: number;
-  payment_date: string;
-  expiration_date: string;
-  amount_due: number;
-  amount_paid: number;
-  number_of_payments: number;
-  number_of_classes: number;
-  paid_to: string;
-}
-
+// Form data interface (string values for form inputs)
 export interface FormData {
   student_id: string;
   duration_months: string;
@@ -92,6 +52,27 @@ export interface FormData {
   paid_to: string;
 }
 
+// Generic API response wrapper
+export interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  message?: string;
+  error?: string;
+}
+
+// Paginated response interface
+export interface PaginatedResponse<T> {
+  success: boolean;
+  data: T[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+// UI-related interfaces
 export interface FormField {
   name: keyof FormData;
   label: string;
@@ -122,10 +103,9 @@ export interface RenewalCategoryProps {
   children: React.ReactNode;
 }
 
-
-// Props interfaces
+// Component props interfaces
 export interface CreateRenewalFormProps {
-  onSubmit: (data: NewRenewalData) => Promise<void>;
+  onSubmit: (data: CreateRenewalRequest) => Promise<void>;
   onCancel: () => void;
 }
 

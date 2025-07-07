@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { StudentRenewal } from "../types/student_renewal";
+import { Renewal } from "../types/student_renewal";
 import {
   getStudentRenewals,
   getStudentRenewalById,
@@ -10,9 +10,9 @@ import {
 } from "../api/StudentRenewalsRequests/studentRenewalsRequests";
 
 interface StudentRenewalsContextType {
-  renewals: StudentRenewal[];
-  selectedRenewal: StudentRenewal | null;
-  expiringRenewals: StudentRenewal[];
+  renewals: Renewal[];
+  selectedRenewal: Renewal | null;
+  expiringRenewals: Renewal[];
   loading: boolean;
   error: string | null;
 
@@ -20,9 +20,9 @@ interface StudentRenewalsContextType {
   loadRenewalById: (renewalId: number) => Promise<void>;
   loadExpiringRenewals: (daysFromNow?: number) => Promise<void>;
   createRenewal: (
-    renewal: Omit<StudentRenewal, "renewal_id" | "created_at" | "updated_at">
+    renewal: Omit<Renewal, "renewal_id" | "created_at" | "updated_at">
   ) => Promise<void>;
-  updateRenewal: (renewalId: number, renewal: Partial<StudentRenewal>) => Promise<void>;
+  updateRenewal: (renewalId: number, renewal: Partial<Renewal>) => Promise<void>;
   removeRenewal: (renewalId: number) => Promise<void>;
   clearSelectedRenewal: () => void;
   clearError: () => void;
@@ -41,9 +41,9 @@ export const StudentRenewalsProvider: React.FC<StudentRenewalsProviderProps> = (
   children,
   autoLoadStudentId,
 }) => {
-  const [renewals, setRenewals] = useState<StudentRenewal[]>([]);
-  const [selectedRenewal, setSelectedRenewal] = useState<StudentRenewal | null>(null);
-  const [expiringRenewals, setExpiringRenewals] = useState<StudentRenewal[]>([]);
+  const [renewals, setRenewals] = useState<Renewal[]>([]);
+  const [selectedRenewal, setSelectedRenewal] = useState<Renewal | null>(null);
+  const [expiringRenewals, setExpiringRenewals] = useState<Renewal[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [currentStudentId, setCurrentStudentId] = useState<number | undefined>(autoLoadStudentId);
@@ -120,7 +120,7 @@ export const StudentRenewalsProvider: React.FC<StudentRenewalsProviderProps> = (
   };
 
   const createRenewal = async (
-    renewal: Omit<StudentRenewal, "renewal_id" | "created_at" | "updated_at">
+    renewal: Omit<Renewal, "renewal_id" | "created_at" | "updated_at">
   ): Promise<void> => {
     setLoading(true);
     setError(null);
@@ -140,7 +140,7 @@ export const StudentRenewalsProvider: React.FC<StudentRenewalsProviderProps> = (
 
   const updateRenewal = async (
     renewalId: number,
-    renewalUpdate: Partial<StudentRenewal>
+    renewalUpdate: Partial<Renewal>
   ): Promise<void> => {
     setLoading(true);
     setError(null);

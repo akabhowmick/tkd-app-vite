@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useStudentRenewals } from "../../../../context/StudentRenewalContext";
 import { RenewalCategory } from "./RenewalCategory";
-import { RenewalCardProps, StatusConfig, Renewal, CategorizedRenewals, NewRenewalData } from "../../../../types/student_renewal";
+import { RenewalCardProps, StatusConfig, Renewal, CategorizedRenewals, CreateRenewalRequest } from "../../../../types/student_renewal";
 import { CreateRenewalForm } from "./CreateRenewalForm";
 
 // Renewal Card Component
@@ -126,7 +126,7 @@ export const StudentRenewalsPage: React.FC = () => {
     }
   };
 
-  const handleCreateRenewal = async (renewalData: NewRenewalData): Promise<void> => {
+  const handleCreateRenewal = async (renewalData: CreateRenewalRequest): Promise<void> => {
     await createRenewal(renewalData);
     setShowCreateForm(false);
   };
