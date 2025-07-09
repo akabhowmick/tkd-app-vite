@@ -40,7 +40,7 @@ export interface UpdateRenewalRequest {
 }
 
 // Form data interface (string values for form inputs)
-export interface FormData {
+export interface RenewalFormData {
   student_id: string;
   duration_months: string;
   payment_date: string;
@@ -73,8 +73,8 @@ export interface PaginatedResponse<T> {
 }
 
 // UI-related interfaces
-export interface FormField {
-  name: keyof FormData;
+export interface RenewalFormField {
+  name: keyof RenewalFormData;
   label: string;
   type: string;
   step?: string;

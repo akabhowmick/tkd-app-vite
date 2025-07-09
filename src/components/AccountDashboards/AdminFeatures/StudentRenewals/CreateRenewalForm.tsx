@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { CreateRenewalFormProps, FormField } from "../../../../types/student_renewal";
+import { CreateRenewalFormProps, RenewalFormField, RenewalFormData } from "../../../../types/student_renewal";
 
 export const CreateRenewalForm: React.FC<CreateRenewalFormProps> = ({ onSubmit, onCancel }) => {
-  const [formData, setFormData] = useState<FormData>({
+  const [formData, setFormData] = useState<RenewalFormData>({
     student_id: "",
     duration_months: "",
     payment_date: "",
@@ -43,11 +43,11 @@ export const CreateRenewalForm: React.FC<CreateRenewalFormProps> = ({ onSubmit, 
     }
   };
 
-  const handleChange = (field: keyof FormData, value: string): void => {
+  const handleChange = (field: keyof RenewalFormData, value: string): void => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const formFields: FormField[] = [
+  const formFields: RenewalFormField[] = [
     { name: "student_id", label: "Student ID", type: "number", required: true },
     { name: "duration_months", label: "Duration (Months)", type: "number", required: true },
     { name: "payment_date", label: "Payment Date", type: "date", required: true },
