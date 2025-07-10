@@ -48,7 +48,7 @@ export const CreateRenewalForm: React.FC<CreateRenewalFormProps> = ({ onSubmit, 
   };
 
   const formFields: RenewalFormField[] = [
-    { name: "student_id", label: "Student ID", type: "number", required: true },
+    { name: "student_id", label: "Student ID", type: "string", required: true, placeholder: "Student Name" },
     { name: "duration_months", label: "Duration (Months)", type: "number", required: true },
     { name: "payment_date", label: "Payment Date", type: "date", required: true },
     { name: "expiration_date", label: "Expiration Date", type: "date", required: true },
@@ -73,7 +73,7 @@ export const CreateRenewalForm: React.FC<CreateRenewalFormProps> = ({ onSubmit, 
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div className="bg-white text-black rounded-xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
         <h2 className="text-2xl font-bold mb-4">Create New Renewal</h2>
         <div className="space-y-4">
           {formFields.map((field) => (
@@ -84,7 +84,7 @@ export const CreateRenewalForm: React.FC<CreateRenewalFormProps> = ({ onSubmit, 
                 step={field.step}
                 value={formData[field.name]}
                 onChange={(e) => handleChange(field.name, e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white "
                 placeholder={field.placeholder}
                 required={field.required}
               />
