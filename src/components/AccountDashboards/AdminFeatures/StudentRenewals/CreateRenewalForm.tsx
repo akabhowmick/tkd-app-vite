@@ -1,7 +1,10 @@
 import { useState } from "react";
 import { CreateRenewalFormProps, RenewalFormField, RenewalFormData } from "../../../../types/student_renewal";
+import { useSchool } from "../../../../context/SchoolContext";
 
 export const CreateRenewalForm: React.FC<CreateRenewalFormProps> = ({ onSubmit, onCancel }) => {
+  const {students} = useSchool();
+
   const [formData, setFormData] = useState<RenewalFormData>({
     student_id: "",
     duration_months: "",
@@ -48,7 +51,6 @@ export const CreateRenewalForm: React.FC<CreateRenewalFormProps> = ({ onSubmit, 
   };
 
   const formFields: RenewalFormField[] = [
-    { name: "student_id", label: "Student ID", type: "string", required: true, placeholder: "Student Name" },
     { name: "duration_months", label: "Duration (Months)", type: "number", required: true },
     { name: "payment_date", label: "Payment Date", type: "date", required: true },
     { name: "expiration_date", label: "Expiration Date", type: "date", required: true },
@@ -76,6 +78,25 @@ export const CreateRenewalForm: React.FC<CreateRenewalFormProps> = ({ onSubmit, 
       <div className="bg-white text-black rounded-xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
         <h2 className="text-2xl font-bold mb-4">Create New Renewal</h2>
         <div className="space-y-4">
+          {/* Student Dropdown */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Student</label>
+            <select
+              value={formData.student_id}
+              onChange={(e) => handleChange("student_id", e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+              required
+            >
+              <option value="">Select a student...</option>
+              {students.map((student) => (
+                <option key={student.id} value={student.id!.toString()}>
+                  {student.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Other Form Fields */}
           {formFields.map((field) => (
             <div key={field.name}>
               <label className="block text-sm font-medium text-gray-700 mb-1">{field.label}</label>
