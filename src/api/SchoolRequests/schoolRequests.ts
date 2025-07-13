@@ -22,6 +22,8 @@ export const deleteSchool = async (id: string) => {
 
 export const getSchoolByAdmin = async (adminId: string) => {
   const { data, error } = await supabase.from("schools").select("*").eq("admin_id", adminId).single();
-  if (error) throw error;
+  if (error){
+    console.error(error)
+  };
   return data as School;
 };

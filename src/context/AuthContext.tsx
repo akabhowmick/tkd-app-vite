@@ -47,7 +47,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Login Function using Supabase
   const login = async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    console.log("log in error: ", error);
+    console.error(error);
     if (error) return false;
 
     const userMetadata = data.user?.user_metadata;
@@ -75,7 +75,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         },
       },
     });
-    console.log("checking return", data, error);
 
     if (error) return false;
 

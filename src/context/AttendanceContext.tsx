@@ -12,7 +12,7 @@ type AttendanceStatus = "present" | "absent";
 
 export const useAttendance = () => {
   const { user } = useAuth();
-  const { students } = useSchool();
+  const { students, schoolId } = useSchool();
   const [attendance, setAttendance] = useState<Record<string, AttendanceStatus>>({});
   const [selectedDate, setSelectedDate] = useState<string>(getTodayDate());
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -22,13 +22,12 @@ export const useAttendance = () => {
     const fetchExistingAttendance = async () => {
       setIsLoading(true);
 
-      if (!user?.schoolId || !selectedDate) {
+      if (!schoolId || !selectedDate) {
         setIsLoading(false);
         return;
       }
-
       try {
-        const { data, error } = await getAttendanceByDate(user.schoolId, selectedDate);
+        const { data, error } = await getAttendanceByDate(schoolId, selectedDate);
 
         if (data) {
           const existing = data.reduce(
@@ -54,16 +53,14 @@ export const useAttendance = () => {
     if (students.length > 0) {
       fetchExistingAttendance();
     }
-  }, [selectedDate, user?.schoolId, students.length]);
+  }, [selectedDate, schoolId, students.length]);
 
   const handleDateChange = (date: string) => {
     setSelectedDate(date);
   };
 
   const handleAttendanceChange = (studentId: string, status: AttendanceStatus) => {
-    console.log(studentId, status);
     setAttendance((prev) => ({ ...prev, [studentId]: status }));
-    console.log(attendance)
   };
 
   const handleSubmit = async () => {
@@ -115,7 +112,7 @@ export const useAttendance = () => {
     handleAttendanceChange,
     handleSubmit,
 
-    // Context data 
-    students
+    // Context data
+    students,
   };
 };

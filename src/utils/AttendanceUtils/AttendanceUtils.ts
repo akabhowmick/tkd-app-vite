@@ -18,7 +18,7 @@ export const STATUS_STYLES = {
     statText: "text-red-600",
   },
   unmarked: {
-    bg: "bg-gray-50",
+    bg: "bg-gray-100",
     border: "border-gray-200",
     text: "text-gray-700",
     statBg: "bg-gray-50",

@@ -37,8 +37,6 @@ export const SchoolManagement = () => {
       // Update
       await supabase.from("schools").update(formData).eq("id", currentSchool.id);
     } else {
-      // Create
-      console.log({ ...formData, admin_id: user?.id });
       const { error } = await supabase
         .from("schools")
         .insert([{ ...formData, admin_id: user?.id }]);
