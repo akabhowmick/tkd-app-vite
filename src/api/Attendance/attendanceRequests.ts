@@ -9,7 +9,7 @@ export interface AttendanceRecord {
 }
 
 export const createAttendance = async (records: AttendanceRecord[]) => {
-  const { data, error } = await supabase.from("attendance-records").upsert(records);
+  const { data, error } = await supabase.from("attendance_records").upsert(records);
   return { data, error };
 };
 
@@ -18,7 +18,7 @@ export const getAttendanceByDate = async (
   date: string
 ): Promise<{ data: AttendanceRecord[] | null; error: unknown }> => {
   const { data, error } = await supabase
-    .from("attendance-records")
+    .from("attendance_records")
     .select("*")
     .eq("school_id", schoolId)
     .eq("date", date);
@@ -27,12 +27,12 @@ export const getAttendanceByDate = async (
 };
 
 export async function updateAttendance(id: string, status: "present" | "absent") {
-  const { data, error } = await supabase.from("attendance-records").update({ status }).eq("id", id);
+  const { data, error } = await supabase.from("attendance_records").update({ status }).eq("id", id);
 
   return { data, error };
 }
 
 export async function deleteAttendance(id: string) {
-  const { error } = await supabase.from("attendance-records").delete().eq("id", id);
+  const { error } = await supabase.from("attendance_records").delete().eq("id", id);
   return { error };
 }
