@@ -1,9 +1,7 @@
-Attendance:
-  1. on click make the get students appear
-  2. the handleAttendanceChange should work locally 
-  3. add attendance record 
-  4. 
-
+Add Student:
+1. make the form irrespective of clicking
+2. add student form fix the styles  
+3. not sending the school id as part of the params 
 
 Renewals
   1. add as optional at first 

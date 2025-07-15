@@ -10,7 +10,7 @@ export interface AttendanceRecord {
 
 export const createAttendance = async (records: AttendanceRecord[]) => {
   const { data, error } = await supabase.from("attendance_records").upsert(records);
-  return { data, error };
+  return { data, error }; 
 };
 
 export const getAttendanceByDate = async (

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useAuth } from "../../../../../context/AuthContext";
 
-export const CreateSchoolProfileProfile = () => {
+export const CreateSchoolProfile = () => {
   const { user } = useAuth();
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");

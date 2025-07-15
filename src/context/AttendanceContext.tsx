@@ -64,17 +64,17 @@ export const useAttendance = () => {
   };
 
   const handleSubmit = async () => {
-    if (!user?.schoolId) return;
-
+    if (!schoolId || !user) return;
     setIsSubmitting(true);
-
     try {
       const records = Object.entries(attendance).map(([student_id, status]) => ({
         student_id,
         status,
-        school_id: user.schoolId!,
+        school_id: schoolId,
         date: selectedDate,
       }));
+
+      console.log(records);
 
       const { error } = await createAttendance(records);
 
