@@ -5,6 +5,5 @@ Add Student:
 
 Renewals
   1. add as optional at first 
-  2. make a table for them? 
   3. then display renewals, by day, week, month
   4. add a check off like to do list vibe 

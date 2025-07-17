@@ -6,7 +6,6 @@ import Login from "../pages/Login";
 import SignUp from "../pages/Signup";
 import { Header } from "./Header";
 import Dashboard from "../pages/Dashboard";
-import { AddStudentPage } from "../pages/AddStudentPage";
 import { TakeAttendance } from "./AccountDashboards/AdminFeatures/AttendanceRecords/TakeAttendance";
 import { StudentListPage } from "./AccountDashboards/AdminFeatures/StudentView/StudentListPage";
 import { SchoolManagement } from "./AccountDashboards/AdminFeatures/SchoolManagement/SchoolManagement";
@@ -54,14 +53,6 @@ const AppRouter: React.FC = () => {
           element={
             <PrivateRoute>
               <TakeAttendance />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/dashboard/admin/addStudent"
-          element={
-            <PrivateRoute>
-              <AddStudentPage />
             </PrivateRoute>
           }
         />

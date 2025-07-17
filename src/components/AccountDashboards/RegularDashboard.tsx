@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faAdd,
   faHome,
   faMoneyBill,
   faListUl,
@@ -17,14 +16,12 @@ import { useSchool } from "../../context/SchoolContext";
 import { SchoolManagement } from "./AdminFeatures/SchoolManagement/SchoolManagement";
 import { TakeAttendance } from "./AdminFeatures/AttendanceRecords/TakeAttendance";
 import { StudentListPage } from "./AdminFeatures/StudentView/StudentListPage";
-import { AddStudentPage } from "../../pages/AddStudentPage";
 import { StudentRenewalsPage } from "./AdminFeatures/StudentRenewals/StudentRenewalsPage";
 
 // Constants
 const SIDEBAR_CONFIG = [
   { icon: faHome, label: "Dashboard", view: "home" },
   { icon: faMoneyBill, label: "Renewals", view: "renewals" },
-  { icon: faAdd, label: "Add Student", view: "addStudent" },
   { icon: faListUl, label: "Student List", view: "students" },
   { icon: faListCheck, label: "Attendance", view: "attendance" },
   { icon: faSchool, label: "School Profile", view: "school" },
@@ -64,7 +61,6 @@ const STAT_CARDS_CONFIG = [
 const VIEW_COMPONENTS = {
   school: SchoolManagement,
   renewals: StudentRenewalsPage,
-  addStudent: AddStudentPage,
   students: StudentListPage,
   attendance: TakeAttendance,
 } as const;
