@@ -108,21 +108,7 @@ const Header = ({ title }: { title: string }) => (
       <h2 className="text-gray-600">Dashboard / {title}</h2>
       <h1 className="text-2xl font-bold">{title}</h1>
     </div>
-    <div className="flex items-center space-x-4">
-      <div className="relative">
-        <input
-          className="bg-gray-100 h-10 px-5 pr-10 rounded-full text-sm focus:outline-none"
-          placeholder="Search"
-          type="text"
-        />
-        <button className="absolute right-0 top-0 mt-3 mr-4">
-          <i className="fas fa-search"></i>
-        </button>
-      </div>
-      <i className="fas fa-user text-gray-600"></i>
-      <i className="fas fa-bell text-gray-600"></i>
-      <i className="fas fa-cog text-gray-600"></i>
-    </div>
+    
   </div>
 );
 

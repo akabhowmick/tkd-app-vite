@@ -1,37 +1,44 @@
 import React, { useState } from "react";
 import { useStudentRenewals } from "../../../../context/StudentRenewalContext";
 import { RenewalCategory } from "./RenewalCategory";
-import { Renewal, CategorizedRenewals, CreateRenewalRequest } from "../../../../types/student_renewal";
+import {
+  Renewal,
+  CategorizedRenewals,
+  CreateRenewalRequest,
+} from "../../../../types/student_renewal";
 import { CreateRenewalForm } from "./CreateRenewalForm";
 import { RenewalCard } from "./RenewalCard";
 
-
 // Main Component - Single Responsibility: Display renewals
 export const StudentRenewalsPage: React.FC = () => {
-  const { renewals, loadRenewals, updateRenewal, removeRenewal, createRenewal } = useStudentRenewals();
+  const { renewals, loadRenewals, updateRenewal, removeRenewal, createRenewal } =
+    useStudentRenewals();
   const [showCreateForm, setShowCreateForm] = useState<boolean>(false);
 
   const categorizeRenewals = (renewals: Renewal[]): CategorizedRenewals => {
-    return renewals.reduce((acc, renewal) => {
-      const isExpired = new Date(renewal.expiration_date) < new Date();
-      const isPaid = renewal.amount_paid >= renewal.amount_due;
+    return renewals.reduce(
+      (acc, renewal) => {
+        const isExpired = new Date(renewal.expiration_date) < new Date();
+        const isPaid = renewal.amount_paid >= renewal.amount_due;
 
-      if (isPaid) {
-        acc.paid.push(renewal);
-      } else if (isExpired) {
-        acc.expired.push(renewal);
-      } else {
-        acc.active.push(renewal);
-      }
+        if (isPaid) {
+          acc.paid.push(renewal);
+        } else if (isExpired) {
+          acc.expired.push(renewal);
+        } else {
+          acc.active.push(renewal);
+        }
 
-      return acc;
-    }, { expired: [], active: [], paid: [] } as CategorizedRenewals);
+        return acc;
+      },
+      { expired: [], active: [], paid: [] } as CategorizedRenewals
+    );
   };
 
   const categorizedRenewals = categorizeRenewals(renewals);
 
   const handleMarkPaid = (renewalId: number): void => {
-    const renewal = renewals.find(r => r.renewal_id === renewalId);
+    const renewal = renewals.find((r) => r.renewal_id === renewalId);
     if (renewal) {
       updateRenewal(renewalId, { amount_paid: renewal.amount_due });
     }
@@ -44,10 +51,6 @@ export const StudentRenewalsPage: React.FC = () => {
 
   const handleLoadRenewals = (): void => {
     loadRenewals();
-  };
-
-  const handleLoadSpecificStudent = (): void => {
-    loadRenewals(123);
   };
 
   return (
@@ -67,12 +70,7 @@ export const StudentRenewalsPage: React.FC = () => {
           >
             📅 Load All Renewals
           </button>
-          <button
-            onClick={handleLoadSpecificStudent}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors duration-200 flex items-center gap-2 shadow-md"
-          >
-            📅 Load Student 123
-          </button>
+
           <button
             onClick={() => setShowCreateForm(true)}
             className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors duration-200 flex items-center gap-2 shadow-md"
