@@ -1,12 +1,10 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useSchool } from "../context/SchoolContext";
-import {
-  AttendanceRecord,
-  createAttendance,
-  getAttendanceByDate,
-} from "../api/Attendance/attendanceRequests";
+import { createAttendance, getAttendanceByDate } from "../api/Attendance/attendanceRequests";
 import { getTodayDate } from "../utils/AttendanceUtils/DateUtils";
+import { AttendanceRecord } from "../types/attendance";
+import Swal from "sweetalert2";
 
 type AttendanceStatus = "present" | "absent";
 
@@ -79,14 +77,30 @@ export const useAttendance = () => {
       const { error } = await createAttendance(records);
 
       if (error) {
-        alert("Failed to save attendance.");
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: "Failed to save attendance.",
+          confirmButtonText: "OK",
+        });
         console.error("Save error:", error);
       } else {
-        alert("Attendance saved successfully.");
+        Swal.fire({
+          icon: "success",
+          title: "Attendance saved successfully.",
+          showConfirmButton: false,
+          timer: 1000, // Auto-close after 2 seconds
+        });
       }
     } catch (error) {
       console.error("Error saving attendance:", error);
-      alert("Failed to save attendance.");
+
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Failed to save attendance.",
+        confirmButtonText: "OK",
+      });
     } finally {
       setIsSubmitting(false);
     }

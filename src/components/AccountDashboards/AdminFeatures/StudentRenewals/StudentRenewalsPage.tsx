@@ -75,7 +75,7 @@ export const StudentRenewalsPage: React.FC = () => {
             onClick={() => setShowCreateForm(true)}
             className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors duration-200 flex items-center gap-2 shadow-md"
           >
-            ➕ Create Renewal
+            ➕ Register Renewal
           </button>
         </div>
 

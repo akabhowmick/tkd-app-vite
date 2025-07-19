@@ -4,7 +4,7 @@ export interface AttendanceRecordInsert {
   student_id: string; // UUID
   status: AttendanceStatus;
   school_id: string; // UUID
-  date?: Date | null;
+  date?: Date | null | string;
 }
 
 // Full attendance record interface 

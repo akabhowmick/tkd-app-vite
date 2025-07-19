@@ -1,14 +1,8 @@
+import { AttendanceRecord, AttendanceRecordInsert } from "../../types/attendance";
 import { supabase } from "../supabase";
 
-export interface AttendanceRecord {
-  id?: string;
-  student_id: string;
-  status: "present" | "absent";
-  school_id: string;
-  date: string; 
-}
 
-export const createAttendance = async (records: AttendanceRecord[]) => {
+export const createAttendance = async (records: AttendanceRecordInsert[]) => {
   const { data, error } = await supabase.from("attendance_records").upsert(records);
   return { data, error }; 
 };

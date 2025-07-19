@@ -34,7 +34,7 @@ export const Header = () => {
   return (
     <div className="bg-red-900 flex justify-between items-center h-24 w-full px-6 text-white shadow-md">
       {/* Logo */}
-      <h1 className="text-3xl font-bold">Taekwondo Chat App</h1>
+      <h1 className="text-3xl font-bold">Taekwondo Student Management App</h1>
 
       {/* Desktop Navigation */}
       <ul className="hidden md:flex space-x-6">
@@ -73,7 +73,7 @@ export const Header = () => {
         }`}
       >
         {/* Mobile Logo */}
-        <h1 className="text-3xl font-bold text-white m-4">Taekwondo Chat App</h1>
+        <h1 className="text-3xl font-bold text-white m-4">Taekwondo Student Management App</h1>
 
         {/* Mobile Navigation Items */}
         {navItems.map((item) => (
