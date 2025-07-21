@@ -89,7 +89,7 @@ export const useAttendance = () => {
           icon: "success",
           title: "Attendance saved successfully.",
           showConfirmButton: false,
-          timer: 1000, // Auto-close after 2 seconds
+          timer: 1000, 
         });
       }
     } catch (error) {
