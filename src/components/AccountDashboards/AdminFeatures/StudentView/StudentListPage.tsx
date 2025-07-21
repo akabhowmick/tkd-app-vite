@@ -13,7 +13,7 @@ export const StudentListPage = () => {
   };
 
   const handleEditSuccess = () => {
-    setEditingUser(null); 
+    setEditingUser(null);
   };
 
   useEffect(() => {
@@ -24,7 +24,18 @@ export const StudentListPage = () => {
   return (
     <div className="max-w-4xl mx-auto p-4">
       <h1 className="text-3xl font-bold mb-4 text-black">Student Management</h1>
-
+      {/* Add Student Button */}
+      <div className="my-6 text-left">
+        <HandleAddOrEdit
+          createStudent={async (studentData) => {
+            await createStudent(studentData);
+          }}
+          loadStudents={loadStudents}
+          buttonText="Add New Student"
+          buttonClassName="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-red-700 hover:bg-red-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-600"
+        />
+      </div>
+      <h2 className="text-2xl font-bold mb-4 text-black">View Current Students</h2>
       {editingUser && (
         <div className="mb-6 border p-4 rounded bg-white shadow-md">
           <h3 className="text-lg font-semibold mb-3 text-gray-800">
@@ -68,14 +79,14 @@ export const StudentListPage = () => {
               <tr key={student.id} className="border-t text-black">
                 <td className="p-3">{student.name}</td>
                 <td className="p-3">{student.email}</td>
-                <td className="p-3">{student.phone || 'N/A'}</td>
+                <td className="p-3">{student.phone || "N/A"}</td>
                 <td className="p-3 space-x-2">
                   <button
                     onClick={() => handleEdit(student)}
                     className="text-blue-600 hover:underline focus:outline-none"
                     disabled={editingUser?.id === student.id}
                   >
-                    {editingUser?.id === student.id ? 'Editing...' : 'Edit'}
+                    {editingUser?.id === student.id ? "Editing..." : "Edit"}
                   </button>
                   <button
                     onClick={() => handleDelete(student.id!)}
@@ -89,18 +100,6 @@ export const StudentListPage = () => {
           )}
         </tbody>
       </table>
-
-      {/* Add Student Button */}
-      <div className="mt-6 text-center">
-        <HandleAddOrEdit
-          createStudent={async (studentData) => {
-            await createStudent(studentData);
-          }}
-          loadStudents={loadStudents}
-          buttonText="Add New Student"
-          buttonClassName="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-red-700 hover:bg-red-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-600"
-        />
-      </div>
     </div>
   );
 };

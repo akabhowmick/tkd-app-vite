@@ -1,12 +1,5 @@
-Add Student:
-1. make the form irrespective of clicking
-2. add student form fix the styles  
-
 Renewals
   1. add as optional at first 
   3. then display renewals, by day, week, month
   4. add a check off like to do list vibe 
 
-
-Attendance: 
-  1. fix for saving => replace with pop
