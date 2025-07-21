@@ -3,6 +3,7 @@ import { UserProfile } from "../../types/user";
 
 // CREATE a student
 export const createStudent = async (student: Omit<UserProfile, "id">): Promise<void> => {
+  console.log(student);
   const { error } = await supabase.from("students").insert([student]);
   if (error) throw error;
 };

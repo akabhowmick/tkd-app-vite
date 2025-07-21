@@ -1,75 +1,19 @@
 import { useEffect, useState } from "react";
 import { UserProfile } from "../../../../types/user";
 import { HandleAddOrEdit } from "./HandleAddOrEdit";
-import { deleteStudent, updateStudent, createStudent } from "../../../../api/StudentRequests/studentRequests";
-import Swal from "sweetalert2";
+import { updateStudent, createStudent } from "../../../../api/StudentRequests/studentRequests";
 import { useSchool } from "../../../../context/SchoolContext";
 
 export const StudentListPage = () => {
-  const { loadStudents, students } = useSchool();
+  const { loadStudents, handleDelete, students } = useSchool();
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
-
-  const handleDelete = async (id: string) => {
-    try {
-      const result = await Swal.fire({
-        title: "Delete Student?",
-        text: "Are you sure you want to delete this student? This action cannot be undone.",
-        icon: "warning",
-        showCancelButton: true,
-        confirmButtonColor: "#ef4444",
-        cancelButtonColor: "#6b7280",
-        confirmButtonText: "Yes, delete it!",
-        cancelButtonText: "Cancel",
-        reverseButtons: true,
-      });
-
-      if (result.isConfirmed) {
-        // Show loading
-        Swal.fire({
-          title: "Deleting...",
-          text: "Please wait while we delete the student.",
-          allowOutsideClick: false,
-          allowEscapeKey: false,
-          showConfirmButton: false,
-          didOpen: () => {
-            Swal.showLoading();
-          },
-        });
-
-        try {
-          await deleteStudent(id);
-          await loadStudents();
-
-          // Success message
-          Swal.fire({
-            title: "Deleted!",
-            text: "The student has been successfully deleted.",
-            icon: "success",
-            confirmButtonColor: "#10b981",
-            timer: 2000,
-            timerProgressBar: true,
-          });
-        } catch (error) {
-          // Error message
-          Swal.fire({
-            title: "Error!",
-            text: `Failed to delete the student. Please try again. ${error}`,
-            icon: "error",
-            confirmButtonColor: "#ef4444",
-          });
-        }
-      }
-    } catch (error) {
-      console.error("Error in handleDelete:", error);
-    }
-  };
 
   const handleEdit = (user: UserProfile) => {
     setEditingUser(user);
   };
 
   const handleEditSuccess = () => {
-    setEditingUser(null); // Close the edit form after successful update
+    setEditingUser(null); 
   };
 
   useEffect(() => {
@@ -109,7 +53,6 @@ export const StudentListPage = () => {
             <th className="p-3">Name</th>
             <th className="p-3">Email</th>
             <th className="p-3">Phone</th>
-            <th className="p-3">Role</th>
             <th className="p-3">Actions</th>
           </tr>
         </thead>
@@ -126,7 +69,6 @@ export const StudentListPage = () => {
                 <td className="p-3">{student.name}</td>
                 <td className="p-3">{student.email}</td>
                 <td className="p-3">{student.phone || 'N/A'}</td>
-                <td className="p-3">{student.role || 'Student'}</td>
                 <td className="p-3 space-x-2">
                   <button
                     onClick={() => handleEdit(student)}

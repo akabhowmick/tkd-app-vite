@@ -5,7 +5,8 @@ import { School } from "../types/school";
 import { getSchoolByAdmin } from "../api/SchoolRequests/schoolRequests";
 import { useAuth } from "./AuthContext";
 import { UserProfile } from "../types/user";
-import { getStudents } from "../api/StudentRequests/studentRequests";
+import { deleteStudent, getStudents } from "../api/StudentRequests/studentRequests";
+import Swal from "sweetalert2";
 
 interface SchoolContextType {
   sales: number;
@@ -17,6 +18,7 @@ interface SchoolContextType {
   students: UserProfile[];
   fetchSchool: () => Promise<void>;
   loadStudents: (currentSchoolId?: string, forceRefresh?: boolean) => Promise<void>;
+  handleDelete: (id: string) => Promise<void>; 
   refreshStudents: () => Promise<void>;
   setSchoolId: React.Dispatch<React.SetStateAction<string>>;
   createSchool: (school: Omit<School, "id" | "created_at">) => Promise<void>;
@@ -88,6 +90,61 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       setLoading(false);
     }
   }, [schoolId, studentsCache, lastStudentsFetch]);
+
+  const handleDelete = async (id: string) => {
+      try {
+        const result = await Swal.fire({
+          title: "Delete Student?",
+          text: "Are you sure you want to delete this student? This action cannot be undone.",
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonColor: "#ef4444",
+          cancelButtonColor: "#6b7280",
+          confirmButtonText: "Yes, delete it!",
+          cancelButtonText: "Cancel",
+          reverseButtons: true,
+        });
+  
+        if (result.isConfirmed) {
+          // Show loading
+          Swal.fire({
+            title: "Deleting...",
+            text: "Please wait while we delete the student.",
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            didOpen: () => {
+              Swal.showLoading();
+            },
+          });
+  
+          try {
+            await deleteStudent(id);
+            await loadStudents();
+  
+            // Success message
+            Swal.fire({
+              title: "Deleted!",
+              text: "The student has been successfully deleted.",
+              icon: "success",
+              confirmButtonColor: "#10b981",
+              timer: 1000,
+              timerProgressBar: true,
+            });
+          } catch (error) {
+            // Error message
+            Swal.fire({
+              title: "Error!",
+              text: `Failed to delete the student. Please try again. ${error}`,
+              icon: "error",
+              confirmButtonColor: "#ef4444",
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Error in handleDelete:", error);
+      }
+    };
 
   // Effect to fetch school data when user is available
   useEffect(() => {
@@ -217,6 +274,7 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         loading,
         schoolId,
         loadStudents,
+        handleDelete,
         refreshStudents,
         setSchoolId,
         createSchool,

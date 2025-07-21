@@ -2,6 +2,7 @@ Add Student:
 1. make the form irrespective of clicking
 2. add student form fix the styles  
 3. not sending the school id as part of the params 
+4. only have student option
 
 Renewals
   1. add as optional at first 

@@ -1,25 +1,7 @@
 import React from "react";
 import Swal from "sweetalert2";
-import { UserProfile } from "../../../../types/user";
-
-// Types for student data
-interface StudentData {
-  name: string;
-  email: string;
-  phone?: string;
-  role?: string;
-  school_id: string;
-}
-
-interface HandleAddOrEditProps {
-  student?: UserProfile;
-  onSuccess?: () => void;
-  buttonText?: string;
-  buttonClassName?: string;
-  createStudent?: (student: Omit<UserProfile, "id">) => Promise<void>;
-  updateStudent?: (id: string, student: Partial<UserProfile>) => Promise<void>;
-  loadStudents?: () => Promise<void>;
-}
+import { HandleAddOrEditProps } from "../../../../types/school";
+import { useSchool } from "../../../../context/SchoolContext";
 
 export const HandleAddOrEdit: React.FC<HandleAddOrEditProps> = ({
   student,
@@ -30,6 +12,7 @@ export const HandleAddOrEdit: React.FC<HandleAddOrEditProps> = ({
   updateStudent,
   loadStudents,
 }) => {
+  const { schoolId } = useSchool();
   const isEdit = !!student;
   const defaultButtonText = isEdit ? "Edit Student" : "Add Student";
 
@@ -59,21 +42,6 @@ export const HandleAddOrEdit: React.FC<HandleAddOrEditProps> = ({
                 student?.phone || ""
               }">
             </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Role</label>
-              <select id="swal-role" class="swal2-select">
-                <option value="Student" ${
-                  !student?.role || student?.role === "Student" ? "selected" : ""
-                }>Student</option>
-                <option value="Admin" ${student?.role === "Admin" ? "selected" : ""}>Admin</option>
-                <option value="Instructor" ${
-                  student?.role === "Instructor" ? "selected" : ""
-                }>Instructor</option>
-                <option value="Parent" ${
-                  student?.role === "Parent" ? "selected" : ""
-                }>Parent</option>
-              </select>
-            </div>
           </div>
         `,
         focusConfirm: false,
@@ -89,7 +57,8 @@ export const HandleAddOrEdit: React.FC<HandleAddOrEditProps> = ({
           const name = (document.getElementById("swal-name") as HTMLInputElement).value;
           const email = (document.getElementById("swal-email") as HTMLInputElement).value;
           const phone = (document.getElementById("swal-phone") as HTMLInputElement).value;
-          const role = (document.getElementById("swal-role") as HTMLSelectElement).value;
+          const role = "Student";
+          const school_id = schoolId; 
 
           if (!name || !email) {
             Swal.showValidationMessage("Please fill in all required fields");
@@ -101,7 +70,7 @@ export const HandleAddOrEdit: React.FC<HandleAddOrEditProps> = ({
             return false;
           }
 
-          return { name, email, phone, role };
+          return { name, email, phone, role, school_id };
         },
       });
 
@@ -129,22 +98,19 @@ export const HandleAddOrEdit: React.FC<HandleAddOrEditProps> = ({
             await loadStudents();
           }
 
-          // Success message
           await Swal.fire({
             title: "Success!",
             text: `Student has been ${isEdit ? "updated" : "created"} successfully.`,
             icon: "success",
             confirmButtonColor: "#10b981",
-            timer: 2000,
+            timer: 1000,
             timerProgressBar: true,
           });
 
-          // Call success callback if provided
           if (onSuccess) {
             onSuccess();
           }
         } catch (error) {
-          // Error message
           Swal.fire({
             title: "Error!",
             text: `Failed to ${
@@ -167,28 +133,3 @@ export const HandleAddOrEdit: React.FC<HandleAddOrEditProps> = ({
   );
 };
 
-// Alternative version as a standalone page component
-export const AddStudentPage: React.FC<{
-  createStudent?: (data: StudentData) => Promise<void>;
-  loadStudents?: () => Promise<void>;
-}> = ({ createStudent, loadStudents }) => {
-  return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md mx-auto">
-        <div className="text-center">
-          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">Add New Student</h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Click the button below to add a new student to the system
-          </p>
-        </div>
-        <div className="mt-8 text-center">
-          <HandleAddOrEdit
-            createStudent={createStudent}
-            loadStudents={loadStudents}
-            buttonClassName="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-          />
-        </div>
-      </div>
-    </div>
-  );
-};
