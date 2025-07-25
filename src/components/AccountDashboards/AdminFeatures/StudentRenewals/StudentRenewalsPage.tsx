@@ -111,9 +111,9 @@ export const StudentRenewalsPage: React.FC = () => {
             renewals={categorizedRenewals.active}
             borderColor="border-blue-500"
           >
-            {categorizedRenewals.active.map((renewal) => (
+            {categorizedRenewals.active.map((renewal, index) => (
               <RenewalCard
-                key={renewal.renewal_id}
+                key={`${renewal.renewal_id}+${index}`}
                 renewal={renewal}
                 onMarkPaid={handleMarkPaid}
                 onDelete={removeRenewal}
