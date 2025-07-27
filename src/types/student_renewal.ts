@@ -108,9 +108,18 @@ export interface CreateRenewalFormProps {
   onSubmit: (data: CreateRenewalRequest) => Promise<void>;
   onCancel: () => void;
 }
+export interface ExpiringRenewal extends Renewal {
+  daysOverdue: number; 
+  status: 'expired' | 'expiring_soon' | 'grace_period'; 
+  statusMessage: string; 
+  priority: number; 
+}
 
 export interface RenewalCardProps {
-  renewal: Renewal;
-  onMarkPaid: (renewalId: number) => void;
-  onDelete: (renewalId: number) => void;
+  renewal: Renewal | ExpiringRenewal;
+  onMarkPaid: (id: number) => void;
+  onDelete: (id: number) => void;
+  onResolveAsQuit?: (id: number) => void;
+  onResolveWithNext?: (renewal: Renewal) => void;
+  statusMessage?: string;
 }
