@@ -85,12 +85,12 @@ export const RenewalCard: React.FC<RenewalCardProps> = ({
         </div>
         <div className="flex flex-wrap gap-2">
           {!isPaid &&
-            renderActionButton("✓ Mark Paid", () => onMarkPaid(renewal.renewal_id), "bg-green-600")}
+            renderActionButton("Mark Paid", () => onMarkPaid(renewal.renewal_id), "bg-green-600")}
           {onResolveAsQuit &&
             renderActionButton("Quit", () => onResolveAsQuit(renewal.renewal_id), "bg-yellow-500")}
           {onResolveWithNext &&
             renderActionButton("Renew", () => onResolveWithNext(renewal), "bg-blue-600")}
-          {renderActionButton("🗑️ Delete", () => onDelete(renewal.renewal_id), "bg-red-600")}
+          {renderActionButton("Delete", () => onDelete(renewal.renewal_id), "bg-red-600")}
         </div>
       </div>
     </div>
