@@ -1,5 +1,12 @@
+// File: RenewalCard.tsx
 import React from "react";
-import { RenewalCardProps, StatusConfig } from "../../../../types/student_renewal";
+import Swal from "sweetalert2";
+import withReactContent from "sweetalert2-react-content";
+import { FaCog } from "react-icons/fa";
+import { RenewalCardProps, StatusConfig, ExpiringRenewal } from "../../../../types/student_renewal";
+import { useSchool } from "../../../../context/SchoolContext";
+
+const MySwal = withReactContent(Swal);
 
 const statusConfigs: Record<string, StatusConfig> = {
   paid: {
@@ -30,10 +37,72 @@ export const RenewalCard: React.FC<RenewalCardProps> = ({
   onResolveWithNext,
   statusMessage,
 }) => {
+  const { students } = useSchool();
   const isExpired = new Date(renewal.expiration_date) < new Date();
   const isPaid = renewal.amount_paid >= renewal.amount_due;
   const statusKey = isPaid ? "paid" : isExpired ? "expired" : "active";
   const statusConfig = statusConfigs[statusKey];
+
+  const student = students.find(
+    (student) => student.id === (renewal.student_id as unknown as string)
+  );
+
+  const resolvedStatusMessage = statusMessage ?? (renewal as ExpiringRenewal)?.statusMessage;
+
+  const modalBtnStyle = "w-1/2 text-white py-2 rounded-md text-sm font-semibold";
+
+  const handleManageClick = () => {
+    MySwal.fire({
+      title: "Manage Renewal",
+      html: (
+        <div className="flex flex-col gap-2 items-center">
+          {!isPaid && (
+            <button
+              onClick={() => {
+                onMarkPaid(renewal.renewal_id);
+                Swal.close();
+              }}
+              className={`${modalBtnStyle} bg-green-600`}
+            >
+              ✓ Mark Paid
+            </button>
+          )}
+          {onResolveAsQuit && (
+            <button
+              onClick={() => {
+                onResolveAsQuit(renewal.renewal_id);
+                Swal.close();
+              }}
+              className={`${modalBtnStyle} bg-yellow-400`}
+            >
+              Quit
+            </button>
+          )}
+          {onResolveWithNext && (
+            <button
+              onClick={() => {
+                onResolveWithNext(renewal);
+                Swal.close();
+              }}
+              className={`${modalBtnStyle} bg-blue-600`}
+            >
+              Renew
+            </button>
+          )}
+          <button
+            onClick={() => {
+              onDelete(renewal.renewal_id);
+              Swal.close();
+            }}
+            className={`${modalBtnStyle} bg-red-600`}
+          >
+            Delete
+          </button>
+        </div>
+      ),
+      showConfirmButton: false,
+    });
+  };
 
   const renderDetail = (label: string, value: string | number | undefined) =>
     value ? (
@@ -42,26 +111,19 @@ export const RenewalCard: React.FC<RenewalCardProps> = ({
       </p>
     ) : null;
 
-  const renderActionButton = (label: string, onClick: () => void, color: string) => (
-    <button
-      onClick={onClick}
-      className={`${color} hover:opacity-90 text-white px-4 py-2 rounded-lg font-semibold transition-colors duration-200 text-sm`}
-    >
-      {label}
-    </button>
-  );
-
   return (
-    <div className={`${statusConfig.bgColor} border rounded-lg p-4`}>
+    <div
+      className={`${statusConfig.bgColor} border rounded-lg p-4 flex flex-col justify-between min-h-[240px] w-full max-w-[320px]`}
+    >
       <div className="flex justify-between items-start mb-3">
         <div>
           <h3 className="font-semibold text-gray-900">{renewal.duration_months} Month Renewal</h3>
-          {renderDetail("Student ID", renewal.student_id)}
+          {renderDetail("Student Name", student?.name)}
           {renderDetail("Expires", new Date(renewal.expiration_date).toLocaleDateString())}
           {renderDetail("Classes", renewal.number_of_classes)}
           {isPaid && renderDetail("Paid to", renewal.paid_to)}
-          {statusMessage && (
-            <p className="text-sm text-yellow-700 font-medium mt-1">{statusMessage}</p>
+          {resolvedStatusMessage && (
+            <p className="text-sm text-yellow-700 font-medium mt-1">{resolvedStatusMessage}</p>
           )}
         </div>
         <span
@@ -72,20 +134,20 @@ export const RenewalCard: React.FC<RenewalCardProps> = ({
         </span>
       </div>
 
-      <div className="flex justify-between items-center">
-        <div>
-          <span className="text-2xl font-bold text-gray-900">${renewal.amount_due}</span>
-          <span className="text-sm text-gray-600 ml-2">(Paid: ${renewal.amount_paid})</span>
+      <div className="mt-auto">
+        <div className="flex justify-between items-center mb-3">
+          <div>
+            <span className="text-2xl font-bold text-gray-900">${renewal.amount_due}</span>
+            <span className="text-sm text-gray-600 ml-2">(Paid: ${renewal.amount_paid})</span>
+          </div>
+          <button
+            onClick={handleManageClick}
+            className="text-gray-700 hover:text-black text-lg"
+            title="Manage Renewal"
+          >
+            <FaCog />
+          </button>
         </div>
-      </div>
-      <div className="flex flex-wrap gap-2 py-2">
-        {!isPaid &&
-          renderActionButton("Mark Paid", () => onMarkPaid(renewal.renewal_id), "bg-green-600")}
-        {onResolveAsQuit &&
-          renderActionButton("Quit", () => onResolveAsQuit(renewal.renewal_id), "bg-yellow-500")}
-        {onResolveWithNext &&
-          renderActionButton("Renew", () => onResolveWithNext(renewal), "bg-blue-600")}
-        {renderActionButton("Delete", () => onDelete(renewal.renewal_id), "bg-red-600")}
       </div>
     </div>
   );

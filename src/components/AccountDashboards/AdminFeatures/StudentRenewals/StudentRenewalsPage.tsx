@@ -110,7 +110,7 @@ export const StudentRenewalsPage: React.FC = () => {
           />
         )}
 
-        <div className="flex">
+        <div className="flex flex-wrap gap-4">
           {renderCategory("Expiring Soon", "⚠️", expiringSoon, "border-yellow-500")}
           {renderCategory("Grace Period", "🕓", gracePeriod, "border-orange-500")}
           {renderCategory("Expired", "⛔", expired, "border-red-600")}
