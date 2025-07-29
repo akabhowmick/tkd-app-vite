@@ -36,13 +36,13 @@ export const RenewalCard: React.FC<RenewalCardProps> = ({
   const statusConfig = statusConfigs[statusKey];
 
   const renderDetail = (label: string, value: string | number | undefined) =>
-    value ? <p className="text-sm text-gray-600">{label}: {value}</p> : null;
+    value ? (
+      <p className="text-sm text-gray-600">
+        {label}: {value}
+      </p>
+    ) : null;
 
-  const renderActionButton = (
-    label: string,
-    onClick: () => void,
-    color: string
-  ) => (
+  const renderActionButton = (label: string, onClick: () => void, color: string) => (
     <button
       onClick={onClick}
       className={`${color} hover:opacity-90 text-white px-4 py-2 rounded-lg font-semibold transition-colors duration-200 text-sm`}
@@ -55,9 +55,7 @@ export const RenewalCard: React.FC<RenewalCardProps> = ({
     <div className={`${statusConfig.bgColor} border rounded-lg p-4`}>
       <div className="flex justify-between items-start mb-3">
         <div>
-          <h3 className="font-semibold text-gray-900">
-            {renewal.duration_months} Month Renewal
-          </h3>
+          <h3 className="font-semibold text-gray-900">{renewal.duration_months} Month Renewal</h3>
           {renderDetail("Student ID", renewal.student_id)}
           {renderDetail("Expires", new Date(renewal.expiration_date).toLocaleDateString())}
           {renderDetail("Classes", renewal.number_of_classes)}
@@ -76,22 +74,18 @@ export const RenewalCard: React.FC<RenewalCardProps> = ({
 
       <div className="flex justify-between items-center">
         <div>
-          <span className="text-2xl font-bold text-gray-900">
-            ${renewal.amount_due}
-          </span>
-          <span className="text-sm text-gray-600 ml-2">
-            (Paid: ${renewal.amount_paid})
-          </span>
+          <span className="text-2xl font-bold text-gray-900">${renewal.amount_due}</span>
+          <span className="text-sm text-gray-600 ml-2">(Paid: ${renewal.amount_paid})</span>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {!isPaid &&
-            renderActionButton("Mark Paid", () => onMarkPaid(renewal.renewal_id), "bg-green-600")}
-          {onResolveAsQuit &&
-            renderActionButton("Quit", () => onResolveAsQuit(renewal.renewal_id), "bg-yellow-500")}
-          {onResolveWithNext &&
-            renderActionButton("Renew", () => onResolveWithNext(renewal), "bg-blue-600")}
-          {renderActionButton("Delete", () => onDelete(renewal.renewal_id), "bg-red-600")}
-        </div>
+      </div>
+      <div className="flex flex-wrap gap-2 py-2">
+        {!isPaid &&
+          renderActionButton("Mark Paid", () => onMarkPaid(renewal.renewal_id), "bg-green-600")}
+        {onResolveAsQuit &&
+          renderActionButton("Quit", () => onResolveAsQuit(renewal.renewal_id), "bg-yellow-500")}
+        {onResolveWithNext &&
+          renderActionButton("Renew", () => onResolveWithNext(renewal), "bg-blue-600")}
+        {renderActionButton("Delete", () => onDelete(renewal.renewal_id), "bg-red-600")}
       </div>
     </div>
   );

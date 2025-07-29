@@ -83,10 +83,7 @@ const formatTitle = (view: string): string => view.replace("-", " ").toUpperCase
 
 // Components
 const Sidebar = ({ setActive }: SidebarProps) => (
-  <div className="w-64 bg-white h-screen shadow-md text-black">
-    <div className="p-6">
-      <h1 className="text-xl font-bold">Taekwondo School</h1>
-    </div>
+  <div className="w-64 bg-white h-screen text-black">
     <nav className="mt-6 space-y-2">
       {SIDEBAR_CONFIG.map((item, index) => (
         <button

@@ -30,7 +30,7 @@ const getCalendarButtonClasses = (
   selectedDate: string,
   today: string
 ): string => {
-  const baseClasses = "aspect-square flex items-center justify-center text-sm rounded";
+  const baseClasses = "aspect-square flex items-center justify-center text-lg rounded";
 
   if (!date) return baseClasses;
 

@@ -12,7 +12,7 @@ export const RenewalCategory: React.FC<RenewalCategoryProps> = ({
 
   return (
     <section className={`bg-white rounded-xl shadow-lg p-6 border-l-4 ${borderColor}`}>
-      <header className="text-2xl font-bold mb-4 flex items-center gap-2">
+      <header className="text-2xl font-bold mb-4 flex items-center gap-2 text-black">
         <span>{icon}</span>
         {`${title} (${renewals.length})`}
       </header>

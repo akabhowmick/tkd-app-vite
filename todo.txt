@@ -4,5 +4,10 @@ Renewals
   2. then display renewals, by day, week, month
   3. add a check off like to do list vibe 
 
-}
+2. Students
+  a. search features
+  b. add parents => all crud applications 
+
+Collapse Sidebar
+
 

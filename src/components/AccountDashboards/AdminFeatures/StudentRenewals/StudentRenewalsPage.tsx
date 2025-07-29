@@ -91,13 +91,13 @@ export const StudentRenewalsPage: React.FC = () => {
         <div className="flex flex-wrap gap-4 mb-8">
           <button
             onClick={() => loadRenewals()}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold shadow-md"
+            className="bg-white text-black rounded-xl shadow-lg px-6 py-3 border-b-4 border-red-500"
           >
             📅 Load All Renewals
           </button>
           <button
             onClick={() => setShowCreateForm(true)}
-            className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold shadow-md"
+            className="bg-white text-black rounded-xl shadow-lg px-6 py-3 border-b-4 border-red-500"
           >
             ➕ Register Renewal
           </button>
@@ -110,7 +110,7 @@ export const StudentRenewalsPage: React.FC = () => {
           />
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="flex">
           {renderCategory("Expiring Soon", "⚠️", expiringSoon, "border-yellow-500")}
           {renderCategory("Grace Period", "🕓", gracePeriod, "border-orange-500")}
           {renderCategory("Expired", "⛔", expired, "border-red-600")}
