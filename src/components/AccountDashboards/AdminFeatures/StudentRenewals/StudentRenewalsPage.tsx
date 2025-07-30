@@ -39,6 +39,7 @@ export const StudentRenewalsPage: React.FC = () => {
     { expired: [], active: [], paid: [] } as CategorizedRenewals
   );
 
+  // TODO the expired and gracePeriod are not returning anything
   const { expired, gracePeriod, expiringSoon } = getGroupedExpiringRenewals();
 
   const handleCreateRenewal = async (data: CreateRenewalRequest) => {

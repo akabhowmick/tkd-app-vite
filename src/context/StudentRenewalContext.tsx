@@ -45,7 +45,6 @@ interface StudentRenewalsContextType {
   refreshRenewals: () => Promise<void>;
   loadAllRenewals: () => Promise<void>;
   
-  // NEW: Renewal management methods
   resolveRenewalAsQuit: (renewalId: number, notes?: string) => Promise<RenewalResolution>;
   resolveRenewalWithNext: (
     currentRenewal: Renewal,
@@ -300,11 +299,7 @@ export const StudentRenewalsProvider: React.FC<StudentRenewalsProviderProps> = (
         notes: notes || 'Student quit'
       };
 
-      // Remove from expiring renewals (they're resolved)
       setExpiringRenewals(prev => prev.filter(r => r.renewal_id !== renewalId));
-
-      // Optional: You might want to update the student status here
-      // await updateStudentStatus(studentId, 'inactive');
 
       return resolution;
     } catch (error) {
