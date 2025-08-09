@@ -28,7 +28,7 @@ interface StudentRenewalsContextType {
   renewals: Renewal[];
   selectedRenewal: Renewal | null;
   expiringRenewals: Renewal[];
-  processedExpiringRenewals: ExpiringRenewal[]; // NEW: Processed renewals with status info
+  processedExpiringRenewals: ExpiringRenewal[]; 
   loading: boolean;
   error: string | null;
 
@@ -406,7 +406,6 @@ export const StudentRenewalsProvider: React.FC<StudentRenewalsProviderProps> = (
     clearError,
     refreshRenewals,
     
-    // NEW methods
     resolveRenewalAsQuit,
     resolveRenewalWithNext,
     getGroupedExpiringRenewals,
