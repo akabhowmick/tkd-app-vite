@@ -120,8 +120,6 @@ export const RenewalCard: React.FC<RenewalCardProps> = ({
           <h3 className="font-semibold text-gray-900">{renewal.duration_months} Month Renewal</h3>
           {renderDetail("Student Name", student?.name)}
           {renderDetail("Expires", new Date(renewal.expiration_date).toLocaleDateString())}
-          {renderDetail("Classes", renewal.number_of_classes)}
-          {isPaid && renderDetail("Paid to", renewal.paid_to)}
           {resolvedStatusMessage && (
             <p className="text-sm text-yellow-700 font-medium mt-1">{resolvedStatusMessage}</p>
           )}

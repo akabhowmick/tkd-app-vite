@@ -15,7 +15,7 @@ const Home: React.FC = () => {
       {/* Main Content */}
       {/* <KickingAnimation /> */}
       <div className="relative z-10 flex flex-col items-center justify-center h-full text-black">
-        <h1 className="text-4xl font-bold text-red-500 mb-4">
+        <h1 className="text-4xl font-bold text-red-500 mb-4 text-center">
           Welcome to Taekwondo Student Management App
         </h1>
         <p className="text-lg text-gray-700 text-center max-w-xl">

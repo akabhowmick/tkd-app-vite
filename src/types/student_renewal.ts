@@ -1,7 +1,7 @@
 // Core renewal interface with all fields
 export interface Renewal {
-  renewal_id: number;
-  student_id: number;
+  renewal_id: string;
+  student_id: string;
   duration_months: number;
   payment_date: string; // ISO date string
   expiration_date: string; // ISO date string
@@ -16,7 +16,7 @@ export interface Renewal {
 
 // For creating new renewals (omits auto-generated fields)
 export interface CreateRenewalRequest {
-  student_id: number;
+  student_id: string;
   duration_months: number;
   payment_date: string;
   expiration_date: string;
@@ -109,17 +109,24 @@ export interface CreateRenewalFormProps {
   onCancel: () => void;
 }
 export interface ExpiringRenewal extends Renewal {
-  daysOverdue: number; 
-  status: 'expired' | 'expiring_soon' | 'grace_period'; 
-  statusMessage: string; 
-  priority: number; 
+  daysOverdue: number;
+  status: "expired" | "expiring_soon" | "grace_period";
+  statusMessage: string;
+  priority: number;
 }
 
 export interface RenewalCardProps {
   renewal: Renewal | ExpiringRenewal;
-  onMarkPaid: (id: number) => void;
-  onDelete: (id: number) => void;
-  onResolveAsQuit?: (id: number) => void;
+  onMarkPaid: (id: string) => void;
+  onDelete: (id: string) => void;
+  onResolveAsQuit?: (id: string) => void;
   onResolveWithNext?: (renewal: Renewal) => void;
   statusMessage?: string;
+}
+
+export interface RenewalResolution {
+  renewal_id: number;
+  action: "quit" | "renew";
+  resolved_at: string;
+  notes?: string;
 }

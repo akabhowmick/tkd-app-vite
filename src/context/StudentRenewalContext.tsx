@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { Renewal } from "../types/student_renewal";
+import { ExpiringRenewal, Renewal } from "../types/student_renewal";
 import {
   getStudentRenewals,
   getStudentRenewalById,
@@ -9,17 +9,9 @@ import {
   deleteStudentRenewal,
 } from "../api/StudentRenewalsRequests/studentRenewalsRequests";
 
-// Add these new types for renewal management
-export interface ExpiringRenewal extends Renewal {
-  daysOverdue: number;
-  status: 'expired' | 'expiring_soon' | 'grace_period';
-  statusMessage: string;
-  priority: number;
-}
-
 export interface RenewalResolution {
-  renewal_id: number;
-  action: 'quit' | 'renew';
+  renewal_id: string;
+  action: "quit" | "renew";
   resolved_at: string;
   notes?: string;
 }
@@ -28,24 +20,24 @@ interface StudentRenewalsContextType {
   renewals: Renewal[];
   selectedRenewal: Renewal | null;
   expiringRenewals: Renewal[];
-  processedExpiringRenewals: ExpiringRenewal[]; 
+  processedExpiringRenewals: ExpiringRenewal[];
   loading: boolean;
   error: string | null;
 
-  loadRenewals: (studentId?: number) => Promise<void>;
-  loadRenewalById: (renewalId: number) => Promise<void>;
+  loadRenewals: (studentId?: string) => Promise<void>;
+  loadRenewalById: (renewalId: string) => Promise<void>;
   loadExpiringRenewals: (daysFromNow?: number) => Promise<void>;
   createRenewal: (
     renewal: Omit<Renewal, "renewal_id" | "created_at" | "updated_at">
   ) => Promise<void>;
-  updateRenewal: (renewalId: number, renewal: Partial<Renewal>) => Promise<void>;
-  removeRenewal: (renewalId: number) => Promise<void>;
+  updateRenewal: (renewalId: string, renewal: Partial<Renewal>) => Promise<void>;
+  removeRenewal: (renewalId: string) => Promise<void>;
   clearSelectedRenewal: () => void;
   clearError: () => void;
   refreshRenewals: () => Promise<void>;
   loadAllRenewals: () => Promise<void>;
-  
-  resolveRenewalAsQuit: (renewalId: number, notes?: string) => Promise<RenewalResolution>;
+
+  resolveRenewalAsQuit: (renewalId: string, notes?: string) => Promise<RenewalResolution>;
   resolveRenewalWithNext: (
     currentRenewal: Renewal,
     newRenewalData: Partial<Renewal>
@@ -61,7 +53,7 @@ const StudentRenewalsContext = createContext<StudentRenewalsContextType | undefi
 
 interface StudentRenewalsProviderProps {
   children: ReactNode;
-  autoLoadStudentId?: number;
+  autoLoadStudentId?: string;
 }
 
 export const StudentRenewalsProvider: React.FC<StudentRenewalsProviderProps> = ({
@@ -74,7 +66,7 @@ export const StudentRenewalsProvider: React.FC<StudentRenewalsProviderProps> = (
   const [processedExpiringRenewals, setProcessedExpiringRenewals] = useState<ExpiringRenewal[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [currentStudentId, setCurrentStudentId] = useState<number | undefined>(autoLoadStudentId);
+  const [currentStudentId, setCurrentStudentId] = useState<string| undefined>(autoLoadStudentId);
 
   // NEW: Renewal management constants
   const GRACE_PERIOD_DAYS = 7;
@@ -91,7 +83,7 @@ export const StudentRenewalsProvider: React.FC<StudentRenewalsProviderProps> = (
   // NEW: Process renewals whenever expiringRenewals changes
   useEffect(() => {
     processExpiringRenewals();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [expiringRenewals]);
 
   const handleError = (error: unknown, action: string) => {
@@ -106,40 +98,43 @@ export const StudentRenewalsProvider: React.FC<StudentRenewalsProviderProps> = (
     today.setHours(0, 0, 0, 0);
 
     const processed = expiringRenewals
-      .map(renewal => processRenewal(renewal, today))
-      .filter(renewal => renewal !== null) as ExpiringRenewal[];
+      .map((renewal) => processRenewal(renewal, today))
+      .filter((renewal) => renewal !== null) as ExpiringRenewal[];
 
     // Sort by priority (most urgent first)
     processed.sort((a, b) => b.priority - a.priority);
-    
+
+    // TODO check if this working
+    console.log(processed); 
     setProcessedExpiringRenewals(processed);
   };
 
-  // NEW: Process individual renewal
   const processRenewal = (renewal: Renewal, today: Date): ExpiringRenewal | null => {
     const expirationDate = new Date(renewal.expiration_date);
     expirationDate.setHours(0, 0, 0, 0);
-    
-    const daysDiff = Math.floor((today.getTime() - expirationDate.getTime()) / (1000 * 60 * 60 * 24));
-    
+
+    const daysDiff = Math.floor(
+      (today.getTime() - expirationDate.getTime()) / (1000 * 60 * 60 * 24)
+    );
+
     // Check if renewal needs attention
     if (daysDiff >= -WARNING_PERIOD_DAYS && daysDiff <= GRACE_PERIOD_DAYS) {
-      let status: 'expired' | 'expiring_soon' | 'grace_period';
+      let status: "expired" | "expiring_soon" | "grace_period";
       let statusMessage: string;
       let priority: number;
-      
+
       if (daysDiff > 0) {
         if (daysDiff <= GRACE_PERIOD_DAYS) {
-          status = 'grace_period';
+          status = "grace_period";
           statusMessage = `In grace period (${daysDiff} days overdue)`;
           priority = 2;
         } else {
-          status = 'expired';
+          status = "expired";
           statusMessage = `Expired ${Math.abs(daysDiff)} days ago`;
           priority = 3;
         }
       } else {
-        status = 'expiring_soon';
+        status = "expiring_soon";
         statusMessage = `Expires in ${Math.abs(daysDiff)} days`;
         priority = 1;
       }
@@ -149,10 +144,10 @@ export const StudentRenewalsProvider: React.FC<StudentRenewalsProviderProps> = (
         daysOverdue: daysDiff,
         status,
         statusMessage,
-        priority
+        priority,
       };
     }
-    
+
     return null;
   };
 
@@ -170,7 +165,7 @@ export const StudentRenewalsProvider: React.FC<StudentRenewalsProviderProps> = (
     }
   };
 
-  const loadRenewals = async (studentId?: number): Promise<void> => {
+  const loadRenewals = async (studentId?: string): Promise<void> => {
     setLoading(true);
     setError(null);
 
@@ -185,7 +180,7 @@ export const StudentRenewalsProvider: React.FC<StudentRenewalsProviderProps> = (
     }
   };
 
-  const loadRenewalById = async (renewalId: number): Promise<void> => {
+  const loadRenewalById = async (renewalId: string): Promise<void> => {
     setLoading(true);
     setError(null);
 
@@ -235,7 +230,7 @@ export const StudentRenewalsProvider: React.FC<StudentRenewalsProviderProps> = (
   };
 
   const updateRenewal = async (
-    renewalId: number,
+    renewalId: string,
     renewalUpdate: Partial<Renewal>
   ): Promise<void> => {
     setLoading(true);
@@ -267,7 +262,7 @@ export const StudentRenewalsProvider: React.FC<StudentRenewalsProviderProps> = (
     }
   };
 
-  const removeRenewal = async (renewalId: number): Promise<void> => {
+  const removeRenewal = async (renewalId: string): Promise<void> => {
     setLoading(true);
     setError(null);
 
@@ -287,19 +282,22 @@ export const StudentRenewalsProvider: React.FC<StudentRenewalsProviderProps> = (
   };
 
   // NEW: Resolve renewal as quit
-  const resolveRenewalAsQuit = async (renewalId: number, notes?: string): Promise<RenewalResolution> => {
+  const resolveRenewalAsQuit = async (
+    renewalId: string,
+    notes?: string
+  ): Promise<RenewalResolution> => {
     setLoading(true);
     setError(null);
 
     try {
       const resolution: RenewalResolution = {
         renewal_id: renewalId,
-        action: 'quit',
+        action: "quit",
         resolved_at: new Date().toISOString(),
-        notes: notes || 'Student quit'
+        notes: notes || "Student quit",
       };
 
-      setExpiringRenewals(prev => prev.filter(r => r.renewal_id !== renewalId));
+      setExpiringRenewals((prev) => prev.filter((r) => r.renewal_id !== renewalId));
 
       return resolution;
     } catch (error) {
@@ -323,9 +321,11 @@ export const StudentRenewalsProvider: React.FC<StudentRenewalsProviderProps> = (
       const currentExpiration = new Date(currentRenewal.expiration_date);
       const newStartDate = new Date(currentExpiration);
       newStartDate.setDate(newStartDate.getDate() + 1);
-      
+
       const newExpirationDate = new Date(newStartDate);
-      newExpirationDate.setMonth(newExpirationDate.getMonth() + (newRenewalData.duration_months || 1));
+      newExpirationDate.setMonth(
+        newExpirationDate.getMonth() + (newRenewalData.duration_months || 1)
+      );
 
       const newRenewal: Omit<Renewal, "renewal_id" | "created_at" | "updated_at"> = {
         student_id: currentRenewal.student_id,
@@ -343,13 +343,13 @@ export const StudentRenewalsProvider: React.FC<StudentRenewalsProviderProps> = (
       await createRenewal(newRenewal);
 
       // Remove old renewal from expiring renewals
-      setExpiringRenewals(prev => prev.filter(r => r.renewal_id !== currentRenewal.renewal_id));
+      setExpiringRenewals((prev) => prev.filter((r) => r.renewal_id !== currentRenewal.renewal_id));
 
       const resolution: RenewalResolution = {
         renewal_id: currentRenewal.renewal_id,
-        action: 'renew',
+        action: "renew",
         resolved_at: new Date().toISOString(),
-        notes: `Renewed for ${newRenewal.duration_months} months`
+        notes: `Renewed for ${newRenewal.duration_months} months`,
       };
 
       return { resolution, newRenewal };
@@ -361,12 +361,11 @@ export const StudentRenewalsProvider: React.FC<StudentRenewalsProviderProps> = (
     }
   };
 
-  // NEW: Get grouped expiring renewals
   const getGroupedExpiringRenewals = () => {
     return {
-      expired: processedExpiringRenewals.filter(r => r.status === 'expired'),
-      gracePeriod: processedExpiringRenewals.filter(r => r.status === 'grace_period'),
-      expiringSoon: processedExpiringRenewals.filter(r => r.status === 'expiring_soon')
+      expired: processedExpiringRenewals.filter((r) => r.status === "expired"),
+      gracePeriod: processedExpiringRenewals.filter((r) => r.status === "grace_period"),
+      expiringSoon: processedExpiringRenewals.filter((r) => r.status === "expiring_soon"),
     };
   };
 
@@ -405,7 +404,7 @@ export const StudentRenewalsProvider: React.FC<StudentRenewalsProviderProps> = (
     clearSelectedRenewal,
     clearError,
     refreshRenewals,
-    
+
     resolveRenewalAsQuit,
     resolveRenewalWithNext,
     getGroupedExpiringRenewals,

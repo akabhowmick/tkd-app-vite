@@ -47,12 +47,12 @@ export const StudentRenewalsPage: React.FC = () => {
     setShowCreateForm(false);
   };
 
-  const handleMarkPaid = (id: number) => {
+  const handleMarkPaid = (id: string) => {
     const renewal = renewals.find((r) => r.renewal_id === id);
     if (renewal) updateRenewal(id, { amount_paid: renewal.amount_due });
   };
 
-  const handleResolveAsQuit = async (id: number) => {
+  const handleResolveAsQuit = async (id: string) => {
     await resolveRenewalAsQuit(id);
   };
 
@@ -112,10 +112,13 @@ export const StudentRenewalsPage: React.FC = () => {
         )}
 
         <div className="flex flex-wrap gap-4">
-          {renderCategory("Expiring Soon", "⚠️", expiringSoon, "border-yellow-500")}
+          {/* TODO: Working */}
+          {renderCategory("Expiring Soon", "⚠️", expiringSoon, "border-yellow-500")} 
           {renderCategory("Grace Period", "🕓", gracePeriod, "border-orange-500")}
           {renderCategory("Expired", "⛔", expired, "border-red-600")}
+          {/* Working */}
           {renderCategory("Active", "⏰", categorizedRenewals.active, "border-blue-500")}
+          {/* Working */}
           {renderCategory("Paid", "✅", categorizedRenewals.paid, "border-green-500")}
         </div>
       </div>

@@ -1,24 +1,25 @@
-import { CreateStudentRenewalRequest, StudentRenewal } from "../../types/student_renewal";
+
+import { CreateRenewalRequest, Renewal } from "../../types/student_renewal";
 import { supabase } from "../supabase";
 
 // CREATE a student renewal
-export const createStudentRenewal = async (renewal: CreateStudentRenewalRequest): Promise<void> => {
+export const createStudentRenewal = async (renewal: CreateRenewalRequest): Promise<void> => {
   const { error } = await supabase.from("student_renewals").insert([renewal]);
   if (error) throw error;
 };
 
 // READ all student renewals by student_id
-export const getStudentRenewals = async (studentId?: number): Promise<StudentRenewal[]> => {
+export const getStudentRenewals = async (studentId?: string): Promise<Renewal[]> => {
   let query = supabase.from("student_renewals").select("*");
   if (studentId) query = query.eq("student_id", studentId);
 
   const { data, error } = await query.order("created_at", { ascending: false });
   if (error) throw error;
-  return data as StudentRenewal[];
+  return data as Renewal[];
 };
 
 // READ a single student renewal by ID
-export const getStudentRenewalById = async (renewalId: number): Promise<StudentRenewal> => {
+export const getStudentRenewalById = async (renewalId: string): Promise<Renewal> => {
   const { data, error } = await supabase
     .from("student_renewals")
     .select("*")
@@ -26,11 +27,11 @@ export const getStudentRenewalById = async (renewalId: number): Promise<StudentR
     .single();
 
   if (error) throw error;
-  return data as StudentRenewal;
+  return data as Renewal;
 };
 
 // READ expiring renewals
-export const getExpiringRenewals = async (daysFromNow: number = 30): Promise<StudentRenewal[]> => {
+export const getExpiringRenewals = async (daysFromNow: number = 30): Promise<Renewal[]> => {
   const futureDate = new Date();
   futureDate.setDate(futureDate.getDate() + daysFromNow);
 
@@ -42,13 +43,13 @@ export const getExpiringRenewals = async (daysFromNow: number = 30): Promise<Stu
     .order("expiration_date", { ascending: true });
 
   if (error) throw error;
-  return data as StudentRenewal[];
+  return data as Renewal[];
 };
 
 // UPDATE a student renewal
 export const updateStudentRenewal = async (
-  renewalId: number,
-  renewal: Partial<StudentRenewal>
+  renewalId: string,
+  renewal: Partial<Renewal>
 ): Promise<void> => {
   const { error } = await supabase
     .from("student_renewals")
@@ -59,7 +60,7 @@ export const updateStudentRenewal = async (
 };
 
 // DELETE a student renewal
-export const deleteStudentRenewal = async (renewalId: number): Promise<void> => {
+export const deleteStudentRenewal = async (renewalId: string): Promise<void> => {
   const { error } = await supabase.from("student_renewals").delete().eq("renewal_id", renewalId);
   if (error) throw error;
 };
