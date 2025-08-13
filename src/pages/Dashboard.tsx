@@ -1,9 +1,9 @@
 // import AdminDashboard from "../components/AccountDashboards/AdminDashboard";
-import InstructorDashboard from "../components/AccountDashboards/OtherUserDashboards/InstructorDashboard";
-import ParentDashboard from "../components/AccountDashboards/OtherUserDashboards/ParentDashboard";
+// import InstructorDashboard from "../components/AccountDashboards/OtherUserDashboards/InstructorDashboard";
+// import ParentDashboard from "../components/AccountDashboards/OtherUserDashboards/ParentDashboard";
+// import StudentDashboard from "../components/AccountDashboards/OtherUserDashboards/StudentDashboard";
 
 import { MainDashboard } from "../components/MainDashboard/MainDashboard";
-import StudentDashboard from "../components/AccountDashboards/OtherUserDashboards/StudentDashboard";
 import { useAuth } from "../context/AuthContext";
 import { SchoolProvider } from "../context/SchoolContext";
 import { StudentRenewalsProvider } from "../context/StudentRenewalContext";
@@ -22,12 +22,13 @@ const Dashboard = () => {
           </StudentRenewalsProvider>
         </SchoolProvider>
       );
-    case UserRole.Instructor:
-      return <InstructorDashboard />;
-    case UserRole.Parent:
-      return <ParentDashboard />;
-    case UserRole.Student:
-      return <StudentDashboard />;
+    // TODO implement in the future
+    // case UserRole.Instructor:
+    //   return <InstructorDashboard />;
+    // case UserRole.Parent:
+    //   return <ParentDashboard />;
+    // case UserRole.Student:
+    //   return <StudentDashboard />;
     default:
       return <Profile />;
     // return <div>Invalid user role</div>;
