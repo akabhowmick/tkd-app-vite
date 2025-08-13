@@ -1,13 +1,14 @@
 // import AdminDashboard from "../components/AccountDashboards/AdminDashboard";
 import InstructorDashboard from "../components/AccountDashboards/OtherUserDashboards/InstructorDashboard";
 import ParentDashboard from "../components/AccountDashboards/OtherUserDashboards/ParentDashboard";
-import { Profile } from "../components/AccountDashboards/Profile";
-import RegularDashboard from "../components/AccountDashboards/RegularDashboard";
-import StudentDashboard from "../components/AccountDashboards/StudentDashboard";
+
+import { MainDashboard } from "../components/MainDashboard/MainDashboard";
+import StudentDashboard from "../components/AccountDashboards/OtherUserDashboards/StudentDashboard";
 import { useAuth } from "../context/AuthContext";
 import { SchoolProvider } from "../context/SchoolContext";
 import { StudentRenewalsProvider } from "../context/StudentRenewalContext";
 import { UserRole } from "../types/user";
+import { Profile } from "../components/AccountDashboards/AdminFeatures/Profile/Profile";
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -17,7 +18,7 @@ const Dashboard = () => {
       return (
         <SchoolProvider>
           <StudentRenewalsProvider>
-            <RegularDashboard />;
+            <MainDashboard />;
           </StudentRenewalsProvider>
         </SchoolProvider>
       );

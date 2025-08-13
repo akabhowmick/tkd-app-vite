@@ -13,10 +13,10 @@ import {
   IconDefinition,
 } from "@fortawesome/free-solid-svg-icons";
 import { useSchool } from "../../context/SchoolContext";
-import { SchoolManagement } from "./AdminFeatures/SchoolManagement/SchoolManagement";
-import { TakeAttendance } from "./AdminFeatures/AttendanceRecords/TakeAttendance";
-import { StudentListPage } from "./AdminFeatures/StudentView/StudentListPage";
-import { StudentRenewalsPage } from "./AdminFeatures/StudentRenewals/StudentRenewalsPage";
+import { SchoolManagement } from "../AccountDashboards/AdminFeatures/SchoolManagement/SchoolManagement";
+import { TakeAttendance } from "../AccountDashboards/AdminFeatures/AttendanceRecords/TakeAttendance";
+import { StudentListPage } from "../AccountDashboards/AdminFeatures/StudentView/StudentListPage";
+import { StudentRenewalsPage } from "../AccountDashboards/AdminFeatures/StudentRenewals/StudentRenewalsPage";
 
 // Constants
 const SIDEBAR_CONFIG = [
@@ -105,7 +105,6 @@ const Header = ({ title }: { title: string }) => (
       <h2 className="text-gray-600">Dashboard / {title}</h2>
       <h1 className="text-2xl font-bold">{title}</h1>
     </div>
-    
   </div>
 );
 
@@ -122,7 +121,7 @@ const StatCard = ({ icon, title, value, change, isPositive }: StatCardProps) => 
   </div>
 );
 
-const RegularDashboard = () => {
+export const MainDashboard = () => {
   const schoolData = useSchool();
   const [activeView, setActiveView] = useState("home");
 
@@ -158,5 +157,3 @@ const RegularDashboard = () => {
     </div>
   );
 };
-
-export default RegularDashboard;

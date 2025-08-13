@@ -105,7 +105,6 @@ export const StudentRenewalsProvider: React.FC<StudentRenewalsProviderProps> = (
     processed.sort((a, b) => b.priority - a.priority);
 
     // TODO check if this working
-    console.log(processed); 
     setProcessedExpiringRenewals(processed);
   };
 
