@@ -13,7 +13,6 @@ const VIEW_COMPONENTS = {
   attendance: TakeAttendance,
 } as const;
 
-// Utility functions
 const formatTitle = (view: string): string => view.replace("-", " ").toUpperCase();
 
 const Header = ({ title }: { title: string }) => (
