@@ -1,5 +1,13 @@
 // updated SchoolContext.tsx
-import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback, useMemo } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+  useCallback,
+  useMemo,
+} from "react";
 import { supabase } from "../api/supabase";
 import { School } from "../types/school";
 import { getSchoolByAdmin } from "../api/SchoolRequests/schoolRequests";
@@ -18,7 +26,7 @@ interface SchoolContextType {
   students: UserProfile[];
   fetchSchool: () => Promise<void>;
   loadStudents: (currentSchoolId?: string, forceRefresh?: boolean) => Promise<void>;
-  handleDelete: (id: string) => Promise<void>; 
+  handleDelete: (id: string) => Promise<void>;
   refreshStudents: () => Promise<void>;
   setSchoolId: React.Dispatch<React.SetStateAction<string>>;
   createSchool: (school: Omit<School, "id" | "created_at">) => Promise<void>;
@@ -57,101 +65,104 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     }
   };
 
-  const loadStudents = useCallback(async (currentSchoolId?: string, forceRefresh = false) => {
-    const targetSchoolId = currentSchoolId || schoolId;
-    if (!targetSchoolId) return;
-    
-    const now = Date.now();
-    const cacheTimeout = 5 * 60 * 1000; // 5 minutes
-    const lastFetch = lastStudentsFetch.get(targetSchoolId) || 0;
-    const cachedStudents = studentsCache.get(targetSchoolId);
-    
-    // Return cached data if it's fresh and not forcing refresh
-    if (!forceRefresh && cachedStudents && (now - lastFetch) < cacheTimeout) {
-      setStudents(cachedStudents);
-      return;
-    }
-    
-    try {
-      setLoading(true);
-      const allUsers = await getStudents();
-      // Filter students by school_id and role
-      const filtered = allUsers.filter((user) => 
-        user.role === "Student" && user.school_id === targetSchoolId
-      );
-      
-      // Update cache
-      setStudentsCache(prev => new Map(prev).set(targetSchoolId, filtered));
-      setLastStudentsFetch(prev => new Map(prev).set(targetSchoolId, now));
-      setStudents(filtered);
-    } catch (error) {
-      console.error("Error loading students:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [schoolId, studentsCache, lastStudentsFetch]);
+  const loadStudents = useCallback(
+    async (currentSchoolId?: string, forceRefresh = false) => {
+      const targetSchoolId = currentSchoolId || schoolId;
+      if (!targetSchoolId) return;
+
+      const now = Date.now();
+      const cacheTimeout = 5 * 60 * 1000; // 5 minutes
+      const lastFetch = lastStudentsFetch.get(targetSchoolId) || 0;
+      const cachedStudents = studentsCache.get(targetSchoolId);
+
+      // Return cached data if it's fresh and not forcing refresh
+      if (!forceRefresh && cachedStudents && now - lastFetch < cacheTimeout) {
+        setStudents(cachedStudents);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        const allUsers = await getStudents();
+        // Filter students by school_id and role
+        const filtered = allUsers.filter(
+          (user) => user.role === "Student" && user.school_id === targetSchoolId
+        );
+
+        // Update cache
+        setStudentsCache((prev) => new Map(prev).set(targetSchoolId, filtered));
+        setLastStudentsFetch((prev) => new Map(prev).set(targetSchoolId, now));
+        setStudents(filtered);
+      } catch (error) {
+        console.error("Error loading students:", error);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [schoolId, studentsCache, lastStudentsFetch]
+  );
 
   const handleDelete = async (id: string) => {
-      try {
-        const result = await Swal.fire({
-          title: "Delete Student?",
-          text: "Are you sure you want to delete this student? This action cannot be undone.",
-          icon: "warning",
-          showCancelButton: true,
-          confirmButtonColor: "#ef4444",
-          cancelButtonColor: "#6b7280",
-          confirmButtonText: "Yes, delete it!",
-          cancelButtonText: "Cancel",
-          reverseButtons: true,
+    try {
+      const result = await Swal.fire({
+        title: "Delete Student?",
+        text: "Are you sure you want to delete this student? This action cannot be undone.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#ef4444",
+        cancelButtonColor: "#6b7280",
+        confirmButtonText: "Yes, delete it!",
+        cancelButtonText: "Cancel",
+        reverseButtons: true,
+      });
+
+      if (result.isConfirmed) {
+        // Show loading
+        Swal.fire({
+          title: "Deleting...",
+          text: "Please wait while we delete the student.",
+          allowOutsideClick: false,
+          allowEscapeKey: false,
+          showConfirmButton: false,
+          didOpen: () => {
+            Swal.showLoading();
+          },
         });
-  
-        if (result.isConfirmed) {
-          // Show loading
+
+        try {
+          await deleteStudent(id);
+          await loadStudents();
+
+          // Success message
           Swal.fire({
-            title: "Deleting...",
-            text: "Please wait while we delete the student.",
-            allowOutsideClick: false,
-            allowEscapeKey: false,
-            showConfirmButton: false,
-            didOpen: () => {
-              Swal.showLoading();
-            },
+            title: "Deleted!",
+            text: "The student has been successfully deleted.",
+            icon: "success",
+            confirmButtonColor: "#10b981",
+            timer: 1000,
+            timerProgressBar: true,
           });
-  
-          try {
-            await deleteStudent(id);
-            await loadStudents();
-  
-            // Success message
-            Swal.fire({
-              title: "Deleted!",
-              text: "The student has been successfully deleted.",
-              icon: "success",
-              confirmButtonColor: "#10b981",
-              timer: 1000,
-              timerProgressBar: true,
-            });
-          } catch (error) {
-            // Error message
-            Swal.fire({
-              title: "Error!",
-              text: `Failed to delete the student. Please try again. ${error}`,
-              icon: "error",
-              confirmButtonColor: "#ef4444",
-            });
-          }
+        } catch (error) {
+          // Error message
+          Swal.fire({
+            title: "Error!",
+            text: `Failed to delete the student. Please try again. ${error}`,
+            icon: "error",
+            confirmButtonColor: "#ef4444",
+          });
         }
-      } catch (error) {
-        console.error("Error in handleDelete:", error);
       }
-    };
+    } catch (error) {
+      console.error("Error in handleDelete:", error);
+    }
+  };
 
   // Effect to fetch school data when user is available
   useEffect(() => {
     if (user) {
       fetchSchool();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   // Memoized students for the current school
@@ -202,6 +213,7 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
           if (salesError) throw salesError;
 
+          // TODO: check this
           const totalSales =
             salesData?.reduce((sum, record) => sum + parseFloat(record.amount), 0) ?? 0;
           setSales(totalSales);
@@ -211,6 +223,7 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
             .select("*", { count: "exact", head: true })
             .eq("school_id", schoolId);
 
+          // TODO: check this
           if (attendanceError) throw attendanceError;
           setAttendance(attendanceCount ?? 0);
         } catch (err) {
@@ -250,12 +263,12 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     setSchoolId("");
     setStudents([]);
     // Clear cache for deleted school
-    setStudentsCache(prev => {
+    setStudentsCache((prev) => {
       const newCache = new Map(prev);
       newCache.delete(id);
       return newCache;
     });
-    setLastStudentsFetch(prev => {
+    setLastStudentsFetch((prev) => {
       const newCache = new Map(prev);
       newCache.delete(id);
       return newCache;
