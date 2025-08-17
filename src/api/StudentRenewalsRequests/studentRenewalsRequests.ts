@@ -1,4 +1,3 @@
-
 import { CreateRenewalRequest, Renewal } from "../../types/student_renewal";
 import { supabase } from "../supabase";
 
@@ -27,6 +26,7 @@ export const getStudentRenewalById = async (renewalId: string): Promise<Renewal>
     .single();
 
   if (error) throw error;
+  console.log("calling get Student by ID");
   return data as Renewal;
 };
 
@@ -55,7 +55,7 @@ export const updateStudentRenewal = async (
     .from("student_renewals")
     .update(renewal)
     .eq("renewal_id", renewalId);
-
+  console.log("updateStudentRenewal: ", renewal, " " , renewalId);
   if (error) throw error;
 };
 
