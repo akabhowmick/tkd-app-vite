@@ -8,4 +8,10 @@ Renewals
   a. search features
   b. add parents => all crud applications 
 
-error coming from sales => so we need to figure out what to do => another sales tables? 
+3. Get started => should route to login => is there a need for home??
+
+4. for the home page should have a list of features of how to use 
+
+error coming from sales => so we need to figure out what to do 
+=> another sales tables? 
+=> attendance tables 
