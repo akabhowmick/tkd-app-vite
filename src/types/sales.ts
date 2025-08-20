@@ -1,3 +1,6 @@
+import { FaCreditCard, FaMoneyBill, FaMoneyCheck } from "react-icons/fa";
+import { IconType } from "react-icons/lib";
+
 export type PaymentType = 'cash' | 'check' | 'credit';
 
 export type PaymentCategory = 
@@ -24,10 +27,10 @@ export type CreateSaleRequest = Omit<Sale, 'sale_id' | 'created_at' | 'updated_a
 export type UpdateSaleRequest = Partial<Omit<Sale, 'sale_id' | 'created_at'>>;
 
 
-export const PAYMENT_TYPES: { value: PaymentType; label: string }[] = [
-  { value: 'cash', label: 'Cash' },
-  { value: 'check', label: 'Check' },
-  { value: 'credit', label: 'Credit Card' }
+export const PAYMENT_TYPES: { value: PaymentType; label: string, icon: IconType }[] = [
+  { value: 'cash', label: 'Cash', icon: FaMoneyBill},
+  { value: 'check', label: 'Check', icon: FaMoneyCheck },
+  { value: 'credit', label: 'Credit Card', icon: FaCreditCard }
 ];
 
 export const PAYMENT_CATEGORIES: { value: PaymentCategory; label: string; requiresNotes?: boolean }[] = [
