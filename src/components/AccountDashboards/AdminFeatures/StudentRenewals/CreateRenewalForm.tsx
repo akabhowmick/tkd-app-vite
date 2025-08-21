@@ -78,7 +78,6 @@ export const CreateRenewalForm: React.FC<CreateRenewalFormProps> = ({ onSubmit, 
       <div className="bg-white text-black rounded-xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
         <h2 className="text-2xl font-bold mb-4">Create New Renewal</h2>
         <div className="space-y-4">
-          {/* Student Dropdown */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Student</label>
             <select
