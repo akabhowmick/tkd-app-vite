@@ -1,4 +1,3 @@
-// Core renewal interface with all fields
 export interface Renewal {
   renewal_id: string;
   student_id: string;
@@ -13,8 +12,6 @@ export interface Renewal {
   created_at: string;
   updated_at: string;
 }
-
-// For creating new renewals (omits auto-generated fields)
 export interface CreateRenewalRequest {
   student_id: string;
   duration_months: number;
@@ -27,7 +24,6 @@ export interface CreateRenewalRequest {
   paid_to: string;
 }
 
-// For updating existing renewals (all fields optional except ID)
 export interface UpdateRenewalRequest {
   duration_months?: number;
   payment_date?: string;
@@ -38,8 +34,6 @@ export interface UpdateRenewalRequest {
   number_of_classes?: number;
   paid_to?: string;
 }
-
-// Form data interface (string values for form inputs)
 export interface RenewalFormData {
   student_id: string;
   duration_months: string;
@@ -52,15 +46,12 @@ export interface RenewalFormData {
   paid_to: string;
 }
 
-// Generic API response wrapper
 export interface ApiResponse<T> {
   success: boolean;
   data?: T;
   message?: string;
   error?: string;
 }
-
-// Paginated response interface
 export interface PaginatedResponse<T> {
   success: boolean;
   data: T[];
@@ -72,7 +63,6 @@ export interface PaginatedResponse<T> {
   };
 }
 
-// UI-related interfaces
 export interface RenewalFormField {
   name: keyof RenewalFormData;
   label: string;
@@ -102,8 +92,6 @@ export interface RenewalCategoryProps {
   borderColor: string;
   children: React.ReactNode;
 }
-
-// Component props interfaces
 export interface CreateRenewalFormProps {
   onSubmit: (data: CreateRenewalRequest) => Promise<void>;
   onCancel: () => void;
