@@ -20,7 +20,7 @@ export const CreateRenewalForm: React.FC<CreateRenewalFormProps> = ({ onSubmit, 
   const handleSubmit = async (): Promise<void> => {
     try {
       await onSubmit({
-        student_id: parseInt(formData.student_id),
+        student_id: formData.student_id,
         duration_months: parseInt(formData.duration_months),
         payment_date: formData.payment_date,
         expiration_date: formData.expiration_date,
