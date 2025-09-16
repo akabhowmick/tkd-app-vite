@@ -70,7 +70,7 @@ export const StudentRenewalsProvider: React.FC<StudentRenewalsProviderProps> = (
 
   // NEW: Renewal management constants
   const GRACE_PERIOD_DAYS = 7;
-  const WARNING_PERIOD_DAYS = 14;
+  const WARNING_PERIOD_DAYS = 15;
 
   useEffect(() => {
     if (autoLoadStudentId) {
