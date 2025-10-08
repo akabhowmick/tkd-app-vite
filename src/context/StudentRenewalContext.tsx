@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useMemo, useReducer, useCallback, ReactNode } from "react";
 import { ExpiringRenewal, Renewal } from "../types/student_renewal";
 import {
   getStudentRenewals,
@@ -9,6 +9,11 @@ import {
   deleteStudentRenewal,
 } from "../api/StudentRenewalsRequests/studentRenewalsRequests";
 
+// ── Config/constants
+const GRACE_PERIOD_DAYS = 7 as const;
+const WARNING_PERIOD_DAYS = 15 as const;
+
+// ── Public types
 export interface RenewalResolution {
   renewal_id: string;
   action: "quit" | "renew";
@@ -16,7 +21,7 @@ export interface RenewalResolution {
   notes?: string;
 }
 
-interface StudentRenewalsContextType {
+export interface StudentRenewalsContextType {
   renewals: Renewal[];
   selectedRenewal: Renewal | null;
   expiringRenewals: Renewal[];
@@ -24,6 +29,7 @@ interface StudentRenewalsContextType {
   loading: boolean;
   error: string | null;
 
+  loadAllRenewals: () => Promise<void>;
   loadRenewals: (studentId?: string) => Promise<void>;
   loadRenewalById: (renewalId: string) => Promise<void>;
   loadExpiringRenewals: (daysFromNow?: number) => Promise<void>;
@@ -35,13 +41,15 @@ interface StudentRenewalsContextType {
   clearSelectedRenewal: () => void;
   clearError: () => void;
   refreshRenewals: () => Promise<void>;
-  loadAllRenewals: () => Promise<void>;
 
   resolveRenewalAsQuit: (renewalId: string, notes?: string) => Promise<RenewalResolution>;
   resolveRenewalWithNext: (
     currentRenewal: Renewal,
     newRenewalData: Partial<Renewal>
-  ) => Promise<{ resolution: RenewalResolution; newRenewal: Partial<Renewal> }>;
+  ) => Promise<{
+    resolution: RenewalResolution;
+    newRenewal: Omit<Renewal, "renewal_id" | "created_at" | "updated_at">;
+  }>;
   getGroupedExpiringRenewals: () => {
     expired: ExpiringRenewal[];
     gracePeriod: ExpiringRenewal[];
@@ -49,349 +57,311 @@ interface StudentRenewalsContextType {
   };
 }
 
+// ── Internal state & reducer
+type State = Readonly<{
+  renewals: Renewal[];
+  selectedRenewal: Renewal | null;
+  expiringRenewals: Renewal[];
+  loading: boolean;
+  error: string | null;
+  currentStudentId?: string;
+}>;
+
+type Action =
+  | { type: "SET_LOADING"; payload: boolean }
+  | { type: "SET_ERROR"; payload: string | null }
+  | { type: "SET_RENEWALS"; payload: { renewals: Renewal[]; studentId?: string } }
+  | { type: "SET_SELECTED"; payload: Renewal | null }
+  | { type: "SET_EXPIRING"; payload: Renewal[] }
+  | { type: "CLEAR_SELECTED" }
+  | { type: "CLEAR_ERROR" };
+
+const initialState: State = {
+  renewals: [],
+  selectedRenewal: null,
+  expiringRenewals: [],
+  loading: false,
+  error: null,
+  currentStudentId: undefined,
+};
+
+function reducer(state: State, action: Action): State {
+  switch (action.type) {
+    case "SET_LOADING":
+      return { ...state, loading: action.payload };
+    case "SET_ERROR":
+      return { ...state, error: action.payload };
+    case "SET_RENEWALS":
+      return {
+        ...state,
+        renewals: action.payload.renewals,
+        currentStudentId: action.payload.studentId ?? state.currentStudentId,
+      };
+    case "SET_SELECTED":
+      return { ...state, selectedRenewal: action.payload };
+    case "SET_EXPIRING":
+      return { ...state, expiringRenewals: action.payload };
+    case "CLEAR_SELECTED":
+      return { ...state, selectedRenewal: null };
+    case "CLEAR_ERROR":
+      return { ...state, error: null };
+    default: {
+      // Exhaustiveness check
+      return state;
+    }
+  }
+}
+
+// ── Derived helpers (pure)
+function processRenewal(renewal: Renewal, today: Date): ExpiringRenewal | null {
+  const expirationDate = new Date(renewal.expiration_date);
+  expirationDate.setHours(0, 0, 0, 0);
+
+  const daysDiff = Math.floor((today.getTime() - expirationDate.getTime()) / 86_400_000);
+
+  if (daysDiff < -WARNING_PERIOD_DAYS || daysDiff > GRACE_PERIOD_DAYS) return null;
+
+  let status: ExpiringRenewal["status"];
+  let statusMessage: string;
+  let priority: number;
+
+  if (daysDiff > 0) {
+    if (daysDiff <= GRACE_PERIOD_DAYS) {
+      status = "grace_period";
+      statusMessage = `In grace period (${daysDiff} days overdue)`;
+      priority = 2;
+    } else {
+      status = "expired";
+      statusMessage = `Expired ${Math.abs(daysDiff)} days ago`;
+      priority = 3;
+    }
+  } else {
+    status = "expiring_soon";
+    statusMessage = `Expires in ${Math.abs(daysDiff)} days`;
+    priority = 1;
+  }
+
+  return {
+    ...renewal,
+    daysOverdue: daysDiff,
+    status,
+    statusMessage,
+    priority,
+  };
+}
+
+// ── Context
 const StudentRenewalsContext = createContext<StudentRenewalsContextType | undefined>(undefined);
 
-interface StudentRenewalsProviderProps {
+export interface StudentRenewalsProviderProps {
   children: ReactNode;
   autoLoadStudentId?: string;
 }
 
-export const StudentRenewalsProvider: React.FC<StudentRenewalsProviderProps> = ({
+export const StudentRenewalsProvider = ({
   children,
   autoLoadStudentId,
-}) => {
-  const [renewals, setRenewals] = useState<Renewal[]>([]);
-  const [selectedRenewal, setSelectedRenewal] = useState<Renewal | null>(null);
-  const [expiringRenewals, setExpiringRenewals] = useState<Renewal[]>([]);
-  const [processedExpiringRenewals, setProcessedExpiringRenewals] = useState<ExpiringRenewal[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
-  const [currentStudentId, setCurrentStudentId] = useState<string| undefined>(autoLoadStudentId);
+}: StudentRenewalsProviderProps): JSX.Element => {
+  const [state, dispatch] = useReducer(reducer, {
+    ...initialState,
+    currentStudentId: autoLoadStudentId,
+  });
 
-  // NEW: Renewal management constants
-  const GRACE_PERIOD_DAYS = 7;
-  const WARNING_PERIOD_DAYS = 15;
-
-  useEffect(() => {
-    if (autoLoadStudentId) {
-      loadRenewals(autoLoadStudentId);
+  // Centralized async wrapper to keep types
+  const withAsync = useCallback(async <T,>(label: string, fn: () => Promise<T>): Promise<T> => {
+    dispatch({ type: "SET_LOADING", payload: true });
+    dispatch({ type: "SET_ERROR", payload: null });
+    try {
+      const result = await fn();
+      return result;
+    } catch (err) {
+      // optionally narrow error type here if your API throws known shapes
+      console.error(`Error ${label}:`, err);
+      dispatch({ type: "SET_ERROR", payload: `Failed to ${label}` });
+      throw err;
+    } finally {
+      dispatch({ type: "SET_LOADING", payload: false });
     }
-    loadExpiringRenewals();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoLoadStudentId]);
+  }, []);
 
-  // NEW: Process renewals whenever expiringRenewals changes
-  useEffect(() => {
-    processExpiringRenewals();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [expiringRenewals]);
+  // ── Loads
+  const loadAllRenewals = useCallback(
+    (): Promise<void> =>
+      withAsync("load renewals", async () => {
+        const data = await getStudentRenewals();
+        dispatch({ type: "SET_RENEWALS", payload: { renewals: data } });
+      }),
+    [withAsync]
+  );
 
-  const handleError = (error: unknown, action: string) => {
-    const errorMessage = `Failed to ${action}`;
-    setError(errorMessage);
-    console.error(`Error ${action}:`, error);
-  };
+  const loadRenewals = useCallback(
+    (studentId?: string): Promise<void> =>
+      withAsync("load renewals", async () => {
+        const data = await getStudentRenewals(studentId);
+        dispatch({ type: "SET_RENEWALS", payload: { renewals: data, studentId } });
+      }),
+    [withAsync]
+  );
 
-  // NEW: Process expiring renewals with status information
-  const processExpiringRenewals = () => {
+  const loadRenewalById = useCallback(
+    (renewalId: string): Promise<void> =>
+      withAsync("load renewal", async () => {
+        const data = await getStudentRenewalById(renewalId);
+        dispatch({ type: "SET_SELECTED", payload: data });
+      }),
+    [withAsync]
+  );
+
+  const loadExpiringRenewals = useCallback(
+    (daysFromNow: number = 30): Promise<void> =>
+      withAsync("load expiring renewals", async () => {
+        const data = await getExpiringRenewals(daysFromNow);
+        dispatch({ type: "SET_EXPIRING", payload: data });
+      }),
+    [withAsync]
+  );
+
+  // ── Mutations
+  const createRenewal = useCallback(
+    (renewal: Omit<Renewal, "renewal_id" | "created_at" | "updated_at">): Promise<void> =>
+      withAsync("create renewal", async () => {
+        await createStudentRenewal(renewal);
+        const id = state.currentStudentId;
+        await Promise.all([loadRenewals(id), loadExpiringRenewals()]);
+      }),
+    [withAsync, loadRenewals, loadExpiringRenewals, state.currentStudentId]
+  );
+
+  const updateRenewal = useCallback(
+    (renewalId: string, renewalUpdate: Partial<Renewal>): Promise<void> =>
+      withAsync("update renewal", async () => {
+        await updateStudentRenewal(renewalId, renewalUpdate);
+        const id = state.currentStudentId;
+        await Promise.all([loadRenewals(id), loadExpiringRenewals()]);
+
+        if (state.selectedRenewal?.renewal_id === renewalId) {
+          await loadRenewalById(renewalId);
+        }
+      }),
+    [
+      withAsync,
+      loadRenewals,
+      loadExpiringRenewals,
+      loadRenewalById,
+      state.currentStudentId,
+      state.selectedRenewal,
+    ]
+  );
+
+  const removeRenewal = useCallback(
+    (renewalId: string): Promise<void> =>
+      withAsync("delete renewal", async () => {
+        await deleteStudentRenewal(renewalId);
+        const id = state.currentStudentId;
+        await Promise.all([loadRenewals(id), loadExpiringRenewals()]);
+        if (state.selectedRenewal?.renewal_id === renewalId) {
+          dispatch({ type: "CLEAR_SELECTED" });
+        }
+      }),
+    [withAsync, loadRenewals, loadExpiringRenewals, state.currentStudentId, state.selectedRenewal]
+  );
+
+  // ── Resolution helpers
+  const resolveRenewalAsQuit = useCallback(
+    (renewalId: string, notes?: string): Promise<RenewalResolution> =>
+      withAsync("resolve renewal as quit", async () => {
+        const resolution: RenewalResolution = {
+          renewal_id: renewalId,
+          action: "quit",
+          resolved_at: new Date().toISOString(),
+          notes: notes ?? "Student quit",
+        };
+        await loadExpiringRenewals();
+        return resolution;
+      }),
+    [withAsync, loadExpiringRenewals]
+  );
+
+  const resolveRenewalWithNext = useCallback(
+    (
+      currentRenewal: Renewal,
+      newRenewalData: Partial<Renewal>
+    ): Promise<{
+      resolution: RenewalResolution;
+      newRenewal: Omit<Renewal, "renewal_id" | "created_at" | "updated_at">;
+    }> =>
+      withAsync("resolve renewal with next renewal", async () => {
+        const currentExpiration = new Date(currentRenewal.expiration_date);
+        const newStartDate = new Date(currentExpiration);
+        newStartDate.setDate(newStartDate.getDate() + 1);
+
+        const months = newRenewalData.duration_months ?? 1;
+        const newExpirationDate = new Date(newStartDate);
+        newExpirationDate.setMonth(newExpirationDate.getMonth() + months);
+
+        const newRenewal: Omit<Renewal, "renewal_id" | "created_at" | "updated_at"> = {
+          student_id: currentRenewal.student_id,
+          duration_months: months,
+          payment_date: new Date().toISOString(),
+          expiration_date: newExpirationDate.toISOString(),
+          amount_due: newRenewalData.amount_due ?? currentRenewal.amount_due,
+          amount_paid: newRenewalData.amount_paid ?? 0,
+          number_of_payments: newRenewalData.number_of_payments ?? 1,
+          number_of_classes: newRenewalData.number_of_classes ?? currentRenewal.number_of_classes,
+          paid_to: newRenewalData.paid_to ?? currentRenewal.paid_to,
+        };
+
+        await createStudentRenewal(newRenewal);
+        await Promise.all([loadRenewals(state.currentStudentId), loadExpiringRenewals()]);
+
+        const resolution: RenewalResolution = {
+          renewal_id: currentRenewal.renewal_id,
+          action: "renew",
+          resolved_at: new Date().toISOString(),
+          notes: `Renewed for ${months} months`,
+        };
+
+        return { resolution, newRenewal };
+      }),
+    [withAsync, loadRenewals, loadExpiringRenewals, state.currentStudentId]
+  );
+
+  // ── Derived data (memoized, no extra state)
+  const processedExpiringRenewals: ExpiringRenewal[] = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    return state.expiringRenewals
+      .map((r) => processRenewal(r, today))
+      .filter((r): r is ExpiringRenewal => r !== null)
+      .sort((a, b) => b.priority - a.priority);
+  }, [state.expiringRenewals]);
 
-    const processed = expiringRenewals
-      .map((renewal) => processRenewal(renewal, today))
-      .filter((renewal) => renewal !== null) as ExpiringRenewal[];
+  const getGroupedExpiringRenewals = useCallback(() => {
+    const expired = processedExpiringRenewals.filter((r) => r.status === "expired");
+    const gracePeriod = processedExpiringRenewals.filter((r) => r.status === "grace_period");
+    const expiringSoon = processedExpiringRenewals.filter((r) => r.status === "expiring_soon");
+    return { expired, gracePeriod, expiringSoon };
+  }, [processedExpiringRenewals]);
 
-    // Sort by priority (most urgent first)
-    processed.sort((a, b) => b.priority - a.priority);
+  const clearSelectedRenewal = useCallback((): void => {
+    dispatch({ type: "CLEAR_SELECTED" });
+  }, []);
 
-    // TODO check if this working
-    setProcessedExpiringRenewals(processed);
-  };
+  const clearError = useCallback((): void => {
+    dispatch({ type: "CLEAR_ERROR" });
+  }, []);
 
-  const processRenewal = (renewal: Renewal, today: Date): ExpiringRenewal | null => {
-    const expirationDate = new Date(renewal.expiration_date);
-    expirationDate.setHours(0, 0, 0, 0);
+  const refreshRenewals = useCallback(async (): Promise<void> => {
+    await Promise.all([loadAllRenewals(), loadExpiringRenewals()]);
+  }, [loadAllRenewals, loadExpiringRenewals]);
 
-    const daysDiff = Math.floor(
-      (today.getTime() - expirationDate.getTime()) / (1000 * 60 * 60 * 24)
-    );
-
-    // Check if renewal needs attention
-    if (daysDiff >= -WARNING_PERIOD_DAYS && daysDiff <= GRACE_PERIOD_DAYS) {
-      let status: "expired" | "expiring_soon" | "grace_period";
-      let statusMessage: string;
-      let priority: number;
-
-      if (daysDiff > 0) {
-        if (daysDiff <= GRACE_PERIOD_DAYS) {
-          status = "grace_period";
-          statusMessage = `In grace period (${daysDiff} days overdue)`;
-          priority = 2;
-        } else {
-          status = "expired";
-          statusMessage = `Expired ${Math.abs(daysDiff)} days ago`;
-          priority = 3;
-        }
-      } else {
-        status = "expiring_soon";
-        statusMessage = `Expires in ${Math.abs(daysDiff)} days`;
-        priority = 1;
-      }
-
-      return {
-        ...renewal,
-        daysOverdue: daysDiff,
-        status,
-        statusMessage,
-        priority,
-      };
-    }
-
-    return null;
-  };
-
-  const loadAllRenewals = async (): Promise<void> => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const data = await getStudentRenewals();
-      setRenewals(data);
-    } catch (error) {
-      handleError(error, "load renewals");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadRenewals = async (studentId?: string): Promise<void> => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const data = await getStudentRenewals(studentId);
-      setRenewals(data);
-      setCurrentStudentId(studentId);
-    } catch (error) {
-      handleError(error, "load renewals");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadRenewalById = async (renewalId: string): Promise<void> => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const data = await getStudentRenewalById(renewalId);
-      setSelectedRenewal(data);
-    } catch (error) {
-      handleError(error, "load renewal");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadExpiringRenewals = async (daysFromNow: number = 30): Promise<void> => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const data = await getExpiringRenewals(daysFromNow);
-      setExpiringRenewals(data);
-    } catch (error) {
-      handleError(error, "load expiring renewals");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const createRenewal = async (
-    renewal: Omit<Renewal, "renewal_id" | "created_at" | "updated_at">
-  ): Promise<void> => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      await createStudentRenewal(renewal);
-      if (currentStudentId === renewal.student_id || currentStudentId === undefined) {
-        await loadRenewals(currentStudentId);
-      }
-      // Refresh expiring renewals after creating new one
-      await loadExpiringRenewals();
-    } catch (error) {
-      handleError(error, "create renewal");
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const updateRenewal = async (
-    renewalId: string,
-    renewalUpdate: Partial<Renewal>
-  ): Promise<void> => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      await updateStudentRenewal(renewalId, renewalUpdate);
-
-      setRenewals((prev) =>
-        prev.map((renewal) =>
-          renewal.renewal_id === renewalId ? { ...renewal, ...renewalUpdate } : renewal
-        )
-      );
-
-      if (selectedRenewal?.renewal_id === renewalId) {
-        setSelectedRenewal((prev) => (prev ? { ...prev, ...renewalUpdate } : null));
-      }
-
-      setExpiringRenewals((prev) =>
-        prev.map((renewal) =>
-          renewal.renewal_id === renewalId ? { ...renewal, ...renewalUpdate } : renewal
-        )
-      );
-    } catch (error) {
-      handleError(error, "update renewal");
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const removeRenewal = async (renewalId: string): Promise<void> => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      await deleteStudentRenewal(renewalId);
-      setRenewals((prev) => prev.filter((renewal) => renewal.renewal_id !== renewalId));
-      setExpiringRenewals((prev) => prev.filter((renewal) => renewal.renewal_id !== renewalId));
-      if (selectedRenewal?.renewal_id === renewalId) {
-        setSelectedRenewal(null);
-      }
-    } catch (error) {
-      handleError(error, "delete renewal");
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // NEW: Resolve renewal as quit
-  const resolveRenewalAsQuit = async (
-    renewalId: string,
-    notes?: string
-  ): Promise<RenewalResolution> => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const resolution: RenewalResolution = {
-        renewal_id: renewalId,
-        action: "quit",
-        resolved_at: new Date().toISOString(),
-        notes: notes || "Student quit",
-      };
-
-      setExpiringRenewals((prev) => prev.filter((r) => r.renewal_id !== renewalId));
-
-      return resolution;
-    } catch (error) {
-      handleError(error, "resolve renewal as quit");
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // NEW: Resolve renewal by creating next renewal
-  const resolveRenewalWithNext = async (
-    currentRenewal: Renewal,
-    newRenewalData: Partial<Renewal>
-  ): Promise<{ resolution: RenewalResolution; newRenewal: Partial<Renewal> }> => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      // Calculate new renewal dates
-      const currentExpiration = new Date(currentRenewal.expiration_date);
-      const newStartDate = new Date(currentExpiration);
-      newStartDate.setDate(newStartDate.getDate() + 1);
-
-      const newExpirationDate = new Date(newStartDate);
-      newExpirationDate.setMonth(
-        newExpirationDate.getMonth() + (newRenewalData.duration_months || 1)
-      );
-
-      const newRenewal: Omit<Renewal, "renewal_id" | "created_at" | "updated_at"> = {
-        student_id: currentRenewal.student_id,
-        duration_months: newRenewalData.duration_months || 1,
-        payment_date: new Date().toISOString(),
-        expiration_date: newExpirationDate.toISOString(),
-        amount_due: newRenewalData.amount_due || currentRenewal.amount_due,
-        amount_paid: newRenewalData.amount_paid || 0,
-        number_of_payments: newRenewalData.number_of_payments || 1,
-        number_of_classes: newRenewalData.number_of_classes || currentRenewal.number_of_classes,
-        paid_to: newRenewalData.paid_to || currentRenewal.paid_to,
-      };
-
-      // Create the new renewal
-      await createRenewal(newRenewal);
-
-      // Remove old renewal from expiring renewals
-      setExpiringRenewals((prev) => prev.filter((r) => r.renewal_id !== currentRenewal.renewal_id));
-
-      const resolution: RenewalResolution = {
-        renewal_id: currentRenewal.renewal_id,
-        action: "renew",
-        resolved_at: new Date().toISOString(),
-        notes: `Renewed for ${newRenewal.duration_months} months`,
-      };
-
-      return { resolution, newRenewal };
-    } catch (error) {
-      handleError(error, "resolve renewal with next renewal");
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getGroupedExpiringRenewals = () => {
-    return {
-      expired: processedExpiringRenewals.filter((r) => r.status === "expired"),
-      gracePeriod: processedExpiringRenewals.filter((r) => r.status === "grace_period"),
-      expiringSoon: processedExpiringRenewals.filter((r) => r.status === "expiring_soon"),
-    };
-  };
-
-  // Clear selected renewal
-  const clearSelectedRenewal = (): void => {
-    setSelectedRenewal(null);
-  };
-
-  // Clear error
-  const clearError = (): void => {
-    setError(null);
-  };
-
-  // Refresh renewals (reload current data)
-  const refreshRenewals = async (): Promise<void> => {
-    await loadAllRenewals();
-    await loadExpiringRenewals();
-  };
-
-  // Context value
   const contextValue: StudentRenewalsContextType = {
-    renewals,
-    selectedRenewal,
-    expiringRenewals,
+    renewals: state.renewals,
+    selectedRenewal: state.selectedRenewal,
+    expiringRenewals: state.expiringRenewals,
     processedExpiringRenewals,
-    loading,
-    error,
+    loading: state.loading,
+    error: state.error,
 
     loadAllRenewals,
     loadRenewals,
@@ -418,11 +388,9 @@ export const StudentRenewalsProvider: React.FC<StudentRenewalsProviderProps> = (
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const useStudentRenewals = (): StudentRenewalsContextType => {
-  const context = useContext(StudentRenewalsContext);
-
-  if (context === undefined) {
+  const ctx = useContext(StudentRenewalsContext);
+  if (!ctx) {
     throw new Error("useStudentRenewals must be used within a StudentRenewalsProvider");
   }
-
-  return context;
+  return ctx;
 };
