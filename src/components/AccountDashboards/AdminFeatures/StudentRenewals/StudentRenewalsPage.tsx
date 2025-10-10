@@ -1,5 +1,4 @@
-// File: StudentRenewalsPage.tsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useStudentRenewals } from "../../../../context/StudentRenewalContext";
 import { RenewalCategory } from "./RenewalCategory";
 import { CreateRenewalForm } from "./CreateRenewalForm";
@@ -21,9 +20,24 @@ export const StudentRenewalsPage: React.FC = () => {
     resolveRenewalAsQuit,
     resolveRenewalWithNext,
     loadRenewals,
+    loadExpiringRenewals,
+    loading,
   } = useStudentRenewals();
 
   const [showCreateForm, setShowCreateForm] = useState(false);
+
+  // Load data on mount
+  useEffect(() => {
+    const initializeData = async () => {
+      try {
+        await loadRenewals();
+        await loadExpiringRenewals();
+      } catch (error) {
+        console.error("Error loading initial data:", error);
+      }
+    };
+    initializeData();
+  }, [loadRenewals, loadExpiringRenewals]);
 
   const categorizedRenewals = renewals.reduce(
     (acc, renewal) => {
@@ -39,7 +53,6 @@ export const StudentRenewalsPage: React.FC = () => {
     { expired: [], active: [], paid: [] } as CategorizedRenewals
   );
 
-  // TODO the expired and gracePeriod are not returning anything
   const { expired, gracePeriod, expiringSoon } = getGroupedExpiringRenewals();
 
   const handleCreateRenewal = async (data: CreateRenewalRequest) => {
@@ -63,6 +76,15 @@ export const StudentRenewalsPage: React.FC = () => {
       number_of_classes: renewal.number_of_classes,
       paid_to: renewal.paid_to,
     });
+  };
+
+  const handleLoadAll = async () => {
+    try {
+      await loadRenewals();
+      await loadExpiringRenewals();
+    } catch (error) {
+      console.error("Error reloading data:", error);
+    }
   };
 
   const renderCategory = (title: string, icon: string, items: Renewal[], color: string) => (
@@ -91,14 +113,16 @@ export const StudentRenewalsPage: React.FC = () => {
 
         <div className="flex flex-wrap gap-4 mb-8">
           <button
-            onClick={() => loadRenewals()}
-            className="bg-white text-black rounded-xl shadow-lg px-6 py-3 border-b-4 border-red-500"
+            onClick={handleLoadAll}
+            disabled={loading}
+            className="bg-white text-black rounded-xl shadow-lg px-6 py-3 border-b-4 border-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            📅 Load All Renewals
+            {loading ? "⏳ Loading..." : "📅 Load All Renewals"}
           </button>
           <button
             onClick={() => setShowCreateForm(true)}
-            className="bg-white text-black rounded-xl shadow-lg px-6 py-3 border-b-4 border-red-500"
+            disabled={loading}
+            className="bg-white text-black rounded-xl shadow-lg px-6 py-3 border-b-4 border-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             ➕ Register Renewal
           </button>
@@ -112,13 +136,10 @@ export const StudentRenewalsPage: React.FC = () => {
         )}
 
         <div className="flex flex-wrap gap-4">
-          {/* TODO: Working */}
-          {renderCategory("Expiring Soon", "⚠️", expiringSoon, "border-yellow-500")} 
+          {renderCategory("Expiring Soon", "⚠️", expiringSoon, "border-yellow-500")}
           {renderCategory("Grace Period", "🕓", gracePeriod, "border-orange-500")}
           {renderCategory("Expired", "⛔", expired, "border-red-600")}
-          {/* Working */}
           {renderCategory("Active", "⏰", categorizedRenewals.active, "border-blue-500")}
-          {/* Working */}
           {renderCategory("Paid", "✅", categorizedRenewals.paid, "border-green-500")}
         </div>
       </div>
