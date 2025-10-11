@@ -27,7 +27,7 @@ const STAT_CARDS_CONFIG = [
   {
     icon: faChartLine,
     title: "Sales",
-    value: "$103",
+    value: "sales" as const,
     change: "+5% than yesterday",
     isPositive: true,
   },
@@ -39,7 +39,7 @@ export const StatCards = () => {
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
       {STAT_CARDS_CONFIG.map((config, index) => (
         <StatCard
-          key={index}
+          key={index}   
           icon={config.icon}
           title={config.title}
           value={config.valueKey ? `${schoolData[config.valueKey]}` : config.value!}
