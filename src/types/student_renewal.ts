@@ -1,14 +1,19 @@
+export type RenewalStatus = "active" | "quit" | "renewed" | "expired" | "grace_period" | "expiring_soon";
+
 export interface Renewal {
   renewal_id: string;
   student_id: string;
   duration_months: number;
-  payment_date: string; // ISO date string
-  expiration_date: string; // ISO date string
+  payment_date: string;
+  expiration_date: string;
   amount_due: number;
   amount_paid: number;
   number_of_payments: number;
   number_of_classes: number;
   paid_to: string;
+  status: RenewalStatus; // ADD THIS
+  resolved_at?: string; // ADD THIS
+  resolution_notes?: string; // ADD THIS
   created_at: string;
   updated_at: string;
 }
@@ -98,7 +103,6 @@ export interface CreateRenewalFormProps {
 }
 export interface ExpiringRenewal extends Renewal {
   daysOverdue: number;
-  status: "expired" | "expiring_soon" | "grace_period";
   statusMessage: string;
   priority: number;
 }

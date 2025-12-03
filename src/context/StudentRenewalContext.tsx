@@ -270,19 +270,21 @@ export const StudentRenewalsProvider = ({
   const resolveRenewalAsQuit = useCallback(
     (renewalId: string, notes?: string): Promise<RenewalResolution> =>
       withAsync("resolve renewal as quit", async () => {
-        // Delete the renewal since student quit
-        await deleteStudentRenewal(renewalId);
-        
+        // Mark as quit instead of deleting
+        await updateStudentRenewal(renewalId, {
+          status: "quit",
+          resolved_at: new Date().toISOString(),
+          resolution_notes: notes ?? "Student quit",
+        });
+
         const resolution: RenewalResolution = {
           renewal_id: renewalId,
           action: "quit",
           resolved_at: new Date().toISOString(),
           notes: notes ?? "Student quit",
         };
-        
-        // Reload data after deletion
+
         await Promise.all([loadRenewals(state.currentStudentId), loadExpiringRenewals()]);
-        
         return resolution;
       }),
     [withAsync, loadRenewals, loadExpiringRenewals, state.currentStudentId]
@@ -314,15 +316,16 @@ export const StudentRenewalsProvider = ({
           amount_paid: newRenewalData.amount_paid ?? 0,
           number_of_payments: newRenewalData.number_of_payments ?? 1,
           number_of_classes: newRenewalData.number_of_classes ?? currentRenewal.number_of_classes,
+          status: "active",
           paid_to: newRenewalData.paid_to ?? currentRenewal.paid_to,
         };
 
         // Create new renewal
         await createStudentRenewal(newRenewal);
-        
+
         // Delete old renewal (it's been replaced)
         await deleteStudentRenewal(currentRenewal.renewal_id);
-        
+
         // Reload data
         await Promise.all([loadRenewals(state.currentStudentId), loadExpiringRenewals()]);
 
@@ -342,7 +345,7 @@ export const StudentRenewalsProvider = ({
   const getGroupedExpiringRenewals = useCallback(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     // Process all renewals, not just the ones from loadExpiringRenewals
     const allProcessed = state.renewals
       .map((r) => processRenewal(r, today))
@@ -352,7 +355,7 @@ export const StudentRenewalsProvider = ({
     const expired = allProcessed.filter((r) => r.status === "expired");
     const gracePeriod = allProcessed.filter((r) => r.status === "grace_period");
     const expiringSoon = allProcessed.filter((r) => r.status === "expiring_soon");
-    
+
     return { expired, gracePeriod, expiringSoon };
   }, [state.renewals]);
 
