@@ -1,22 +1,31 @@
-export type RenewalStatus = "active" | "quit" | "renewed" | "expired" | "grace_period" | "expiring_soon";
+// src/types/student_renewal.ts - UPDATED VERSION
+
+export type RenewalStatus =
+  | "active"
+  | "quit"
+  | "renewed"
+  | "expired"
+  | "expiring_soon"
+  | "grace_period";
 
 export interface Renewal {
   renewal_id: string;
   student_id: string;
   duration_months: number;
-  payment_date: string;
-  expiration_date: string;
+  payment_date: string; // ISO date string
+  expiration_date: string; // ISO date string
   amount_due: number;
   amount_paid: number;
   number_of_payments: number;
   number_of_classes: number;
   paid_to: string;
-  status: RenewalStatus; // ADD THIS
-  resolved_at?: string; // ADD THIS
-  resolution_notes?: string; // ADD THIS
+  status?: RenewalStatus; // Optional for backward compatibility
+  resolved_at?: string; // ISO timestamp when renewal was resolved
+  resolution_notes?: string; // Notes about why/how it was resolved
   created_at: string;
   updated_at: string;
 }
+
 export interface CreateRenewalRequest {
   student_id: string;
   duration_months: number;
@@ -27,6 +36,7 @@ export interface CreateRenewalRequest {
   number_of_payments: number;
   number_of_classes: number;
   paid_to: string;
+  status?: RenewalStatus; // Defaults to 'active' if not provided
 }
 
 export interface UpdateRenewalRequest {
@@ -38,7 +48,11 @@ export interface UpdateRenewalRequest {
   number_of_payments?: number;
   number_of_classes?: number;
   paid_to?: string;
+  status?: RenewalStatus;
+  resolved_at?: string;
+  resolution_notes?: string;
 }
+
 export interface RenewalFormData {
   student_id: string;
   duration_months: string;
@@ -57,6 +71,7 @@ export interface ApiResponse<T> {
   message?: string;
   error?: string;
 }
+
 export interface PaginatedResponse<T> {
   success: boolean;
   data: T[];
@@ -97,12 +112,15 @@ export interface RenewalCategoryProps {
   borderColor: string;
   children: React.ReactNode;
 }
+
 export interface CreateRenewalFormProps {
   onSubmit: (data: CreateRenewalRequest) => Promise<void>;
   onCancel: () => void;
 }
+
 export interface ExpiringRenewal extends Renewal {
   daysOverdue: number;
+  status: "expired" | "expiring_soon" | "grace_period";
   statusMessage: string;
   priority: number;
 }
@@ -117,8 +135,33 @@ export interface RenewalCardProps {
 }
 
 export interface RenewalResolution {
-  renewal_id: number;
+  renewal_id: string;
   action: "quit" | "renew";
   resolved_at: string;
   notes?: string;
+}
+
+// Renewal filter options for queries
+export interface RenewalFilters {
+  student_id?: string;
+  status?: RenewalStatus | RenewalStatus[];
+  expiring_within_days?: number;
+  payment_status?: "paid" | "unpaid" | "partial";
+  date_range?: {
+    start: string;
+    end: string;
+  };
+}
+
+// Renewal statistics for dashboard
+export interface RenewalStats {
+  total: number;
+  active: number;
+  expired: number;
+  expiring_soon: number;
+  grace_period: number;
+  quit: number;
+  renewed: number;
+  total_revenue: number;
+  outstanding_balance: number;
 }

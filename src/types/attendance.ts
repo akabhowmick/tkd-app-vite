@@ -1,13 +1,13 @@
 import { STATUS_STYLES } from "../utils/AttendanceUtils/AttendanceUtils";
 
 export interface AttendanceRecordInsert {
-  student_id: string; // UUID
+  student_id: string; // UUID - keep as is
   status: AttendanceStatus;
   school_id: string; // UUID
-  date?: Date | null | string;
+  date: string; // ISO date string, not Date | null
 }
 
-// Full attendance record interface 
+// Full attendance record interface
 export interface AttendanceRecord extends AttendanceRecordInsert {
   id: string; // UUID
   created_at: Date | null;
