@@ -1,5 +1,4 @@
 /* eslint-disable react-refresh/only-export-components */
-/* eslint-disable react-hooks/exhaustive-deps */
 // src/context/StudentRenewalContext.tsx - UPDATED VERSION
 
 import { createContext, useContext, useMemo, useReducer, useCallback, ReactNode } from "react";
@@ -39,7 +38,7 @@ export interface StudentRenewalsContextType {
   loadRenewalById: (renewalId: string) => Promise<void>;
   loadExpiringRenewals: (daysFromNow?: number) => Promise<void>;
   createRenewal: (
-    renewal: Omit<Renewal, "renewal_id" | "created_at" | "updated_at">
+    renewal: Omit<Renewal, "renewal_id" | "created_at" | "updated_at">,
   ) => Promise<void>;
   updateRenewal: (renewalId: string, renewal: Partial<Renewal>) => Promise<void>;
   removeRenewal: (renewalId: string) => Promise<void>;
@@ -50,7 +49,7 @@ export interface StudentRenewalsContextType {
   resolveRenewalAsQuit: (renewalId: string, notes?: string) => Promise<RenewalResolution>;
   resolveRenewalWithNext: (
     currentRenewal: Renewal,
-    newRenewalData: Partial<Renewal>
+    newRenewalData: Partial<Renewal>,
   ) => Promise<{
     resolution: RenewalResolution;
     newRenewal: Omit<Renewal, "renewal_id" | "created_at" | "updated_at">;
@@ -118,7 +117,7 @@ function reducer(state: State, action: Action): State {
 // ── Derived helpers (pure)
 function processRenewal(renewal: Renewal, today: Date): ExpiringRenewal | null {
   // Skip non-active renewals
-  if (renewal.status && renewal.status !== 'active') {
+  if (renewal.status && renewal.status !== "active") {
     return null;
   }
 
@@ -200,7 +199,7 @@ export const StudentRenewalsProvider = ({
         const data = await getStudentRenewals();
         dispatch({ type: "SET_RENEWALS", payload: { renewals: data } });
       }),
-    [withAsync]
+    [withAsync],
   );
 
   const loadRenewals = useCallback(
@@ -209,7 +208,7 @@ export const StudentRenewalsProvider = ({
         const data = await getStudentRenewals(studentId);
         dispatch({ type: "SET_RENEWALS", payload: { renewals: data, studentId } });
       }),
-    [withAsync]
+    [withAsync],
   );
 
   const loadRenewalById = useCallback(
@@ -218,7 +217,7 @@ export const StudentRenewalsProvider = ({
         const data = await getStudentRenewalById(renewalId);
         dispatch({ type: "SET_SELECTED", payload: data });
       }),
-    [withAsync]
+    [withAsync],
   );
 
   const loadExpiringRenewals = useCallback(
@@ -227,7 +226,7 @@ export const StudentRenewalsProvider = ({
         const data = await getExpiringRenewals(daysFromNow);
         dispatch({ type: "SET_EXPIRING", payload: data });
       }),
-    [withAsync]
+    [withAsync],
   );
 
   // ── Mutations
@@ -238,7 +237,7 @@ export const StudentRenewalsProvider = ({
         const id = state.currentStudentId;
         await Promise.all([loadRenewals(id), loadExpiringRenewals()]);
       }),
-    [withAsync, loadRenewals, loadExpiringRenewals, state.currentStudentId]
+    [withAsync, loadRenewals, loadExpiringRenewals, state.currentStudentId],
   );
 
   const updateRenewal = useCallback(
@@ -259,7 +258,7 @@ export const StudentRenewalsProvider = ({
       loadRenewalById,
       state.currentStudentId,
       state.selectedRenewal,
-    ]
+    ],
   );
 
   const removeRenewal = useCallback(
@@ -272,39 +271,37 @@ export const StudentRenewalsProvider = ({
           dispatch({ type: "CLEAR_SELECTED" });
         }
       }),
-    [withAsync, loadRenewals, loadExpiringRenewals, state.currentStudentId, state.selectedRenewal]
+    [withAsync, loadRenewals, loadExpiringRenewals, state.currentStudentId, state.selectedRenewal],
   );
 
   // ── Resolution helpers - FIXED VERSIONS
   const resolveRenewalAsQuit = useCallback(
     (renewalId: string, notes?: string): Promise<RenewalResolution> =>
       withAsync("resolve renewal as quit", async () => {
-        // Update status instead of deleting
         await updateStudentRenewal(renewalId, {
-          status: 'quit',
+          status: "quit",
           resolved_at: new Date().toISOString(),
           resolution_notes: notes ?? "Student quit",
         });
-        
+
         const resolution: RenewalResolution = {
           renewal_id: renewalId,
           action: "quit",
           resolved_at: new Date().toISOString(),
           notes: notes ?? "Student quit",
         };
-        
-        // Reload data after update
+
         await Promise.all([loadRenewals(state.currentStudentId), loadExpiringRenewals()]);
-        
+
         return resolution;
       }),
-    [withAsync, loadRenewals, loadExpiringRenewals, state.currentStudentId, updateStudentRenewal]
+    [withAsync, loadRenewals, loadExpiringRenewals, state.currentStudentId],
   );
 
   const resolveRenewalWithNext = useCallback(
     (
       currentRenewal: Renewal,
-      newRenewalData: Partial<Renewal>
+      newRenewalData: Partial<Renewal>,
     ): Promise<{
       resolution: RenewalResolution;
       newRenewal: Omit<Renewal, "renewal_id" | "created_at" | "updated_at">;
@@ -316,27 +313,24 @@ export const StudentRenewalsProvider = ({
         const newRenewal: Omit<Renewal, "renewal_id" | "created_at" | "updated_at"> = {
           student_id: currentRenewal.student_id,
           duration_months: months,
-          payment_date: new Date().toISOString().split('T')[0],
+          payment_date: new Date().toISOString().split("T")[0],
           expiration_date: newExpirationDate,
           amount_due: newRenewalData.amount_due ?? currentRenewal.amount_due,
           amount_paid: newRenewalData.amount_paid ?? 0,
           number_of_payments: newRenewalData.number_of_payments ?? 1,
           number_of_classes: newRenewalData.number_of_classes ?? currentRenewal.number_of_classes,
           paid_to: newRenewalData.paid_to ?? currentRenewal.paid_to,
-          status: 'active',
+          status: "active",
         };
 
-        // Create new renewal first
         await createStudentRenewal(newRenewal);
-        
-        // Mark old renewal as renewed instead of deleting
+
         await updateStudentRenewal(currentRenewal.renewal_id, {
-          status: 'renewed',
+          status: "renewed",
           resolved_at: new Date().toISOString(),
           resolution_notes: `Renewed for ${months} months`,
         });
-        
-        // Reload data
+
         await Promise.all([loadRenewals(state.currentStudentId), loadExpiringRenewals()]);
 
         const resolution: RenewalResolution = {
@@ -348,17 +342,17 @@ export const StudentRenewalsProvider = ({
 
         return { resolution, newRenewal };
       }),
-    [withAsync, loadRenewals, loadExpiringRenewals, state.currentStudentId, updateStudentRenewal]
+    [withAsync, loadRenewals, loadExpiringRenewals, state.currentStudentId],
   );
 
   // ── Derived data - Process ALL ACTIVE renewals for categorization
   const getGroupedExpiringRenewals = useCallback(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     // Only process active renewals
-    const activeRenewals = state.renewals.filter(r => !r.status || r.status === 'active');
-    
+    const activeRenewals = state.renewals.filter((r) => !r.status || r.status === "active");
+
     const allProcessed = activeRenewals
       .map((r) => processRenewal(r, today))
       .filter((r): r is ExpiringRenewal => r !== null)
@@ -367,7 +361,7 @@ export const StudentRenewalsProvider = ({
     const expired = allProcessed.filter((r) => r.status === "expired");
     const gracePeriod = allProcessed.filter((r) => r.status === "grace_period");
     const expiringSoon = allProcessed.filter((r) => r.status === "expiring_soon");
-    
+
     return { expired, gracePeriod, expiringSoon };
   }, [state.renewals]);
 
