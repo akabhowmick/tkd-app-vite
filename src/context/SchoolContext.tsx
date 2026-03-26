@@ -86,7 +86,7 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         const allUsers = await getStudents();
         // Filter students by school_id and role
         const filtered = allUsers.filter(
-          (user) => user.role === "Student" && user.school_id === targetSchoolId
+          (user) => user.role === "Student" && user.school_id === targetSchoolId,
         );
 
         // Update cache
@@ -99,7 +99,7 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         setLoading(false);
       }
     },
-    [schoolId, studentsCache, lastStudentsFetch]
+    [schoolId, studentsCache, lastStudentsFetch],
   );
 
   const handleDelete = async (id: string) => {
@@ -185,52 +185,50 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   // Effect to fetch metrics when schoolId is available
   useEffect(() => {
     const fetchMetrics = async () => {
-      if (schoolId !== "") {
-        try {
-          setLoading(true);
+      if (schoolId === "") return;
 
-          const { data: schoolData, error: schoolError } = await supabase
-            .from("schools")
-            .select("*")
-            .eq("id", schoolId)
-            .single();
+      try {
+        setLoading(true);
 
-          if (schoolError) throw schoolError;
-          setSchool(schoolData);
+        // School record
+        const { data: schoolData, error: schoolError } = await supabase
+          .from("schools")
+          .select("*")
+          .eq("id", schoolId)
+          .single();
 
-          const { count: userCount, error: userError } = await supabase
-            .from("users")
-            .select("*", { count: "exact", head: true })
-            .eq("school_id", schoolId);
+        if (schoolError) throw schoolError;
+        setSchool(schoolData);
 
-          if (userError) throw userError;
-          setClients(userCount ?? 0);
+        // Student / client count
+        const { count: userCount, error: userError } = await supabase
+          .from("students")
+          .select("*", { count: "exact", head: true })
+          .eq("school_id", schoolId);
 
-          const { data: salesData, error: salesError } = await supabase
-            .from("sales")
-            .select("amount")
-            .eq("school_id", schoolId);
+        if (userError) throw userError;
+        setClients(userCount ?? 0);
 
-          if (salesError) throw salesError;
+        // Today's attendance count — FIX #4a: correct table name
+        const today = new Date().toISOString().split("T")[0];
+        const { count: attendanceCount, error: attendanceError } = await supabase
+          .from("attendance_records") // was "attendance" — table doesn't exist
+          .select("*", { count: "exact", head: true })
+          .eq("school_id", schoolId)
+          .eq("date", today)
+          .eq("status", "present");
 
-          // TODO: check this
-          const totalSales =
-            salesData?.reduce((sum, record) => sum + parseFloat(record.amount), 0) ?? 0;
-          setSales(totalSales);
+        if (attendanceError) throw attendanceError;
+        setAttendance(attendanceCount ?? 0);
 
-          const { count: attendanceCount, error: attendanceError } = await supabase
-            .from("attendance")
-            .select("*", { count: "exact", head: true })
-            .eq("school_id", schoolId);
-
-          // TODO: check this
-          if (attendanceError) throw attendanceError;
-          setAttendance(attendanceCount ?? 0);
-        } catch (err) {
-          console.error("Error fetching school dashboard:", err);
-        } finally {
-          setLoading(false);
-        }
+        // Sales total — FIX #4b: sales table doesn't have school_id yet,
+        // so for now we skip to avoid a broken query silently returning 0.
+        // TODO: add school_id to sales table and re-enable this.
+        setSales(0);
+      } catch (err) {
+        console.error("Error fetching school dashboard metrics:", err);
+      } finally {
+        setLoading(false);
       }
     };
 

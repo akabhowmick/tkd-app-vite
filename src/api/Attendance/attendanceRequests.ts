@@ -1,15 +1,16 @@
 import { AttendanceRecord, AttendanceRecordInsert } from "../../types/attendance";
 import { supabase } from "../supabase";
 
-
 export const createAttendance = async (records: AttendanceRecordInsert[]) => {
-  const { data, error } = await supabase.from("attendance_records").upsert(records);
-  return { data, error }; 
+  const { data, error } = await supabase
+    .from("attendance_records")
+    .upsert(records, { onConflict: "student_id,date" });
+  return { data, error };
 };
 
 export const getAttendanceByDate = async (
   schoolId: string,
-  date: string
+  date: string,
 ): Promise<{ data: AttendanceRecord[] | null; error: unknown }> => {
   const { data, error } = await supabase
     .from("attendance_records")
@@ -22,7 +23,6 @@ export const getAttendanceByDate = async (
 
 export async function updateAttendance(id: string, status: "present" | "absent") {
   const { data, error } = await supabase.from("attendance_records").update({ status }).eq("id", id);
-
   return { data, error };
 }
 

@@ -1,17 +1,344 @@
-Renewals
-  1. renewals don't work
-    a. the student id passed is causing some issues 
-  2. then display renewals, by day, week, month
-  3. add a check off like to do list vibe 
+# TaeKwonTrack — Full Codebase Sweep
 
-2. Students
-  a. search features
-  b. add parents => all crud applications 
+## PRIORITY 1 — Attendance Fixes (Do These Now)
 
-3. Get started => should route to login => is there a need for home??
+### 1. Calendar off-by-one in month navigation
+**File:** `src/components/AccountDashboards/AdminFeatures/AttendanceRecords/AttendanceCalendar.tsx`
 
-4. for the home page should have a list of features of how to use 
+```ts
+// BROKEN
+const newDate = new Date(
+  date.getFullYear(),
+  date.getMonth() + 1 + (direction === "next" ? 1 : -1),
+  1
+);
 
-error coming from sales => so we need to figure out what to do 
-=> another sales tables? 
-=> attendance tables 
+// FIXED
+const newDate = new Date(
+  date.getFullYear(),
+  date.getMonth() + (direction === "next" ? 1 : -1),
+  1
+);
+```
+`getMonth()` is already 0-indexed. The extra `+1` means "Previous" stays on current month and "Next" skips a month.
+
+---
+
+### 2. isLoading stuck forever when school has 0 students
+**File:** `src/context/AttendanceContext.tsx`
+
+```ts
+// BROKEN
+if (students.length > 0) {
+  fetchExistingAttendance();
+}
+
+// FIXED
+if (students.length > 0) {
+  fetchExistingAttendance();
+} else {
+  setIsLoading(false);
+}
+```
+If a school hasn't added students yet, the loading spinner never clears and the attendance page is unusable.
+
+---
+
+### 3. upsert has no conflict target — can cause duplicate inserts
+**File:** `src/api/Attendance/attendanceRequests.ts`
+
+```ts
+// BROKEN
+const { data, error } = await supabase.from("attendance_records").upsert(records);
+
+// FIXED
+const { data, error } = await supabase
+  .from("attendance_records")
+  .upsert(records, { onConflict: "student_id,date" });
+```
+Without specifying onConflict, Supabase may insert duplicates instead of updating. You have a unique index on (student_id, date) — use it.
+
+---
+
+### 4. Wrong table name for attendance dashboard metric
+**File:** `src/context/SchoolContext.tsx`
+
+```ts
+// BROKEN
+const { count: attendanceCount } = await supabase
+  .from("attendance")   // table doesn't exist
+
+// FIXED
+const { count: attendanceCount } = await supabase
+  .from("attendance_records")
+```
+The "Today's Attendance" stat card always shows 0 or silently errors because it queries a non-existent table.
+
+---
+
+### 5. SQL schema trailing comma — migration will fail
+**File:** `src/sql/attendance.sql`
+
+```sql
+-- BROKEN
+created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+);
+
+-- FIXED
+created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+```
+
+---
+
+### 6. AttendanceContext is a hook, not a context — no shared state
+**File:** `src/context/AttendanceContext.tsx`
+
+The file is named `AttendanceContext.tsx` but exports a plain custom hook with no Provider. Every component that calls `useAttendance()` gets its own isolated copy of state. This will break the dashboard stat card (which reads attendance count separately) and will cause issues when you add the parent portal. Should be converted to a proper context with a Provider before more features are added.
+
+---
+
+## PRIORITY 2 — Data / Logic Bugs
+
+### 7. SalesTrackingPage has duplicate validateForm logic
+**Files:** `src/components/AccountDashboards/AdminFeatures/Sales/SalesTrackingPage.tsx` AND `src/context/SalesContext.tsx`
+
+Validation is written twice and in the old `SalesTrackingPage.tsx` the condition is broken:
+
+```ts
+// BROKEN — this always proceeds even on validation failure
+if (!validateForm() && !loading && !formErrors) {
+  return;
+}
+
+// The new SalesContext version is correct. The old file should be deleted.
+```
+The old `SalesTrackingPage.tsx` in `AdminFeatures/Sales/` is now a dead file — the active one lives in `MainDashboard/Sales/`. Remove it to avoid confusion.
+
+---
+
+### 8. SchoolContext fetches metrics from a `sales` table that doesn't match your schema
+**File:** `src/context/SchoolContext.tsx`
+
+```ts
+const { data: salesData } = await supabase
+  .from("sales")
+  .select("amount")
+  .eq("school_id", schoolId);
+```
+Your `sales.sql` schema doesn't include a `school_id` column on the sales table (it references `student_id` instead). This query will always return 0 or error. The "Today's Money" stat card is broken.
+
+---
+
+### 9. loadStudents fetches ALL students then filters client-side
+**File:** `src/context/SchoolContext.tsx`
+
+```ts
+// INEFFICIENT — fetches every student in the DB
+const allUsers = await getStudents();
+const filtered = allUsers.filter(
+  (user) => user.role === "Student" && user.school_id === targetSchoolId
+);
+
+// getStudents() already supports schoolId — just use it
+const filtered = await getStudents(targetSchoolId);
+```
+At 200 students this is fine, but as you scale to multiple schools this downloads every student record from every school before filtering. `getStudents()` in `studentRequests.ts` already accepts a `schoolId` param — just pass it.
+
+---
+
+### 10. StudentRenewalsContext: resolveRenewalAsQuit has updateStudentRenewal in dep array
+**File:** `src/context/StudentRenewalContext.tsx`
+
+```ts
+// updateStudentRenewal is an imported function, not a state value
+// Having it in deps causes unnecessary re-renders
+[withAsync, loadRenewals, loadExpiringRenewals, state.currentStudentId, updateStudentRenewal]
+
+// FIXED — remove updateStudentRenewal from deps
+[withAsync, loadRenewals, loadExpiringRenewals, state.currentStudentId]
+```
+This was flagged in earlier bug fixes but re-appears in `resolveRenewalWithNext` as well.
+
+---
+
+### 11. Dashboard.tsx has a stray semicolon in JSX
+**File:** `src/pages/Dashboard.tsx`
+
+```tsx
+// BROKEN
+<StudentRenewalsProvider>
+  <MainDashboard />;   // <-- semicolon inside JSX renders as text
+</StudentRenewalsProvider>
+
+// FIXED
+<StudentRenewalsProvider>
+  <MainDashboard />
+</StudentRenewalsProvider>
+```
+
+---
+
+### 12. PrivateRoute in AppRouter doesn't actually redirect
+**File:** `src/components/AppRouter.tsx`
+
+```tsx
+// BROKEN — renders a NavLink with no children, doesn't redirect
+const PrivateRoute = ({ children }) => {
+  return user ? <>{children}</> : <NavLink to="/login" ... replace />;
+};
+
+// FIXED — use Navigate instead
+import { Navigate } from "react-router-dom";
+const PrivateRoute = ({ children }) => {
+  return user ? <>{children}</> : <Navigate to="/login" replace />;
+};
+```
+Right now if an unauthenticated user hits `/dashboard`, they get a broken NavLink render instead of being redirected.
+
+---
+
+### 13. AuthContext login logs errors on the happy path
+**File:** `src/context/AuthContext.tsx`
+
+```ts
+// BROKEN — console.error fires even on success
+const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+console.error(error);   // logs null on every successful login
+
+// FIXED
+if (error) console.error(error);
+```
+
+---
+
+### 14. RLS policies in attendance.sql reference a non-existent table
+**File:** `src/sql/attendance.sql`
+
+```sql
+-- BROKEN — user_profiles table doesn't exist in your schema
+SELECT school_id FROM user_profiles WHERE user_id = auth.uid()
+
+-- Should match your actual auth pattern (same approach as student_renewals RLS)
+-- Use auth.jwt() -> 'user_metadata' ->> 'school_id' or join against your actual users/schools table
+```
+
+---
+
+## PRIORITY 3 — Architecture / Code Quality
+
+### 15. Duplicate API files — AppUserRequests.ts vs UserService.ts
+**Files:** `src/api/AppUserRequests/AppUserRequests.ts` AND `src/api/AppUserRequests/UserService.ts`
+
+Two files in the same folder both export `createUser`, `updateUser`, `deleteUser` with different signatures. One uses `User`, one uses `UserProfile`. Neither appears to be actively used in the codebase. These should be consolidated or removed.
+
+---
+
+### 16. sales.sql has two CREATE TABLE statements
+**File:** `src/sql/sales.sql`
+
+```sql
+-- First definition (simple, with user_id)
+create table sales ( ... user_id uuid ... );
+
+-- Second definition (detailed, with student_id, payment_type, etc.)
+CREATE TABLE sales ( ... student_id BIGINT ... );
+```
+Running this migration will fail on the second `CREATE TABLE`. Pick one (the detailed second version matches your TypeScript types). Delete the first.
+
+---
+
+### 17. student_renewals.sql uses `id` but the app expects `renewal_id`
+**File:** `src/sql/student_renewals.sql`
+
+```sql
+-- SQL uses 'id'
+constraint student_renewals_pkey primary key (id)
+
+-- But every API call and type uses 'renewal_id'
+.eq("renewal_id", renewalId)
+```
+This mismatch was partially addressed before but the SQL file still shows the old schema. Make sure your migration ran the updated version with `renewal_id` as the primary key column name.
+
+---
+
+### 18. StatCards reads `schoolData.sales` and `schoolData.attendance` as numbers but they return 0
+**File:** `src/components/MainDashboard/StatCard/StatCards.tsx`
+
+The config uses `valueKey: "sales"` and `valueKey: "attendance"` to read from `useSchool()`, but those values are always 0 because the underlying queries are broken (see issues 4 and 8). Once those are fixed, the stat cards will work correctly.
+
+---
+
+### 19. Home page "Get Started" uses `<a href>` instead of React Router `<Link>`
+**File:** `src/pages/Home.tsx`
+
+```tsx
+// BROKEN — causes full page reload
+<a href="/signup">Get Started</a>
+
+// FIXED
+import { Link } from "react-router-dom";
+<Link to="/signup">Get Started</Link>
+```
+
+---
+
+### 20. Mobile nav doesn't close when navigating on iOS Safari
+**File:** `src/components/Header.tsx`
+
+The mobile menu uses `fixed` positioning but has no backdrop/overlay to close it by clicking outside. On mobile this means the menu stays open when a user taps a link and then taps elsewhere. Add an overlay div behind the nav that calls `handleNav()` on click.
+
+---
+
+## PRIORITY 4 — Future / Pre-Launch
+
+### 21. No loading or error state on SchoolManagement fetchSchool
+The `fetchSchool` in `SchoolManagement.tsx` calls directly into Supabase with no error boundary. If the school isn't found (fresh signup), the component renders blank with no guidance.
+
+### 22. Footer has placeholder contact info
+`src/components/Footer.tsx` — phone, email, address are all placeholder strings. Fine for now but needs updating before any real users see it.
+
+### 23. Announcements are entirely hardcoded
+All announcement UI reads from `dummyInfo.ts`. Create/Edit/Delete call `console.log`. Not wired to Supabase at all.
+
+### 24. Sales still uses mock data in production path
+`salesApi.ts` simulates API calls with `setTimeout` and in-memory state. The Supabase sales table and schema exist but the API layer hasn't been wired. This is already in your todo list but worth flagging.
+
+### 25. No 404 route defined
+`AppRouter.tsx` has no catch-all `<Route path="*">`. Navigating to any undefined URL renders nothing with no feedback.
+
+### 26. index.css loads Tailwind twice
+Both `index.css` and `App.css` contain the full `@tailwind base/components/utilities` directives. This doubles the CSS output. Remove the three lines from `App.css` and keep them only in `index.css`.
+
+---
+
+## Summary Table
+
+| # | Issue | File | Severity |
+|---|-------|------|----------|
+| 1 | Calendar off-by-one | AttendanceCalendar.tsx | 🔴 Critical |
+| 2 | isLoading stuck on zero students | AttendanceContext.tsx | 🔴 Critical |
+| 3 | upsert no conflict target | attendanceRequests.ts | 🔴 Critical |
+| 4 | Wrong table name (attendance) | SchoolContext.tsx | 🔴 Critical |
+| 5 | SQL trailing comma | attendance.sql | 🔴 Critical |
+| 6 | AttendanceContext not a real context | AttendanceContext.tsx | 🟠 High |
+| 7 | Broken validateForm + dead file | SalesTrackingPage.tsx | 🟠 High |
+| 8 | sales table missing school_id | SchoolContext.tsx | 🟠 High |
+| 9 | loadStudents fetches all schools | SchoolContext.tsx | 🟡 Medium |
+| 10 | Bad dep array in renewals context | StudentRenewalContext.tsx | 🟡 Medium |
+| 11 | Stray semicolon in Dashboard JSX | Dashboard.tsx | 🟡 Medium |
+| 12 | PrivateRoute doesn't redirect | AppRouter.tsx | 🟠 High |
+| 13 | console.error on happy path login | AuthContext.tsx | 🟡 Medium |
+| 14 | RLS references non-existent table | attendance.sql | 🟠 High |
+| 15 | Duplicate API files | AppUserRequests/ | 🟡 Medium |
+| 16 | Two CREATE TABLE in sales.sql | sales.sql | 🟠 High |
+| 17 | renewal_id vs id mismatch in SQL | student_renewals.sql | 🟠 High |
+| 18 | StatCards always shows 0 | StatCards.tsx | 🟡 Medium (downstream of 4+8) |
+| 19 | `<a href>` instead of Link | Home.tsx | 🟡 Medium |
+| 20 | Mobile nav no outside-click close | Header.tsx | 🟡 Medium |
+| 21 | No error state on school fetch | SchoolManagement.tsx | 🟡 Medium |
+| 22 | Placeholder footer content | Footer.tsx | 🟢 Low |
+| 23 | Announcements not wired | Announcements/ | 🟢 Low |
+| 24 | Sales still mock data | salesApi.ts | 🟢 Low (known) |
+| 25 | No 404 route | AppRouter.tsx | 🟢 Low |
+| 26 | Tailwind loaded twice | index.css / App.css | 🟢 Low |

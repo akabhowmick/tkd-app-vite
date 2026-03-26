@@ -2,6 +2,7 @@ import { MainDashboard } from "../components/MainDashboard/MainDashboard";
 import { useAuth } from "../context/AuthContext";
 import { SchoolProvider } from "../context/SchoolContext";
 import { StudentRenewalsProvider } from "../context/StudentRenewalContext";
+import { AttendanceProvider } from "../context/AttendanceContext";
 import { UserRole } from "../types/user";
 import { Profile } from "../components/AccountDashboards/AdminFeatures/Profile/Profile";
 
@@ -13,14 +14,12 @@ const Dashboard = () => {
       return (
         <SchoolProvider>
           <StudentRenewalsProvider>
-            <MainDashboard />
+            <AttendanceProvider>
+              <MainDashboard />
+            </AttendanceProvider>
           </StudentRenewalsProvider>
         </SchoolProvider>
       );
-    case UserRole.Instructor:
-    case UserRole.Parent:
-    case UserRole.Student:
-      return <Profile />;
     default:
       return <Profile />;
   }
