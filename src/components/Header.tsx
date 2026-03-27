@@ -1,107 +1,119 @@
 import { useState } from "react";
-import { AiOutlineClose, AiOutlineMenu } from "react-icons/ai";
-import { NavLink, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
+import { Menu, X } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
-export const Header = () => {
-  const [nav, setNav] = useState(false);
-
-  // Toggle function to handle the navbar's display
-  const handleNav = () => {
-    setNav(!nav);
-  };
-
+const Navbar = () => {
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const location = useLocation();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  // Handle user logout
   const handleLogout = () => {
     logout();
-    navigate("/login"); // Redirect to login after logout
+    navigate("/login");
+    setMobileOpen(false);
   };
 
-  // Navigation items based on user's authentication status
-  const navItems = user
-    ? [
-        { id: 1, text: "Home", to: "/" },
-        { id: 2, text: "Dashboard", to: "/dashboard" },
-      ]
-    : [
-        { id: 1, text: "Home", to: "/" },
-        { id: 2, text: "Login", to: "/login" },
-      ];
+  const publicLinks = [
+    { label: "Home", to: "/" },
+    { label: "Features", to: "/#features" },
+    { label: "Pricing", to: "/pricing" },
+    { label: "FAQ", to: "/faq" },
+    { label: "About", to: "/about" },
+  ];
+
+  const authedLinks = [
+    { label: "Home", to: "/" },
+    { label: "Dashboard", to: "/dashboard" },
+  ];
+
+  const navLinks = user ? authedLinks : publicLinks;
 
   return (
-    <div className="bg-red-900 flex justify-between items-center h-16 w-full px-2 text-white shadow-md">
-      {/* Logo */}
-      <h1 className="text-xl font-bold">TaeKwonTrack</h1>
+    <nav className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+      <div className="container flex h-16 items-center justify-between">
+        <Link to="/" className="text-xl font-bold text-primary">
+          TaeKwonTrack
+        </Link>
 
-      {/* Desktop Navigation */}
-      <ul className="hidden md:flex space-x-6">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.id}
-            to={item.to}
-            className={({ isActive }) =>
-              `p-2 rounded-lg transition duration-300 ${
-                isActive ? "text-gray-300 font-bold" : "hover:text-gray-300"
-              }`
-            }
-          >
-            {item.text}
-          </NavLink>
-        ))}
-        {user && (
-          <button
-            onClick={handleLogout}
-            className="p-2 text-white rounded-lg transition duration-300 hover:text-gray-300"
-          >
-            Logout
-          </button>
-        )}
-      </ul>
+        {/* Desktop */}
+        <div className="hidden md:flex items-center gap-8">
+          {navLinks.map((link) => (
+            <Link
+              key={link.to}
+              to={link.to}
+              className={`text-sm font-medium transition-colors hover:text-primary ${
+                location.pathname === link.to ? "text-primary" : "text-muted-foreground"
+              }`}
+            >
+              {link.label}
+            </Link>
+          ))}
+          {user ? (
+            <button
+              onClick={handleLogout}
+              className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+            >
+              Logout
+            </button>
+          ) : (
+            <Link
+              to="/login"
+              className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 transition-colors"
+            >
+              Get Started
+            </Link>
+          )}
+        </div>
 
-      {/* Mobile Navigation Icon */}
-      <div onClick={handleNav} className="block md:hidden">
-        {nav ? <AiOutlineClose size={24} /> : <AiOutlineMenu size={24} />}
+        {/* Mobile toggle */}
+        <button
+          className="md:hidden p-2 text-foreground"
+          onClick={() => setMobileOpen(!mobileOpen)}
+          aria-label="Toggle menu"
+        >
+          {mobileOpen ? <X size={24} /> : <Menu size={24} />}
+        </button>
       </div>
 
-      {/* Mobile Navigation Menu */}
-      <ul
-        className={`fixed md:hidden left-0 top-0 w-[60%] h-full bg-red-900 shadow-lg transition-transform duration-500 ${
-          nav ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        {/* Mobile Logo */}
-        <h1 className="text-3xl font-bold text-white m-4">TaeKwonTrack</h1>
-
-        {/* Mobile Navigation Items */}
-        {navItems.map((item) => (
-          <NavLink
-            key={item.id}
-            to={item.to}
-            onClick={handleNav} // Close menu on navigation
-            className={({ isActive }) =>
-              `block p-4 rounded-lg transition duration-300 ${
-                isActive ? "text-gray-300 font-bold" : "hover:text-gray-300"
-              }`
-            }
-          >
-            {item.text}
-          </NavLink>
-        ))}
-        {user && (
-          <button
-            onClick={() => {
-              handleLogout();
-              handleNav(); // Close menu after logout
-            }}
-            className="block w-full p-4 bg-gray-700 text-white rounded-lg transition duration-300 hover:bg-gray-600"
-          >
-            Logout
-          </button>
-        )}
-      </ul>
-    </div>
+      {/* Mobile menu */}
+      {mobileOpen && (
+        <div className="md:hidden border-t border-border bg-background px-4 pb-4">
+          {navLinks.map((link) => (
+            <Link
+              key={link.to}
+              to={link.to}
+              onClick={() => setMobileOpen(false)}
+              className="block py-3 text-sm font-medium text-muted-foreground hover:text-primary"
+            >
+              {link.label}
+            </Link>
+          ))}
+          {user ? (
+            <button
+              onClick={handleLogout}
+              className="mt-2 w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+            >
+              Logout
+            </button>
+          ) : (
+            <Link
+              to="/login"
+              onClick={() => setMobileOpen(false)}
+              className="mt-2 block w-full rounded-md bg-primary px-4 py-2 text-center text-sm font-medium text-primary-foreground"
+            >
+              Get Started
+            </Link>
+          )}
+        </div>
+      )}
+    </nav>
   );
 };
+
+export default Navbar;
+
+// Keep the named export so existing imports don't break
+export { Navbar as Header };

@@ -1,27 +1,56 @@
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Space+Grotesk:wght@300..700&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 220 20% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 20% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 20% 10%;
+    --primary: 0 72% 41%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 220 20% 10%;
+    --muted: 220 10% 96%;
+    --muted-foreground: 220 10% 45%;
+    --accent: 0 0% 96%;
+    --accent-foreground: 220 20% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 10% 90%;
+    --input: 220 10% 90%;
+    --ring: 0 72% 41%;
+    --radius: 0.5rem;
+  }
 
-:root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+  * {
+    @apply border-border;
+  }
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: black;
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: "DM Sans", system-ui, sans-serif;
+  }
 
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: "Space Grotesk", system-ui, sans-serif;
+  }
 }
 
-
-/* Background animation */
+/* Page transition animation kept from old styles */
 @keyframes floating {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0) rotate(0deg);
   }
   50% {
@@ -36,31 +65,3 @@
   mix-blend-mode: multiply;
   opacity: 0.3;
 }
-
-.circle:nth-child(1) {
-  width: 150px;
-  height: 150px;
-  top: 20%;
-  left: 25%;
-  background: #dc2626; /* Red */
-  animation-delay: 0s;
-}
-
-.circle:nth-child(2) {
-  width: 200px;
-  height: 200px;
-  top: 50%;
-  left: 70%;
-  background: #4b5563; /* Gray */
-  animation-delay: 1.5s;
-}
-
-.circle:nth-child(3) {
-  width: 100px;
-  height: 100px;
-  bottom: 10%;
-  right: 10%;
-  background: #2b22cf; /* White */
-  animation-delay: 3s;
-}
-

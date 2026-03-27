@@ -1,78 +1,66 @@
-import { FaFacebook, FaTwitter, FaInstagram, FaLinkedin } from 'react-icons/fa';
+import { Link } from "react-router-dom";
+import { Instagram, Facebook, Linkedin } from "lucide-react";
 
-const footerData = {
-  companyName: "TaeKwonTrack",
-  contacts: {
-    phone: "+1 234 567 890",
-    email: "info@taekwondoapp.com",
-    address: "123 Martial Arts Lane, City, Country",
-  },
-  socialMedia: [
-    { name: "Facebook", icon: FaFacebook, link: "https://facebook.com" },
-    { name: "Twitter", icon: FaTwitter, link: "https://twitter.com" },
-    { name: "Instagram", icon: FaInstagram, link: "https://instagram.com" },
-    { name: "LinkedIn", icon: FaLinkedin, link: "https://linkedin.com" },
-  ],
-  services: [
-    { name: "Class Schedules", link: "/schedules" },
-    { name: "Private Lessons", link: "/private-lessons" },
-    { name: "Event Registration", link: "/events" },
-    { name: "Rank Testing Info", link: "/rank-testing" },
-  ],
-};
-
-export const Footer = () => {
-  return (
-    <footer className="bg-red-900 text-white py-8">
-      <div className="container mx-auto grid grid-cols-1 md:grid-cols-4 gap-8 w-11/12">
-
-        {/* Company Name */}
-        <div className="flex items-center">
-          <h1 className="text-2xl font-bold">{footerData.companyName}</h1>
+export const Footer = () => (
+  <footer className="border-t border-border bg-secondary/50">
+    <div className="container py-12">
+      <div className="grid gap-8 md:grid-cols-3">
+        <div>
+          <Link to="/" className="text-xl font-bold text-primary">
+            TaeKwonTrack
+          </Link>
+          <p className="mt-2 text-sm text-muted-foreground">Built for the dojo, not the desk.</p>
         </div>
 
-        {/* Contacts */}
-        <div>
-          <h3 className="text-xl font-bold mb-4">Contacts</h3>
-          <p>Phone: {footerData.contacts.phone}</p>
-          <p>Email: {footerData.contacts.email}</p>
-          <p>Address: {footerData.contacts.address}</p>
+        <div className="flex flex-col gap-2">
+          <span className="text-sm font-semibold text-foreground">Links</span>
+          {[
+            { label: "Home", to: "/" },
+            { label: "Pricing", to: "/pricing" },
+            { label: "FAQ", to: "/faq" },
+            { label: "Login", to: "/login" },
+          ].map((l) => (
+            <Link
+              key={l.to}
+              to={l.to}
+              className="text-sm text-muted-foreground hover:text-primary transition-colors"
+            >
+              {l.label}
+            </Link>
+          ))}
         </div>
 
-        {/* Social Media */}
-        <div>
-          <h3 className="text-xl font-bold mb-4">Follow Us</h3>
-          <div className="flex space-x-4">
-            {footerData.socialMedia.map((media) => (
-              <a
-                key={media.name}
-                href={media.link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-white text-2xl hover:text-gray-300"
-                aria-label={media.name}
-              >
-                <media.icon />
-              </a>
-            ))}
+        <div className="flex flex-col gap-3">
+          <span className="text-sm font-semibold text-foreground">Follow Us</span>
+          <div className="flex gap-4">
+            <a
+              href="#"
+              aria-label="Instagram"
+              className="text-muted-foreground hover:text-primary transition-colors"
+            >
+              <Instagram size={20} />
+            </a>
+            <a
+              href="#"
+              aria-label="Facebook"
+              className="text-muted-foreground hover:text-primary transition-colors"
+            >
+              <Facebook size={20} />
+            </a>
+            <a
+              href="#"
+              aria-label="LinkedIn"
+              className="text-muted-foreground hover:text-primary transition-colors"
+            >
+              <Linkedin size={20} />
+            </a>
           </div>
         </div>
-
-        {/* Services */}
-        <div>
-          <h3 className="text-xl font-bold mb-4">Services</h3>
-          <ul>
-            {footerData.services.map((service) => (
-              <li key={service.name}>
-                <a href={service.link} className="hover:underline">
-                  {service.name}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
-
       </div>
-    </footer>
-  );
-};
+
+      <div className="mt-10 border-t border-border pt-6 text-center text-xs text-muted-foreground">
+        © {new Date().getFullYear()} TaeKwonTrack. All rights reserved.
+      </div>
+    </div>
+  </footer>
+);
