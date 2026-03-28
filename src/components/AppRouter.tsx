@@ -10,6 +10,10 @@ import { TakeAttendance } from "./AccountDashboards/AdminFeatures/AttendanceReco
 import { StudentListPage } from "./AccountDashboards/AdminFeatures/StudentView/StudentListPage";
 import { SchoolManagement } from "./AccountDashboards/AdminFeatures/SchoolManagement/SchoolManagement";
 
+import FaqPage from "../pages/Faq";
+import PricingPage from "../pages/Pricing";
+import AboutPage from "../pages/About";
+
 const AppRouter: React.FC = () => {
   const { user } = useAuth();
 
@@ -38,6 +42,9 @@ const AppRouter: React.FC = () => {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<SignUp />} />
+        <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/faq" element={<FaqPage />} />
+        <Route path="/about" element={<AboutPage />} />
 
         {/* Protected Routes */}
         <Route

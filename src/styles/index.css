@@ -8,23 +8,32 @@
   :root {
     --background: 0 0% 100%;
     --foreground: 220 20% 10%;
+
     --card: 0 0% 100%;
     --card-foreground: 220 20% 10%;
+
     --popover: 0 0% 100%;
     --popover-foreground: 220 20% 10%;
+
     --primary: 0 72% 41%;
     --primary-foreground: 0 0% 100%;
+
     --secondary: 0 0% 96%;
     --secondary-foreground: 220 20% 10%;
+
     --muted: 220 10% 96%;
     --muted-foreground: 220 10% 45%;
+
     --accent: 0 0% 96%;
     --accent-foreground: 220 20% 10%;
+
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 100%;
+
     --border: 220 10% 90%;
     --input: 220 10% 90%;
     --ring: 0 72% 41%;
+
     --radius: 0.5rem;
   }
 
@@ -33,8 +42,11 @@
   }
 
   body {
-    @apply bg-background text-foreground antialiased;
-    font-family: "DM Sans", system-ui, sans-serif;
+    @apply bg-background text-foreground font-body antialiased;
+  }
+
+  html {
+    scroll-behavior: smooth;
   }
 
   h1,
@@ -43,11 +55,11 @@
   h4,
   h5,
   h6 {
-    font-family: "Space Grotesk", system-ui, sans-serif;
+    @apply font-heading;
   }
 }
 
-/* Page transition animation kept from old styles */
+/* Keep the old animated circles for the Home page background */
 @keyframes floating {
   0%,
   100% {
@@ -64,4 +76,29 @@
   animation: floating 5s infinite ease-in-out;
   mix-blend-mode: multiply;
   opacity: 0.3;
+}
+
+.circle:nth-child(1) {
+  width: 150px;
+  height: 150px;
+  top: 20%;
+  left: 25%;
+  background: #dc2626;
+  animation-delay: 0s;
+}
+.circle:nth-child(2) {
+  width: 200px;
+  height: 200px;
+  top: 50%;
+  left: 70%;
+  background: #4b5563;
+  animation-delay: 1.5s;
+}
+.circle:nth-child(3) {
+  width: 100px;
+  height: 100px;
+  bottom: 10%;
+  right: 10%;
+  background: #2b22cf;
+  animation-delay: 3s;
 }

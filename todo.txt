@@ -306,10 +306,6 @@ All announcement UI reads from `dummyInfo.ts`. Create/Edit/Delete call `console.
 
 ### 25. No 404 route defined
 `AppRouter.tsx` has no catch-all `<Route path="*">`. Navigating to any undefined URL renders nothing with no feedback.
-
-### 26. index.css loads Tailwind twice
-Both `index.css` and `App.css` contain the full `@tailwind base/components/utilities` directives. This doubles the CSS output. Remove the three lines from `App.css` and keep them only in `index.css`.
-
 ---
 
 ## Summary Table
@@ -341,4 +337,3 @@ Both `index.css` and `App.css` contain the full `@tailwind base/components/utili
 | 23 | Announcements not wired | Announcements/ | 🟢 Low |
 | 24 | Sales still mock data | salesApi.ts | 🟢 Low (known) |
 | 25 | No 404 route | AppRouter.tsx | 🟢 Low |
-| 26 | Tailwind loaded twice | index.css / App.css | 🟢 Low |

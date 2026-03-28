@@ -1,56 +1,60 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import { useNavigate } from "react-router-dom";
 
-const Navbar = () => {
+const publicNavLinks = [
+  { label: "Home", to: "/" },
+  { label: "Features", to: "/#features" },
+  { label: "Pricing", to: "/pricing" },
+  { label: "FAQ", to: "/faq" },
+  { label: "About", to: "/about" },
+];
+
+const authedNavLinks = [
+  { label: "Home", to: "/" },
+  { label: "Dashboard", to: "/dashboard" },
+];
+
+export const Header = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
-  const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
+
+  const navLinks = user ? authedNavLinks : publicNavLinks;
 
   const handleLogout = () => {
     logout();
-    navigate("/login");
+    navigate("/");
     setMobileOpen(false);
   };
 
-  const publicLinks = [
-    { label: "Home", to: "/" },
-    { label: "Features", to: "/#features" },
-    { label: "Pricing", to: "/pricing" },
-    { label: "FAQ", to: "/faq" },
-    { label: "About", to: "/about" },
-  ];
-
-  const authedLinks = [
-    { label: "Home", to: "/" },
-    { label: "Dashboard", to: "/dashboard" },
-  ];
-
-  const navLinks = user ? authedLinks : publicLinks;
+  const isActive = (to: string) =>
+    to === "/" ? location.pathname === "/" : location.pathname.startsWith(to.split("#")[0]);
 
   return (
     <nav className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
       <div className="container flex h-16 items-center justify-between">
-        <Link to="/" className="text-xl font-bold text-primary">
+        {/* Logo */}
+        <Link to="/" className="text-xl font-bold font-heading text-primary">
           TaeKwonTrack
         </Link>
 
-        {/* Desktop */}
+        {/* Desktop nav */}
         <div className="hidden md:flex items-center gap-8">
           {navLinks.map((link) => (
             <Link
               key={link.to}
               to={link.to}
               className={`text-sm font-medium transition-colors hover:text-primary ${
-                location.pathname === link.to ? "text-primary" : "text-muted-foreground"
+                isActive(link.to) ? "text-primary" : "text-muted-foreground"
               }`}
             >
               {link.label}
             </Link>
           ))}
+
           {user ? (
             <button
               onClick={handleLogout}
@@ -61,7 +65,7 @@ const Navbar = () => {
           ) : (
             <Link
               to="/login"
-              className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 transition-colors"
+              className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 transition-colors"
             >
               Get Started
             </Link>
@@ -91,10 +95,11 @@ const Navbar = () => {
               {link.label}
             </Link>
           ))}
+
           {user ? (
             <button
               onClick={handleLogout}
-              className="mt-2 w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+              className="mt-2 w-full rounded-md bg-muted px-4 py-2 text-sm font-medium text-foreground"
             >
               Logout
             </button>
@@ -113,7 +118,4 @@ const Navbar = () => {
   );
 };
 
-export default Navbar;
-
-// Keep the named export so existing imports don't break
-export { Navbar as Header };
+export default Header;
