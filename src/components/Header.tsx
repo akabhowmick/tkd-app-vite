@@ -5,7 +5,7 @@ import { useAuth } from "../context/AuthContext";
 
 const publicNavLinks = [
   { label: "Home", to: "/" },
-  { label: "Features", to: "/#features" },
+  { label: "Features", to: "/features" },
   { label: "Pricing", to: "/pricing" },
   { label: "FAQ", to: "/faq" },
   { label: "About", to: "/about" },

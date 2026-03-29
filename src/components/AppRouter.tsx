@@ -1,42 +1,31 @@
 import React from "react";
-import { BrowserRouter as Router, Route, Routes, NavLink } from "react-router-dom";
+import { BrowserRouter as Router, Route, Routes, useLocation, Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import Home from "../pages/Home";
 import Login from "../pages/Login";
 import SignUp from "../pages/Signup";
 import { Header } from "./Header";
+import { Footer } from "./Footer";
 import Dashboard from "../pages/Dashboard";
 import { TakeAttendance } from "./AccountDashboards/AdminFeatures/AttendanceRecords/TakeAttendance";
 import { StudentListPage } from "./AccountDashboards/AdminFeatures/StudentView/StudentListPage";
 import { SchoolManagement } from "./AccountDashboards/AdminFeatures/SchoolManagement/SchoolManagement";
-
 import FaqPage from "../pages/Faq";
 import PricingPage from "../pages/Pricing";
 import AboutPage from "../pages/About";
 
-const AppRouter: React.FC = () => {
+const AppContent: React.FC = () => {
   const { user } = useAuth();
+  const location = useLocation();
+  const isDashboard = location.pathname.startsWith("/dashboard");
 
-  const activeClassName = "text-blue-500 font-bold"; // Define active link style
-
-  // Private Route Component
   const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    return user ? (
-      <>{children}</>
-    ) : (
-      <NavLink
-        to="/login"
-        className={({ isActive }) =>
-          isActive ? activeClassName : "text-gray-500 hover:text-gray-700"
-        }
-        replace
-      />
-    );
+    return user ? <>{children}</> : <Navigate to="/login" replace />;
   };
 
   return (
-    <Router>
-      <Header />
+    <>
+      {!isDashboard && <Header />}
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<Home />} />
@@ -79,7 +68,23 @@ const AppRouter: React.FC = () => {
             </PrivateRoute>
           }
         />
+
+        {/* 404 */}
+        <Route
+          path="*"
+          element={<div className="p-12 text-center text-gray-500">Page not found.</div>}
+        />
       </Routes>
+      {!isDashboard && <Footer />}
+    </>
+  );
+};
+
+// Outer component — just provides the Router context
+const AppRouter: React.FC = () => {
+  return (
+    <Router>
+      <AppContent />
     </Router>
   );
 };

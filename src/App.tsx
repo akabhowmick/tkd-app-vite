@@ -3,7 +3,6 @@ import "../src/styles/index.css";
 import React from "react";
 import { AuthProvider } from "./context/AuthContext";
 import AppRouter from "./components/AppRouter";
-import { Footer } from "./components/Footer";
 import { motion } from "framer-motion";
 
 const App: React.FC = () => {
@@ -16,7 +15,6 @@ const App: React.FC = () => {
     >
       <AuthProvider>
         <AppRouter />
-        <Footer />
       </AuthProvider>
     </motion.div>
   );
