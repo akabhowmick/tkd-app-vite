@@ -8,6 +8,41 @@ import { UserProfile } from "../../../../types/user";
 import { getBaseModalOptions, getModalConfig } from "../../../../utils/modalConfig";
 import { validateFormData } from "../../../../utils/formValidation";
 
+const MAX_BULK_STUDENTS = 20;
+
+const buildBulkRow = (index: number) => `
+  <div class="bulk-row" data-index="${index}" style="border:1px solid #e5e7eb; border-radius:8px; padding:12px; margin-bottom:10px; background:#f9fafb; position:relative;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+      <span class="bulk-row-number" style="font-weight:600; font-size:13px; color:#374151;">Student ${index + 1}</span>
+      ${
+        index > 0
+          ? `
+        <button type="button" onclick="this.closest('.bulk-row').remove(); document.getElementById('bulk-add-row-btn').disabled = document.querySelectorAll('.bulk-row').length >= ${MAX_BULK_STUDENTS};"
+          style="background:none; border:none; cursor:pointer; color:#ef4444; font-size:18px; line-height:1;">&times;</button>
+      `
+          : ""
+      }
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;">
+      <div>
+        <label style="font-size:12px; color:#6b7280; display:block; margin-bottom:3px;">Name *</label>
+        <input class="bulk-name" type="text" placeholder="Full name"
+          style="width:100%; padding:6px 8px; border:1px solid #d1d5db; border-radius:6px; font-size:13px;" />
+      </div>
+      <div>
+        <label style="font-size:12px; color:#6b7280; display:block; margin-bottom:3px;">Email *</label>
+        <input class="bulk-email" type="email" placeholder="student@example.com"
+          style="width:100%; padding:6px 8px; border:1px solid #d1d5db; border-radius:6px; font-size:13px;" />
+      </div>
+      <div>
+        <label style="font-size:12px; color:#6b7280; display:block; margin-bottom:3px;">Phone</label>
+        <input class="bulk-phone" type="tel" placeholder="(555) 123-4567"
+          style="width:100%; padding:6px 8px; border:1px solid #d1d5db; border-radius:6px; font-size:13px;" />
+      </div>
+    </div>
+  </div>
+`;
+
 export const HandleAddOrEdit: React.FC<HandleAddOrEditProps> = ({
   student,
   onSuccess,
@@ -19,10 +54,8 @@ export const HandleAddOrEdit: React.FC<HandleAddOrEditProps> = ({
 }) => {
   const { schoolId } = useSchool();
   const isEdit = !!student;
-  const defaultButtonText = isEdit ? "Edit Student" : "Add Student";
   const config = getModalConfig(isEdit);
 
-  // ─── Single student form fields (used for edit or single-add) ───────────────
   const getSingleFormHTML = (prefill?: Partial<UserProfile>) => `
     <div class="swal-form-wrapper">
       <div class="swal-info-box">
@@ -50,7 +83,6 @@ export const HandleAddOrEdit: React.FC<HandleAddOrEditProps> = ({
     </div>
   `;
 
-  // ─── Bulk form HTML (rendered inside Swal, rows managed via vanilla JS) ──────
   const getBulkFormHTML = () => `
     <div class="swal-form-wrapper">
       <div class="swal-info-box">
@@ -60,7 +92,7 @@ export const HandleAddOrEdit: React.FC<HandleAddOrEditProps> = ({
         </svg>
         <div>
           <div class="swal-info-title">Bulk Add Students</div>
-          <div class="swal-info-subtitle">Fill in each row — only Name and Email are required</div>
+          <div class="swal-info-subtitle">Fill in each row — only Name and Email are required (max ${MAX_BULK_STUDENTS})</div>
         </div>
       </div>
 
@@ -72,51 +104,9 @@ export const HandleAddOrEdit: React.FC<HandleAddOrEditProps> = ({
         type="button"
         id="bulk-add-row-btn"
         style="margin-top:12px; padding:6px 14px; background:#2563eb; color:#fff; border:none; border-radius:6px; cursor:pointer; font-size:13px;"
-        onclick="
-          const container = document.getElementById('bulk-rows-container');
-          const count = container.querySelectorAll('.bulk-row').length;
-          const div = document.createElement('div');
-          div.innerHTML = \`${buildBulkRow(999).replace(/`/g, "\\`")}\`;
-          div.querySelector('.bulk-row').dataset.index = count;
-          div.querySelector('.bulk-row-number').textContent = count + 1;
-          container.appendChild(div.firstElementChild);
-        "
       >
         + Add Another Student
       </button>
-    </div>
-  `;
-
-  const buildBulkRow = (index: number) => `
-    <div class="bulk-row" data-index="${index}" style="border:1px solid #e5e7eb; border-radius:8px; padding:12px; margin-bottom:10px; background:#f9fafb; position:relative;">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-        <span class="bulk-row-number" style="font-weight:600; font-size:13px; color:#374151;">Student ${index + 1}</span>
-        ${
-          index > 0
-            ? `
-          <button type="button" onclick="this.closest('.bulk-row').remove()"
-            style="background:none; border:none; cursor:pointer; color:#ef4444; font-size:18px; line-height:1;">&times;</button>
-        `
-            : ""
-        }
-      </div>
-      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;">
-        <div>
-          <label style="font-size:12px; color:#6b7280; display:block; margin-bottom:3px;">Name *</label>
-          <input class="bulk-name" type="text" placeholder="Full name"
-            style="width:100%; padding:6px 8px; border:1px solid #d1d5db; border-radius:6px; font-size:13px;" />
-        </div>
-        <div>
-          <label style="font-size:12px; color:#6b7280; display:block; margin-bottom:3px;">Email *</label>
-          <input class="bulk-email" type="email" placeholder="student@example.com"
-            style="width:100%; padding:6px 8px; border:1px solid #d1d5db; border-radius:6px; font-size:13px;" />
-        </div>
-        <div>
-          <label style="font-size:12px; color:#6b7280; display:block; margin-bottom:3px;">Phone</label>
-          <input class="bulk-phone" type="tel" placeholder="(555) 123-4567"
-            style="width:100%; padding:6px 8px; border:1px solid #d1d5db; border-radius:6px; font-size:13px;" />
-        </div>
-      </div>
     </div>
   `;
 
@@ -126,7 +116,6 @@ export const HandleAddOrEdit: React.FC<HandleAddOrEditProps> = ({
       if (isEdit) {
         await handleSingleModal();
       } else {
-        // Ask: single or bulk?
         const { value: mode } = await Swal.fire({
           ...getBaseModalOptions(),
           title: "Add Students",
@@ -143,7 +132,6 @@ export const HandleAddOrEdit: React.FC<HandleAddOrEditProps> = ({
         } else if (mode === false) {
           await handleBulkModal();
         }
-        // undefined = dismissed, do nothing
       }
     } catch (error) {
       console.error("Error in handleAddOrEdit:", error);
@@ -188,6 +176,31 @@ export const HandleAddOrEdit: React.FC<HandleAddOrEditProps> = ({
       confirmButtonText: "Add All Students",
       confirmButtonColor: "#10b981",
       showCancelButton: true,
+      didOpen: () => {
+        const btn = document.getElementById("bulk-add-row-btn");
+        if (!btn) return;
+
+        btn.addEventListener("click", () => {
+          const container = document.getElementById("bulk-rows-container");
+          if (!container) return;
+
+          const currentRows = container.querySelectorAll(".bulk-row");
+          if (currentRows.length >= MAX_BULK_STUDENTS) return;
+
+          const count = currentRows.length;
+          const div = document.createElement("div");
+          div.innerHTML = buildBulkRow(count);
+          container.appendChild(div.firstElementChild!);
+
+          // Disable button if we've hit the cap
+          if (container.querySelectorAll(".bulk-row").length >= MAX_BULK_STUDENTS) {
+            (btn as HTMLButtonElement).disabled = true;
+            btn.style.opacity = "0.5";
+            btn.style.cursor = "not-allowed";
+            btn.textContent = `Max ${MAX_BULK_STUDENTS} students reached`;
+          }
+        });
+      },
       preConfirm: () => {
         const rows = document.querySelectorAll(".bulk-row");
         const students: Array<Record<string, string>> = [];
@@ -198,7 +211,7 @@ export const HandleAddOrEdit: React.FC<HandleAddOrEditProps> = ({
           const email = (row.querySelector(".bulk-email") as HTMLInputElement).value.trim();
           const phone = (row.querySelector(".bulk-phone") as HTMLInputElement).value.trim();
 
-          if (!name && !email && !phone) continue; // skip fully empty rows
+          if (!name && !email && !phone) continue;
 
           const validationError = validateFormData({ name, email, phone });
           if (validationError) {
@@ -286,7 +299,7 @@ export const HandleAddOrEdit: React.FC<HandleAddOrEditProps> = ({
     if (onSuccess) onSuccess();
   };
 
-  // ─── Single submission (edit or single-add) ──────────────────────────────────
+  // ─── Single submission ───────────────────────────────────────────────────────
   const handleFormSubmission = async (formValues: Omit<UserProfile, "id">) => {
     Swal.fire({
       title: isEdit ? "Updating Student..." : "Creating Student...",
@@ -337,7 +350,7 @@ export const HandleAddOrEdit: React.FC<HandleAddOrEditProps> = ({
 
   return (
     <button onClick={handleAddOrEdit} className={buttonClassName}>
-      {buttonText || defaultButtonText}
+      {buttonText || (isEdit ? "Edit Student" : "Add Student")}
     </button>
   );
 };

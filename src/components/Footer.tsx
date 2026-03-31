@@ -27,7 +27,7 @@ export const Footer = () => (
         </div>
 
         {/* Links */}
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 mx-auto">
           <span className="text-sm font-semibold text-foreground">Links</span>
           {footerLinks.map((l) => (
             <Link
@@ -41,7 +41,7 @@ export const Footer = () => (
         </div>
 
         {/* Social */}
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3 mx-auto">
           <span className="text-sm font-semibold text-foreground">Follow Us</span>
           <div className="flex gap-4">
             {socialLinks.map((s) => (

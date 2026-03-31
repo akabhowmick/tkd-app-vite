@@ -34,10 +34,10 @@ export const Header = () => {
     to === "/" ? location.pathname === "/" : location.pathname.startsWith(to.split("#")[0]);
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+    <nav className="sticky top-0 z-50 border-b border-red-800 bg-red-700">
       <div className="container flex h-16 items-center justify-between">
         {/* Logo */}
-        <Link to="/" className="text-xl font-bold font-heading text-primary">
+        <Link to="/" className="text-xl font-bold font-heading text-white">
           TaeKwonTrack
         </Link>
 
@@ -47,8 +47,8 @@ export const Header = () => {
             <Link
               key={link.to}
               to={link.to}
-              className={`text-sm font-medium transition-colors hover:text-primary ${
-                isActive(link.to) ? "text-primary" : "text-muted-foreground"
+              className={`text-base font-medium transition-colors hover:text-white ${
+                isActive(link.to) ? "text-white" : "text-red-100"
               }`}
             >
               {link.label}
@@ -58,14 +58,14 @@ export const Header = () => {
           {user ? (
             <button
               onClick={handleLogout}
-              className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+              className="text-sm font-medium text-red-200 hover:text-white transition-colors"
             >
               Logout
             </button>
           ) : (
             <Link
               to="/login"
-              className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 transition-colors"
+              className="inline-flex h-9 items-center justify-center rounded-md bg-white px-4 text-sm font-medium text-red-700 shadow hover:bg-red-50 transition-colors"
             >
               Get Started
             </Link>
@@ -74,7 +74,7 @@ export const Header = () => {
 
         {/* Mobile toggle */}
         <button
-          className="md:hidden p-2 text-foreground"
+          className="md:hidden p-2 text-white"
           onClick={() => setMobileOpen(!mobileOpen)}
           aria-label="Toggle menu"
         >
@@ -84,13 +84,13 @@ export const Header = () => {
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <div className="md:hidden border-t border-border bg-background px-4 pb-4">
+        <div className="md:hidden border-t border-red-800 bg-red-700 px-4 pb-4">
           {navLinks.map((link) => (
             <Link
               key={link.to}
               to={link.to}
               onClick={() => setMobileOpen(false)}
-              className="block py-3 text-sm font-medium text-muted-foreground hover:text-primary"
+              className="block py-3 text-sm font-medium text-red-200 hover:text-white"
             >
               {link.label}
             </Link>
@@ -99,7 +99,7 @@ export const Header = () => {
           {user ? (
             <button
               onClick={handleLogout}
-              className="mt-2 w-full rounded-md bg-muted px-4 py-2 text-sm font-medium text-foreground"
+              className="mt-2 w-full rounded-md bg-red-800 px-4 py-2 text-sm font-medium text-white"
             >
               Logout
             </button>
@@ -107,7 +107,7 @@ export const Header = () => {
             <Link
               to="/login"
               onClick={() => setMobileOpen(false)}
-              className="mt-2 block w-full rounded-md bg-primary px-4 py-2 text-center text-sm font-medium text-primary-foreground"
+              className="mt-2 block w-full rounded-md bg-white px-4 py-2 text-center text-sm font-medium text-red-700"
             >
               Get Started
             </Link>
