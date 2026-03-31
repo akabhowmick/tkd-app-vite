@@ -108,7 +108,7 @@ const Login: React.FC = () => {
 
         <button
           type="submit"
-          className="w-full px-4 py-2 text-white bg-blue-500 rounded hover:bg-blue-700"
+          className="w-full px-4 py-2 text-white bg-blue-600 rounded hover:bg-blue-700"
         >
           Login
         </button>
@@ -116,13 +116,12 @@ const Login: React.FC = () => {
 
       <p className="text-sm">
         Don't have an account?{" "}
-        <Link to="/signup" className="text-blue-500 hover:underline">
+        <Link to="/signup" className="text-blue-600 hover:underline">
           Sign Up
         </Link>
       </p>
     </motion.div>
   );
-
 };
 
 export default Login;
