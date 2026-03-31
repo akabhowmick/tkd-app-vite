@@ -65,6 +65,8 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     }
   };
 
+  const getLastName = (name: string = "") => name.trim().split(" ").pop() ?? "";
+
   const loadStudents = useCallback(
     async (currentSchoolId?: string, forceRefresh = false) => {
       const targetSchoolId = currentSchoolId || schoolId;
@@ -83,10 +85,10 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
       try {
         setLoading(true);
-        const allUsers = await getStudents();
-        // Filter students by school_id and role
-        const filtered = allUsers.filter(
-          (user) => user.role === "Student" && user.school_id === targetSchoolId,
+        const allUsers = await getStudents(schoolId);
+
+        const filtered = allUsers.sort((a, b) =>
+          getLastName(a.name).localeCompare(getLastName(b.name)),
         );
 
         // Update cache

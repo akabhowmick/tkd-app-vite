@@ -2,11 +2,6 @@
 
 ## 🔴 Critical / High
 
-- [ ] **#7** — Dead file + broken validateForm logic
-  - `src/components/AccountDashboards/AdminFeatures/Sales/SalesTrackingPage.tsx`
-  - Active sales page lives in `src/components/MainDashboard/Sales/SalesTrackingPage.tsx`
-  - Old file has broken validation condition (`if (!validateForm() && !loading && !formErrors)`) — delete the old file
-
 - [ ] **#12** — PrivateRoute renders a NavLink instead of redirecting unauthenticated users
   - `src/components/AppRouter.tsx`
   - Replace `<NavLink to="/login" replace />` with `<Navigate to="/login" replace />`

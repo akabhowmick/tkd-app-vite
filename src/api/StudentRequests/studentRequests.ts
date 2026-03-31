@@ -7,14 +7,18 @@ export const createStudent = async (student: Omit<UserProfile, "id">): Promise<v
   if (error) throw error;
 };
 
-// READ all students by schoolId 
-export const getStudents = async (schoolId?: string): Promise<UserProfile[]> => {
+// READ all students by schoolId
+export const getStudents = async (schoolId: string): Promise<UserProfile[]> => {
   let query = supabase.from("students").select("*");
   if (schoolId) query = query.eq("school_id", schoolId);
 
   const { data, error } = await query;
   if (error) throw error;
-  return data as UserProfile[];
+
+  return (data as UserProfile[]).sort((a, b) => {
+    const getLastName = (name: string = "") => name.trim().split(" ").pop() ?? "";
+    return getLastName(a.name).localeCompare(getLastName(b.name));
+  });
 };
 
 // UPDATE a student => update the rule afterwards using better backend checks
@@ -28,4 +32,3 @@ export const deleteStudent = async (id: string): Promise<void> => {
   const { error } = await supabase.from("students").delete().eq("id", id);
   if (error) throw error;
 };
- 
