@@ -151,7 +151,7 @@ export const TakeAttendance = () => {
                   <span>{dayNum}</span>
                   {/* Attendance badge placeholder */}
                   {markedCount > 0 && isSelected && (
-                    <span className="mt-0.5 text-[10px] bg-green-500 text-white rounded px-1">
+                    <span className="mt-0.5 text-xs bg-green-500 text-white rounded px-1">
                       P:{markedCount}
                     </span>
                   )}
@@ -225,7 +225,7 @@ export const TakeAttendance = () => {
           ].map((stat) => (
             <div key={stat.label} className="bg-white px-4 py-3 text-center">
               <p className={`text-xl font-bold ${stat.color}`}>{stat.count}</p>
-              <p className="text-xs text-gray-500">{stat.label}</p>
+              <p className="text-sm text-gray-600">{stat.label}</p>
             </div>
           ))}
         </div>
@@ -264,7 +264,7 @@ export const TakeAttendance = () => {
                   <span className="flex-1 text-sm font-medium text-gray-800">{student.name}</span>
 
                   {/* Note indicator */}
-                  {hasNote && <span className="text-xs text-primary mr-1">📝</span>}
+                  {hasNote && <span className="text-sm text-primary mr-1">📝</span>}
 
                   {/* Status buttons */}
                   <div className="flex flex-col gap-1">
@@ -273,7 +273,7 @@ export const TakeAttendance = () => {
                         <button
                           key={s}
                           onClick={() => setStatus(id, s)}
-                          className={`px-3 py-1 text-xs font-semibold rounded border transition-all ${
+                          className={`px-3 py-1 text-sm font-semibold rounded border transition-all ${
                             currentStatus === s
                               ? STATUS_STYLES[s]
                               : "bg-white border-gray-300 text-gray-600 hover:border-gray-400"
@@ -286,7 +286,7 @@ export const TakeAttendance = () => {
                     <div className="flex gap-1">
                       <button
                         onClick={() => setStatus(id, "tardy")}
-                        className={`px-3 py-1 text-xs font-semibold rounded border transition-all ${
+                        className={`px-3 py-1 text-sm font-semibold rounded border transition-all ${
                           currentStatus === "tardy"
                             ? STATUS_STYLES.tardy
                             : "bg-white border-gray-300 text-gray-600 hover:border-gray-400"
@@ -296,7 +296,7 @@ export const TakeAttendance = () => {
                       </button>
                       <button
                         onClick={() => setNoteOpen(noteOpen === id ? null : id)}
-                        className="px-3 py-1 text-xs font-semibold rounded border border-gray-300 text-gray-500 hover:border-gray-400 bg-white transition-all"
+                        className="px-3 py-1 text-sm font-semibold rounded border border-gray-300 text-gray-600 hover:border-gray-400 bg-white transition-all"
                       >
                         Note
                       </button>
@@ -311,7 +311,7 @@ export const TakeAttendance = () => {
                         onChange={(e) => setNotes((prev) => ({ ...prev, [id]: e.target.value }))}
                         onBlur={() => setNoteOpen(null)}
                         placeholder="Add a note..."
-                        className="mt-1 px-2 py-1 text-xs border border-gray-300 rounded outline-none focus:border-primary w-full"
+                        className="mt-1 px-2 py-1 text-sm border border-gray-300 rounded outline-none focus:border-primary w-full"
                       />
                     )}
                   </div>
@@ -323,7 +323,7 @@ export const TakeAttendance = () => {
 
         {/* Footer save bar */}
         <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100 bg-gray-50">
-          <span className="text-xs text-gray-500">
+          <span className="text-sm text-gray-600">
             {markedCount} of {students.length} students marked
           </span>
           <button

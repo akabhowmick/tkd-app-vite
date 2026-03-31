@@ -59,11 +59,11 @@ export const MainDashboard = () => {
         <header className="flex items-center justify-between h-16 px-6 bg-white border-b border-gray-200 shrink-0 z-20">
           {/* Search */}
           <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-2 w-72">
-            <Search size={16} className="text-gray-400" />
+            <Search size={16} className="text-gray-500" />
             <input
               type="text"
               placeholder="Search..."
-              className="bg-transparent text-sm outline-none text-gray-700 placeholder-gray-400 w-full"
+                className="bg-transparent text-sm outline-none text-gray-700 placeholder-gray-500 w-full"
             />
           </div>
 
@@ -87,7 +87,7 @@ export const MainDashboard = () => {
                 <span className="text-sm font-medium text-gray-700 hidden sm:block">
                   {user?.name || "Admin"}
                 </span>
-                <ChevronDown size={14} className="text-gray-400" />
+                <ChevronDown size={14} className="text-gray-500" />
               </button>
 
               {userMenuOpen && (
@@ -118,7 +118,7 @@ export const MainDashboard = () => {
 
         {/* Page hero title bar */}
         <div className="bg-gray-50 border-b border-gray-200 px-6 py-4 shrink-0">
-          <div className="flex items-center gap-2 text-sm text-gray-400 mb-1">
+          <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
             <span>Dashboard</span>
             {activeView !== "home" && (
               <>

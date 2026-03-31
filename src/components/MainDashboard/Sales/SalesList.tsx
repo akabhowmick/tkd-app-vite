@@ -9,9 +9,9 @@ export const SalesList: React.FC<{ sales: Sale[] }> = ({ sales }) => {
     return (
       <div className="bg-white rounded-xl shadow-sm border">
         <div className="p-12 text-center">
-          <FaDollarSign className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+          <FaDollarSign className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <p className="text-gray-500 text-lg">No sales recorded today</p>
-          <p className="text-gray-400 text-sm mt-1">Add your first sale to get started</p>
+          <p className="text-gray-500 text-sm mt-1">Add your first sale to get started</p>
         </div>
       </div>
     );

@@ -8,9 +8,9 @@ export interface ModalConfig {
 
 export const getModalConfig = (isEdit: boolean): ModalConfig => ({
   title: isEdit ? "Edit Student" : "Add New Student",
-  confirmButtonText: isEdit ? "Update Student" : "Add Student", 
+  confirmButtonText: isEdit ? "Update Student" : "Add Student",
   confirmButtonColor: isEdit ? "#059669" : "#3b82f6",
-  width: "600px",
+  width: "min(92vw, 40rem)",
   padding: "2rem",
 });
 

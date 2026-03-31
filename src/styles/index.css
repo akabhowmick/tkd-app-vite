@@ -43,10 +43,13 @@
 
   body {
     @apply bg-background text-foreground font-body antialiased;
+    line-height: 1.6;
+    text-size-adjust: 100%;
   }
 
   html {
     scroll-behavior: smooth;
+    font-size: clamp(16px, 0.2vw + 15.5px, 17px);
   }
 
   h1,

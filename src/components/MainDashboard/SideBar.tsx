@@ -83,7 +83,7 @@ export const Sidebar = ({ setActive, activeView = "home" }: SidebarProps) => {
 
   return (
     <aside
-      className={`relative flex flex-col h-screen bg-gray-900 text-gray-300 border-r border-gray-800 transition-[width] duration-300 ease-in-out flex-shrink-0 ${
+      className={`relative flex flex-col h-screen bg-gray-900 text-gray-200 border-r border-gray-800 transition-[width] duration-300 ease-in-out flex-shrink-0 ${
         collapsed ? "w-16" : "w-64"
       }`}
     >
@@ -100,7 +100,7 @@ export const Sidebar = ({ setActive, activeView = "home" }: SidebarProps) => {
       {/* Collapse toggle */}
       <button
         onClick={() => setCollapsed((c) => !c)}
-        className="absolute -right-3 top-5 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-gray-700 border border-gray-600 text-gray-300 hover:bg-gray-600 shadow"
+        className="absolute -right-3 top-5 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-gray-700 border border-gray-600 text-gray-200 hover:bg-gray-600 shadow"
         aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
       >
         {collapsed ? <ChevronRight size={12} /> : <ChevronLeft size={12} />}
@@ -163,7 +163,7 @@ export const Sidebar = ({ setActive, activeView = "home" }: SidebarProps) => {
                           className={`block w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
                             activeView === child.view
                               ? "text-primary font-medium"
-                              : "text-gray-400 hover:text-white hover:bg-gray-800"
+                              : "text-gray-300 hover:text-white hover:bg-gray-800"
                           }`}
                         >
                           {child.label}

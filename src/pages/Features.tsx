@@ -89,7 +89,7 @@ const Check = ({ yes }: { yes: boolean }) =>
   yes ? (
     <span className="text-green-600 font-bold text-lg">✓</span>
   ) : (
-    <span className="text-gray-300 font-bold text-lg">—</span>
+    <span className="text-gray-400 font-bold text-lg">—</span>
   );
 
 const Features = () => (
@@ -108,7 +108,7 @@ const Features = () => (
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-6 max-w-3xl mx-auto">
             Every feature your dojo needs, nothing it doesn't
           </h1>
-          <p className="text-white/70 text-lg max-w-2xl mx-auto mb-8">
+          <p className="text-white/85 text-lg max-w-2xl mx-auto mb-8">
             TaeKwonTrack is purpose-built for martial arts schools. Every feature was designed
             around how dojos actually operate — not adapted from generic business software.
           </p>
@@ -210,7 +210,7 @@ const Features = () => (
         <h2 className="text-3xl font-bold text-white mb-4">
           Ready to modernize your school management?
         </h2>
-        <p className="text-white/70 mb-8 max-w-xl mx-auto">
+        <p className="text-white/85 mb-8 max-w-xl mx-auto">
           Join schools already using TaeKwonTrack to save hours every week on admin work.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">

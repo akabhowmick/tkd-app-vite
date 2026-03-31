@@ -44,7 +44,7 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
             TaekwonTrack
           </p>
           <h1 className="text-2xl font-bold text-gray-900 mb-1">{title}</h1>
-          <p className="text-xs text-gray-400">
+          <p className="text-sm text-gray-500">
             Last updated:{" "}
             {new Date().toLocaleDateString("en-US", {
               month: "long",
@@ -59,13 +59,13 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
         <div className="pt-6 border-t border-gray-100 flex items-center justify-between">
           <Link
             to={left.to}
-            className={`text-sm font-medium hover:underline ${left.primary ? "text-blue-500" : "text-gray-400"}`}
+            className={`text-sm font-medium hover:underline ${left.primary ? "text-blue-500" : "text-gray-600"}`}
           >
             {left.label}
           </Link>
           <Link
             to={right.to}
-            className={`text-sm hover:underline ${right.primary ? "text-blue-500" : "text-gray-400"}`}
+            className={`text-sm hover:underline ${right.primary ? "text-blue-500" : "text-gray-600"}`}
           >
             {right.label}
           </Link>

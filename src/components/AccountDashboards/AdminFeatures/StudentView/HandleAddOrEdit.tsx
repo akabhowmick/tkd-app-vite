@@ -13,7 +13,7 @@ const MAX_BULK_STUDENTS = 20;
 const buildBulkRow = (index: number) => `
   <div class="bulk-row" data-index="${index}" style="border:1px solid #e5e7eb; border-radius:8px; padding:12px; margin-bottom:10px; background:#f9fafb; position:relative;">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-      <span class="bulk-row-number" style="font-weight:600; font-size:13px; color:#374151;">Student ${index + 1}</span>
+      <span class="bulk-row-number" style="font-weight:600; font-size:0.9375rem; color:#374151;">Student ${index + 1}</span>
       ${
         index > 0
           ? `
@@ -25,19 +25,19 @@ const buildBulkRow = (index: number) => `
     </div>
     <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;">
       <div>
-        <label style="font-size:12px; color:#6b7280; display:block; margin-bottom:3px;">Name *</label>
+        <label style="font-size:0.875rem; color:#6b7280; display:block; margin-bottom:3px;">Name *</label>
         <input class="bulk-name" type="text" placeholder="Full name"
-          style="width:100%; padding:6px 8px; border:1px solid #d1d5db; border-radius:6px; font-size:13px;" />
+          style="width:100%; padding:6px 8px; border:1px solid #d1d5db; border-radius:6px; font-size:0.9375rem;" />
       </div>
       <div>
-        <label style="font-size:12px; color:#6b7280; display:block; margin-bottom:3px;">Email *</label>
+        <label style="font-size:0.875rem; color:#6b7280; display:block; margin-bottom:3px;">Email *</label>
         <input class="bulk-email" type="email" placeholder="student@example.com"
-          style="width:100%; padding:6px 8px; border:1px solid #d1d5db; border-radius:6px; font-size:13px;" />
+          style="width:100%; padding:6px 8px; border:1px solid #d1d5db; border-radius:6px; font-size:0.9375rem;" />
       </div>
       <div>
-        <label style="font-size:12px; color:#6b7280; display:block; margin-bottom:3px;">Phone</label>
+        <label style="font-size:0.875rem; color:#6b7280; display:block; margin-bottom:3px;">Phone</label>
         <input class="bulk-phone" type="tel" placeholder="(555) 123-4567"
-          style="width:100%; padding:6px 8px; border:1px solid #d1d5db; border-radius:6px; font-size:13px;" />
+          style="width:100%; padding:6px 8px; border:1px solid #d1d5db; border-radius:6px; font-size:0.9375rem;" />
       </div>
     </div>
   </div>
@@ -103,7 +103,7 @@ export const HandleAddOrEdit: React.FC<HandleAddOrEditProps> = ({
       <button
         type="button"
         id="bulk-add-row-btn"
-        style="margin-top:12px; padding:6px 14px; background:#2563eb; color:#fff; border:none; border-radius:6px; cursor:pointer; font-size:13px;"
+        style="margin-top:12px; padding:6px 14px; background:#2563eb; color:#fff; border:none; border-radius:6px; cursor:pointer; font-size:0.9375rem;"
       >
         + Add Another Student
       </button>
@@ -172,7 +172,7 @@ export const HandleAddOrEdit: React.FC<HandleAddOrEditProps> = ({
       ...getBaseModalOptions(),
       title: "Bulk Add Students",
       html: getBulkFormHTML(),
-      width: "800px",
+      width: "min(96vw, 52rem)",
       confirmButtonText: "Add All Students",
       confirmButtonColor: "#10b981",
       showCancelButton: true,
