@@ -77,3 +77,37 @@
   - `src/api/SalesRequests/salesApi.ts`
   - Simulates API calls with `setTimeout` and in-memory state
   - Supabase sales table and schema exist but the API layer hasn't been wired up
+
+Supabase Side
+
+Enable Google provider -- go to your Supabase dashboard, Authentication > Providers > Google. Toggle it on. You'll see two fields: Client ID and Client Secret. Leave this tab open, you'll come back to paste values here.
+Add your redirect URL -- in that same Google provider section, Supabase shows you a "Callback URL" (looks like https://your-project-ref.supabase.co/auth/v1/callback). Copy this -- you'll need it in Google Cloud.
+Set your site URL -- Authentication > URL Configuration. Set "Site URL" to your production domain (e.g. https://yourapp.com). Under "Redirect URLs", add both your prod URL and local dev URL:
+
+https://yourapp.com/auth/callback
+http://localhost:5173/auth/callback (or whatever port you run locally)
+
+Google Cloud Side
+
+Create a project -- go to console.cloud.google.com, create a new project (or use an existing one).
+Enable the Google Identity API -- in your project, go to APIs & Services > Enable APIs, search for "Google Identity" or "OAuth" and enable it.
+Configure the consent screen -- APIs & Services > OAuth consent screen. Choose "External", fill in your app name, support email, and developer email. You can leave scopes as default (email and profile are enough). Save and continue through all steps.
+Create OAuth credentials -- APIs & Services > Credentials > Create Credentials > OAuth Client ID. Choose "Web application". Then:
+
+Under Authorized JavaScript origins, add:
+
+https://yourapp.com
+http://localhost:5173
+
+Under Authorized redirect URIs, add the Supabase callback URL you copied in step 2:
+
+https://your-project-ref.supabase.co/auth/v1/callback
+
+Copy your credentials -- after creating, Google shows you a Client ID and Client Secret. Go back to Supabase (step 1) and paste them in.
+
+Verification
+
+Test locally first -- run your app, click "Continue with Google", complete the OAuth flow, and confirm you land on /auth/callback and get redirected to /dashboard.
+Before going to production, go back to the Google consent screen and publish the app (move it out of "Testing" mode), otherwise only test users you've manually added can sign in.
+
+Add both URLs to the Google OAuth consent screen -- in Google Cloud, when you're filling out the consent screen, there are explicit fields for "Privacy Policy URL" and "Terms of Service URL". Paste in your production URLs there (e.g. https://taekwontrack.com/privacy and https://taekwontrack.com/terms). Google will reject or limit your OAuth app if these are missing or point to placeholder pages.

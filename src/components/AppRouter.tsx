@@ -13,6 +13,8 @@ import { SchoolManagement } from "./AccountDashboards/AdminFeatures/SchoolManage
 import FaqPage from "../pages/Faq";
 import PricingPage from "../pages/Pricing";
 import AboutPage from "../pages/About";
+import AuthCallback from "../pages/AuthCallback";
+import ResetPassword from "../pages/ResetPassword";
 
 const AppContent: React.FC = () => {
   const { user } = useAuth();
@@ -34,6 +36,8 @@ const AppContent: React.FC = () => {
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="/faq" element={<FaqPage />} />
         <Route path="/about" element={<AboutPage />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
 
         {/* Protected Routes */}
         <Route
