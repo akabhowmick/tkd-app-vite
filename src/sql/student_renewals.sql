@@ -62,3 +62,42 @@ CREATE TABLE public.student_renewals
   CREATE UNIQUE INDEX one_active_period_per_student
 ON renewal_periods (student_id)
 WHERE status = 'active';
+
+ALTER TABLE public.renewal_periods  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.renewal_payments ENABLE ROW LEVEL SECURITY;
+
+-- Periods: admin of the school can do everything
+CREATE POLICY "Admin manages renewal periods"
+  ON public.renewal_periods
+  FOR ALL
+  USING (
+    school_id IN (
+      SELECT id FROM schools WHERE admin_id = auth.uid()
+    )
+  )
+  WITH CHECK (
+    school_id IN (
+      SELECT id FROM schools WHERE admin_id = auth.uid()
+    )
+  );
+
+-- Payments: same rule, scoped through the period's school
+CREATE POLICY "Admin manages renewal payments"
+  ON public.renewal_payments
+  FOR ALL
+  USING (
+    period_id IN (
+      SELECT rp.period_id
+      FROM renewal_periods rp
+      JOIN schools s ON s.id = rp.school_id
+      WHERE s.admin_id = auth.uid()
+    )
+  )
+  WITH CHECK (
+    period_id IN (
+      SELECT rp.period_id
+      FROM renewal_periods rp
+      JOIN schools s ON s.id = rp.school_id
+      WHERE s.admin_id = auth.uid()
+    )
+  );

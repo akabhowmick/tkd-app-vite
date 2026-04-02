@@ -26,6 +26,41 @@ export interface Renewal {
   updated_at: string;
 }
 
+export interface RenewalPeriod {
+  period_id: string;
+  student_id: string;
+  school_id: string;
+  duration_months: number;
+  expiration_date: string;
+  number_of_classes: number;
+  status: DbRenewalStatus;
+  resolved_at?: string;
+  resolution_notes?: string;
+  created_at: string;
+  updated_at: string;
+  // joined from payments, computed client-side
+  payments?: RenewalPayment[];
+  total_due?: number; // sum of payment amount_due
+  total_paid?: number; // sum of payment amount_paid
+  balance?: number; // total_due - total_paid
+}
+
+export interface RenewalPayment {
+  payment_id: string;
+  period_id: string;
+  student_id: string;
+  payment_date: string;
+  amount_due: number;
+  amount_paid: number;
+  installment_number: number;
+  paid_to: string;
+  created_at: string;
+}
+
+// Split the status types
+export type DbRenewalStatus = "active" | "expired" | "renewed" | "quit";
+export type UiRenewalStatus = DbRenewalStatus | "expiring_soon" | "grace_period";
+
 export interface CreateRenewalRequest {
   student_id: string;
   duration_months: number;
