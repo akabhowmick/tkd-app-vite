@@ -1,103 +1,55 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useStudentRenewals } from "../../../../context/StudentRenewalContext";
 import { RenewalCategory } from "./RenewalCategory";
-import { CreateRenewalForm } from "./CreateRenewalForm";
 import { RenewalCard } from "./RenewalCard";
-import {
-  CategorizedRenewals,
-  CreateRenewalRequest,
-  Renewal,
-  ExpiringRenewal,
-} from "../../../../types/student_renewal";
+import { CreateRenewalForm } from "./CreateRenewalForm";
+import { RenewalPeriodWithUiStatus } from "../../../../types/student_renewal";
 
 export const StudentRenewalsPage: React.FC = () => {
   const {
-    renewals,
-    getGroupedExpiringRenewals,
-    createRenewal,
-    updateRenewal,
-    removeRenewal,
-    resolveRenewalAsQuit,
-    resolveRenewalWithNext,
-    loadRenewals,
-    loadExpiringRenewals,
+    grouped,
     loading,
+    error,
+    loadPeriods,
+    deletePeriod,
+    quitRenewal,
+    renewPeriod,
+    markPaymentPaid,
+    addPayment,
   } = useStudentRenewals();
 
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const { createRenewal } = useStudentRenewals();
 
-  // Load data on mount
   useEffect(() => {
-    const initializeData = async () => {
-      try {
-        await loadRenewals();
-        await loadExpiringRenewals();
-      } catch (error) {
-        console.error("Error loading initial data:", error);
-      }
-    };
-    initializeData();
-  }, [loadRenewals, loadExpiringRenewals]);
+    loadPeriods();
+  }, [loadPeriods]);
 
-  const categorizedRenewals = renewals.reduce(
-    (acc, renewal) => {
-      const isExpired = new Date(renewal.expiration_date) < new Date();
-      const isPaid = renewal.amount_paid >= renewal.amount_due;
+  const totalActive =
+    grouped.active.length + grouped.expiring_soon.length + grouped.grace_period.length;
 
-      if (isPaid) acc.paid.push(renewal);
-      else if (isExpired) acc.expired.push(renewal);
-      else acc.active.push(renewal);
-
-      return acc;
-    },
-    { expired: [], active: [], paid: [] } as CategorizedRenewals
-  );
-
-  const { expired, gracePeriod, expiringSoon } = getGroupedExpiringRenewals();
-
-  const handleCreateRenewal = async (data: CreateRenewalRequest) => {
-    await createRenewal(data);
-    setShowCreateForm(false);
-  };
-
-  const handleMarkPaid = (id: string) => {
-    const renewal = renewals.find((r) => r.renewal_id === id);
-    if (renewal) updateRenewal(id, { amount_paid: renewal.amount_due });
-  };
-
-  const handleResolveAsQuit = async (id: string) => {
-    await resolveRenewalAsQuit(id);
-  };
-
-  const handleResolveWithNext = async (renewal: Renewal) => {
-    await resolveRenewalWithNext(renewal, {
-      duration_months: 1,
-      amount_paid: renewal.amount_due,
-      number_of_classes: renewal.number_of_classes,
-      paid_to: renewal.paid_to,
-    });
-  };
-
-  const handleLoadAll = async () => {
-    try {
-      await loadRenewals();
-      await loadExpiringRenewals();
-    } catch (error) {
-      console.error("Error reloading data:", error);
-    }
-  };
-
-  const renderCategory = (title: string, icon: string, items: Renewal[], color: string) => (
-    <RenewalCategory title={title} icon={icon} renewals={items} borderColor={color}>
-      {items.map((renewal) => (
+  const renderCategory = (
+    title: string,
+    icon: string,
+    periods: RenewalPeriodWithUiStatus[],
+    borderColor: string,
+  ) => (
+    <RenewalCategory
+      key={title}
+      title={title}
+      icon={icon}
+      periods={periods}
+      borderColor={borderColor}
+    >
+      {periods.map((period) => (
         <RenewalCard
-          key={renewal.renewal_id}
-          renewal={renewal}
-          onMarkPaid={handleMarkPaid}
-          onDelete={removeRenewal}
-          onResolveAsQuit={handleResolveAsQuit}
-          onResolveWithNext={handleResolveWithNext}
-          statusMessage={(renewal as ExpiringRenewal)?.statusMessage}
+          key={period.period_id}
+          period={period}
+          onMarkPaid={markPaymentPaid}
+          onDelete={deletePeriod}
+          onResolveAsQuit={quitRenewal}
+          onRenew={(p) => renewPeriod(p, p.duration_months)}
+          onAddPayment={addPayment}
         />
       ))}
     </RenewalCategory>
@@ -106,41 +58,64 @@ export const StudentRenewalsPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
       <div className="max-w-7xl mx-auto">
+        {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">Renewal Management</h1>
-          <p className="text-gray-600">Track and manage student renewals across all categories</p>
+          <p className="text-gray-600">
+            {totalActive} active · {grouped.expiring_soon.length} expiring soon ·{" "}
+            {grouped.grace_period.length} in grace period
+          </p>
         </div>
 
+        {/* Actions */}
         <div className="flex flex-wrap gap-4 mb-8">
           <button
-            onClick={handleLoadAll}
+            onClick={loadPeriods}
             disabled={loading}
-            className="bg-white text-black rounded-xl shadow-lg px-6 py-3 border-b-4 border-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-white text-black rounded-xl shadow-lg px-6 py-3 border-b-4 border-red-500 disabled:opacity-50"
           >
-            {loading ? "⏳ Loading..." : "📅 Load All Renewals"}
+            {loading ? "⏳ Loading..." : "📅 Refresh"}
           </button>
           <button
             onClick={() => setShowCreateForm(true)}
             disabled={loading}
-            className="bg-white text-black rounded-xl shadow-lg px-6 py-3 border-b-4 border-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-white text-black rounded-xl shadow-lg px-6 py-3 border-b-4 border-red-500 disabled:opacity-50"
           >
             ➕ Register Renewal
           </button>
         </div>
 
+        {/* Error */}
+        {error && (
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-xl px-6 py-4 text-red-700 text-sm">
+            {error}
+          </div>
+        )}
+
+        {/* Create form */}
         {showCreateForm && (
           <CreateRenewalForm
-            onSubmit={handleCreateRenewal}
+            onSubmit={async (data) => {
+              await createRenewal(data);
+              setShowCreateForm(false);
+            }}
             onCancel={() => setShowCreateForm(false)}
           />
         )}
 
-        <div className="flex flex-wrap gap-4">
-          {renderCategory("Expiring Soon", "⚠️", expiringSoon, "border-yellow-500")}
-          {renderCategory("Grace Period", "🕓", gracePeriod, "border-orange-500")}
-          {renderCategory("Expired", "⛔", expired, "border-red-600")}
-          {renderCategory("Active", "⏰", categorizedRenewals.active, "border-blue-500")}
-          {renderCategory("Paid", "✅", categorizedRenewals.paid, "border-green-500")}
+        {/* Renewal buckets */}
+        <div className="flex flex-col gap-6">
+          {renderCategory("Expiring Soon", "⚠️", grouped.expiring_soon, "border-yellow-500")}
+          {renderCategory("Grace Period", "🕓", grouped.grace_period, "border-orange-500")}
+          {renderCategory("Expired", "⛔", grouped.expired, "border-red-600")}
+          {renderCategory("Active", "⏰", grouped.active, "border-blue-500")}
+          {renderCategory("Paid", "✅", grouped.paid, "border-green-500")}
+
+          {!loading && Object.values(grouped).every((g) => g.length === 0) && (
+            <div className="text-center text-gray-400 py-16 text-sm">
+              No renewals yet. Register one to get started.
+            </div>
+          )}
         </div>
       </div>
     </div>

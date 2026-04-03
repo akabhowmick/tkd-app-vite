@@ -1,5 +1,13 @@
-import { DollarSign, Users, UserPlus, CalendarCheck, TrendingUp, TrendingDown } from "lucide-react";
+import {
+  DollarSign,
+  Users,
+  CalendarCheck,
+  TrendingUp,
+  TrendingDown,
+  AlertCircle,
+} from "lucide-react";
 import { useSchool } from "../../../context/SchoolContext";
+import { useStudentRenewals } from "../../../context/StudentRenewalContext";
 
 const CARDS = [
   {
@@ -33,26 +41,32 @@ const CARDS = [
     positive: false,
   },
   {
-    icon: UserPlus,
+    icon: AlertCircle,
     iconBg: "bg-orange-100",
     iconColor: "text-orange-600",
-    title: "New This Month",
-    key: "clients" as const,
-    format: (v: number) => String(Math.ceil(v * 0.1)),
-    change: "+12%",
-    positive: true,
+    title: "Expiring Renewals",
+    key: "expiring" as const,
+    format: (v: number) => String(v),
+    change: "",
+    positive: false,
   },
 ];
 
 export const StatCards = () => {
   const schoolData = useSchool();
+  const { grouped } = useStudentRenewals();
+
+  const expiringCount = grouped.expiring_soon.length + grouped.grace_period.length;
 
   return (
     <div className="space-y-6">
       {/* Stat grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
         {CARDS.map((card, i) => {
-          const value = card.format(schoolData[card.key] as number);
+          const value =
+            card.key === "expiring"
+              ? card.format(expiringCount)
+              : card.format(schoolData[card.key] as number);
           const Icon = card.icon;
           const TrendIcon = card.positive ? TrendingUp : TrendingDown;
 

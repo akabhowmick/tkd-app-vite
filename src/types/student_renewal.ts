@@ -86,7 +86,10 @@ export interface RenewalCardProps {
   onDelete: (periodId: string) => void;
   onResolveAsQuit?: (periodId: string) => void;
   onRenew?: (period: RenewalPeriod) => void;
-  onAddPayment?: (periodId: string) => void;
+  onAddPayment?: (
+    periodId: string,
+    req: Omit<CreateRenewalPaymentRequest, "period_id" | "student_id">,
+  ) => void;
 }
 
 export interface RenewalCategoryProps {
