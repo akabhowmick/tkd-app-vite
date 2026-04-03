@@ -53,6 +53,7 @@ export const RenewalCard: React.FC<RenewalCardProps> = ({
   const [paymentsOpen, setPaymentsOpen] = useState(false);
 
   const student = students.find((s) => s.id === period.student_id);
+  // ui_status now includes "paid" so this lookup will always find a match
   const style = STATUS_STYLES[period.ui_status] ?? STATUS_STYLES.active;
   const isPaid = period.balance <= 0 && period.total_due > 0;
 

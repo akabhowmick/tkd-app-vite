@@ -1,4 +1,4 @@
-import { Renewal } from "../../types/student_renewal";
+import { RenewalPeriod } from "../../types/student_renewal";
 
 /**
  * Calculates the new expiration date for a renewal based on the current renewal's expiration
@@ -7,8 +7,8 @@ import { Renewal } from "../../types/student_renewal";
  * @returns ISO date string for the new expiration date
  */
 export function calculateNewExpirationDate(
-  currentRenewal: Renewal,
-  durationMonths: number
+  currentRenewal: RenewalPeriod,
+  durationMonths: number,
 ): string {
   const currentExpiration = new Date(currentRenewal.expiration_date);
 
@@ -20,7 +20,6 @@ export function calculateNewExpirationDate(
   const newExpirationDate = new Date(newStartDate);
   newExpirationDate.setMonth(newExpirationDate.getMonth() + durationMonths);
 
-  // Return as ISO string (YYYY-MM-DD format)
   return newExpirationDate.toISOString().split("T")[0];
 }
 
@@ -152,14 +151,15 @@ export function calculatePaymentPercentage(amountDue: number, amountPaid: number
 
 /**
  * Determines renewal status based on dates and payment
- * @param renewal - The renewal object
+ * Uses RenewalPeriod's aggregated total_due / total_paid fields
+ * @param period - The renewal period object
  * @returns Status string
  */
 export function determineRenewalStatus(
-  renewal: Renewal
+  period: RenewalPeriod,
 ): "active" | "expiring_soon" | "grace_period" | "expired" | "paid" {
-  const isPaid = renewal.amount_paid >= renewal.amount_due;
-  const daysUntilExpiration = calculateDaysUntilExpiration(renewal.expiration_date);
+  const isPaid = period.balance <= 0 && period.total_due > 0;
+  const daysUntilExpiration = calculateDaysUntilExpiration(period.expiration_date);
 
   if (isPaid) return "paid";
   if (daysUntilExpiration < -7) return "expired";

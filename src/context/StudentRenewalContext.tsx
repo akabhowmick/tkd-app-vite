@@ -6,6 +6,7 @@ import {
   GroupedRenewals,
   CreateRenewalRequest,
   UpdateRenewalPeriodRequest,
+  CreateRenewalPaymentRequest,
 } from "../types/student_renewal";
 import {
   getRenewalPeriods,
@@ -29,8 +30,6 @@ const WARNING_PERIOD_DAYS = 15;
 
 // ─────────────────────────────────────────────
 // Categorization — single source of truth
-// Reads DB status first, then applies date math
-// for expiring_soon and grace_period (UI only)
 // ─────────────────────────────────────────────
 function getDaysUntilExpiration(expirationDate: string): number {
   const today = new Date();
@@ -42,6 +41,8 @@ function getDaysUntilExpiration(expirationDate: string): number {
 
 function getStatusMessage(uiStatus: UiRenewalStatus, days: number): string {
   switch (uiStatus) {
+    case "paid":
+      return "Fully paid";
     case "expiring_soon":
       return `Expires in ${days} day${days === 1 ? "" : "s"}`;
     case "grace_period":
@@ -61,7 +62,7 @@ function getStatusMessage(uiStatus: UiRenewalStatus, days: number): string {
 
 function deriveUiStatus(period: RenewalPeriod): UiRenewalStatus {
   // Paid overrides everything — check balance first
-  if (period.balance <= 0 && period.total_due > 0) return "active";
+  if (period.balance <= 0 && period.total_due > 0) return "paid";
 
   // Resolved states come straight from DB
   if (period.status === "renewed") return "renewed";
@@ -71,7 +72,7 @@ function deriveUiStatus(period: RenewalPeriod): UiRenewalStatus {
   // For active periods, compute from expiration date
   const days = getDaysUntilExpiration(period.expiration_date);
 
-  if (days < -GRACE_PERIOD_DAYS) return "expired"; // cron hasn't run yet
+  if (days < -GRACE_PERIOD_DAYS) return "expired";
   if (days < 0) return "grace_period";
   if (days <= WARNING_PERIOD_DAYS) return "expiring_soon";
   return "active";
@@ -103,13 +104,12 @@ function groupPeriods(periods: RenewalPeriod[]): GroupedRenewals {
 
     const enriched = enrichPeriod(period);
 
-    // Paid bucket — full balance settled
-    if (period.balance <= 0 && period.total_due > 0) {
-      result.paid.push(enriched);
-      continue;
-    }
-
+    // Route to bucket based on the single derived ui_status —
+    // no duplicate balance checks here, deriveUiStatus handles it
     switch (enriched.ui_status) {
+      case "paid":
+        result.paid.push(enriched);
+        break;
       case "expiring_soon":
         result.expiring_soon.push(enriched);
         break;
@@ -140,8 +140,6 @@ function groupPeriods(periods: RenewalPeriod[]): GroupedRenewals {
 
 // ─────────────────────────────────────────────
 // New expiration date when renewing
-// If the old period is already past expiry,
-// start fresh from today instead of chaining
 // ─────────────────────────────────────────────
 function calculateNewExpirationDate(oldExpirationDate: string, durationMonths: number): string {
   const expiry = new Date(oldExpirationDate);
@@ -222,8 +220,6 @@ interface StudentRenewalsContextType {
   renewPeriod: (period: RenewalPeriod, durationMonths: number) => Promise<void>;
 }
 
-import { CreateRenewalPaymentRequest } from "../types/student_renewal";
-
 const StudentRenewalsContext = createContext<StudentRenewalsContextType | undefined>(undefined);
 
 export const StudentRenewalsProvider = ({ children }: { children: ReactNode }) => {
@@ -278,7 +274,6 @@ export const StudentRenewalsProvider = ({ children }: { children: ReactNode }) =
           installment_number: 1,
         });
 
-        // Reload the period with payments attached
         const fresh = await getRenewalPeriodById(newPeriod.period_id);
         dispatch({ type: "UPSERT_PERIOD", payload: fresh });
       }),
@@ -390,7 +385,6 @@ export const StudentRenewalsProvider = ({ children }: { children: ReactNode }) =
           },
         );
 
-        // Reload everything so both old (renewed) and new (active) are current
         const all = await getRenewalPeriods(schoolId);
         dispatch({ type: "SET_PERIODS", payload: all });
       }),

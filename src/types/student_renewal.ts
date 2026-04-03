@@ -1,7 +1,7 @@
 export type DbRenewalStatus = "active" | "expired" | "renewed" | "quit";
-export type UiRenewalStatus = DbRenewalStatus | "expiring_soon" | "grace_period";
+export type UiRenewalStatus = DbRenewalStatus | "expiring_soon" | "grace_period" | "paid";
 
-// Prevents expiring_soon / grace_period from ever reaching Supabase
+// Prevents expiring_soon / grace_period / paid from ever reaching Supabase
 export function toDbStatus(status: DbRenewalStatus): DbRenewalStatus {
   return status;
 }
@@ -38,11 +38,13 @@ export interface RenewalPeriod {
   total_paid: number;
   balance: number;
 }
+
 export interface RenewalPeriodWithUiStatus extends RenewalPeriod {
   ui_status: UiRenewalStatus;
   days_until_expiration: number; // negative = already expired
   status_message: string;
 }
+
 export interface CreateRenewalPeriodRequest {
   student_id: string;
   school_id: string;
@@ -60,6 +62,7 @@ export interface CreateRenewalPaymentRequest {
   installment_number: number;
   paid_to: string;
 }
+
 export interface CreateRenewalRequest {
   period: CreateRenewalPeriodRequest;
   payment: Omit<CreateRenewalPaymentRequest, "period_id" | "student_id">;
@@ -67,12 +70,13 @@ export interface CreateRenewalRequest {
 
 export interface UpdateRenewalPeriodRequest {
   duration_months?: number;
-  expiration_date?: number;
+  expiration_date?: string; // was incorrectly typed as number
   number_of_classes?: number;
   status?: DbRenewalStatus;
   resolved_at?: string;
   resolution_notes?: string;
 }
+
 export interface GroupedRenewals {
   expiring_soon: RenewalPeriodWithUiStatus[];
   grace_period: RenewalPeriodWithUiStatus[];
@@ -80,6 +84,7 @@ export interface GroupedRenewals {
   active: RenewalPeriodWithUiStatus[];
   paid: RenewalPeriodWithUiStatus[];
 }
+
 export interface RenewalCardProps {
   period: RenewalPeriodWithUiStatus;
   onMarkPaid: (periodId: string, paymentId: string) => void;
