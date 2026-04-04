@@ -11,6 +11,9 @@ import {
   ChevronUp,
   BarChart2,
   Settings,
+  Calendar,
+  Award,
+  Package,
 } from "lucide-react";
 
 interface NavItem {
@@ -47,6 +50,26 @@ const NAV_SECTIONS: { heading: string | null; items: NavItem[] }[] = [
         icon: School,
         label: "School Profile",
         view: "school",
+      },
+    ],
+  },
+  {
+    heading: "PROGRAMS",
+    items: [
+      {
+        icon: Calendar,
+        label: "Class Scheduling",
+        view: "classes",
+      },
+      {
+        icon: Award,
+        label: "Belt Tracking",
+        view: "belts",
+      },
+      {
+        icon: Package,
+        label: "Inventory",
+        view: "inventory",
       },
     ],
   },

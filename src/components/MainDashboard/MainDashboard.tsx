@@ -6,6 +6,9 @@ import { SchoolManagement } from "../AccountDashboards/AdminFeatures/SchoolManag
 import { StudentRenewalsPage } from "../AccountDashboards/AdminFeatures/StudentRenewals/StudentRenewalsPage";
 import { StudentListPage } from "../AccountDashboards/AdminFeatures/StudentView/StudentListPage";
 import { TakeAttendance } from "../AccountDashboards/AdminFeatures/AttendanceRecords/TakeAttendance";
+import { ClassSchedulingPage } from "../../pages/ClassSchedulingPage";
+import { BeltTrackingPage } from "../../pages/BeltTrackingPage";
+import { InventoryPage } from "../../pages/InventoryPage";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 
@@ -14,6 +17,9 @@ const VIEW_COMPONENTS = {
   renewals: StudentRenewalsPage,
   students: StudentListPage,
   attendance: TakeAttendance,
+  classes: ClassSchedulingPage,
+  belts: BeltTrackingPage,
+  inventory: InventoryPage,
 } as const;
 
 const VIEW_TITLES: Record<string, string> = {
@@ -22,6 +28,9 @@ const VIEW_TITLES: Record<string, string> = {
   renewals: "Renewal Management",
   students: "Students",
   attendance: "Take Attendance",
+  classes: "Class Scheduling",
+  belts: "Belt Tracking",
+  inventory: "Inventory Management",
   reporting: "Reporting",
   settings: "Settings",
 };

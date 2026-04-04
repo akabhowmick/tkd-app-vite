@@ -3,6 +3,9 @@ import { useAuth } from "../context/AuthContext";
 import { SchoolProvider } from "../context/SchoolContext";
 import { StudentRenewalsProvider } from "../context/StudentRenewalContext";
 import { AttendanceProvider } from "../context/AttendanceContext";
+import { ClassProvider } from "../context/ClassContext";
+import { BeltProvider } from "../context/BeltContext";
+import { InventoryProvider } from "../context/InventoryContext";
 import { UserRole } from "../types/user";
 import { Profile } from "../components/AccountDashboards/AdminFeatures/Profile/Profile";
 
@@ -15,7 +18,13 @@ const Dashboard = () => {
         <SchoolProvider>
           <StudentRenewalsProvider>
             <AttendanceProvider>
-              <MainDashboard />
+              <ClassProvider>
+                <BeltProvider>
+                  <InventoryProvider>
+                    <MainDashboard />
+                  </InventoryProvider>
+                </BeltProvider>
+              </ClassProvider>
             </AttendanceProvider>
           </StudentRenewalsProvider>
         </SchoolProvider>

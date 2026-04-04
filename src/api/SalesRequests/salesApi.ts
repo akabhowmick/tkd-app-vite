@@ -1,21 +1,38 @@
 import { Sale } from "../../types/sales";
-import { mockTodaysSales } from "../../utils/SalesUtils/dummySales";
+import { supabase } from "../supabase";
 
-let memorySales: Sale[] = [...mockTodaysSales];
+export async function fetchTodaysSales(schoolId: string): Promise<Sale[]> {
+  const today = new Date().toISOString().split("T")[0];
 
-export async function fetchTodaysSales(): Promise<Sale[]> {
-  // simulate latency
-  await new Promise((r) => setTimeout(r, 150));
-  return [...memorySales];
+  const { data, error } = await supabase
+    .from("sales")
+    .select("*")
+    .eq("school_id", schoolId)
+    .gte("payment_date", today)
+    .order("payment_date", { ascending: false });
+
+  if (error) throw error;
+  return data || [];
 }
 
-export async function createSale(newSale: Sale): Promise<Sale> {
-  await new Promise((r) => setTimeout(r, 150));
-  memorySales = [newSale, ...memorySales];
-  return newSale;
+export async function fetchAllSales(schoolId: string): Promise<Sale[]> {
+  const { data, error } = await supabase
+    .from("sales")
+    .select("*")
+    .eq("school_id", schoolId)
+    .order("payment_date", { ascending: false });
+
+  if (error) throw error;
+  return data || [];
 }
 
-// helper to reset in tests/dev
-export function __resetSales(v: Sale[]) {
-  memorySales = [...v];
+export async function createSale(newSale: Omit<Sale, "sale_id" | "created_at" | "updated_at">): Promise<Sale> {
+  const { data, error } = await supabase
+    .from("sales")
+    .insert(newSale)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
 }

@@ -223,10 +223,16 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         if (attendanceError) throw attendanceError;
         setAttendance(attendanceCount ?? 0);
 
-        // Sales total — FIX #4b: sales table doesn't have school_id yet,
-        // so for now we skip to avoid a broken query silently returning 0.
-        // TODO: add school_id to sales table and re-enable this.
-        setSales(0);
+        // Sales total for today
+        const { data: salesData, error: salesError } = await supabase
+          .from("sales")
+          .select("amount")
+          .eq("school_id", schoolId)
+          .gte("payment_date", today);
+
+        if (salesError) throw salesError;
+        const todaysSales = salesData?.reduce((sum, sale) => sum + Number(sale.amount), 0) ?? 0;
+        setSales(todaysSales);
       } catch (err) {
         console.error("Error fetching school dashboard metrics:", err);
       } finally {

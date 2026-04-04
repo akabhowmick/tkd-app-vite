@@ -40,7 +40,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     const fetchUser = async () => {
       const { data, error } = await supabase.auth.getUser();
-      if (data?.user && !error) {
+      if (error) {
+        console.error("Error fetching user session:", error);
+        return;
+      }
+      if (data?.user) {
         const m = data.user.user_metadata;
         const storedSchool = localStorage.getItem("authSchool");
         setUser({
