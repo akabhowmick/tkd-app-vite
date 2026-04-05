@@ -93,7 +93,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (error) return { success: false, message: friendlyAuthError(error.message) };
 
     const m = data.user?.user_metadata;
-    setUser({
+    const loggedInUser: BaseUser = {
       id: data.user.id,
       name: m?.name || "Unknown User",
       email: data.user.email || "",
@@ -101,7 +101,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       role: m?.role || UserRole.Student,
       createdAt: new Date(data.user.created_at),
       schoolId: m?.schoolId || null,
-    });
+    };
+    setUser(loggedInUser);
+    identifyUser(data.user.id, { email: data.user.email, role: loggedInUser.role });
+    setSentryUser({ id: data.user.id, email: data.user.email });
+    track("user_logged_in", { method: "email" });
 
     return { success: true, message: "" };
   };
@@ -131,12 +135,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       createdAt: new Date(),
       schoolId: "",
     });
+    identifyUser(data.user!.id, { email: newUser.email, role: newUser.role });
+    setSentryUser({ id: data.user!.id, email: newUser.email });
+    track("user_signed_up", { role: newUser.role });
 
     return { success: true, message: "" };
   };
 
   const logout = async () => {
     await supabase.auth.signOut();
+    track("user_logged_out");
+    resetIdentity();
+    clearSentryUser();
     setUser(null);
     setSchool(null);
     localStorage.removeItem("authSchool");

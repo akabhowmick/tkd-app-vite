@@ -1,4 +1,5 @@
 import { createContext, useContext, useReducer, useCallback, useMemo, ReactNode } from "react";
+import { track } from "../analytics/posthog";
 import {
   RenewalPeriod,
   RenewalPeriodWithUiStatus,
@@ -60,7 +61,7 @@ function getStatusMessage(uiStatus: UiRenewalStatus, days: number): string {
   }
 }
 
-function deriveUiStatus(period: RenewalPeriod): UiRenewalStatus {
+export function deriveUiStatus(period: RenewalPeriod): UiRenewalStatus {
   // Paid overrides everything — check balance first
   if (period.balance <= 0 && period.total_due > 0) return "paid";
 
@@ -89,7 +90,7 @@ function enrichPeriod(period: RenewalPeriod): RenewalPeriodWithUiStatus {
   };
 }
 
-function groupPeriods(periods: RenewalPeriod[]): GroupedRenewals {
+export function groupPeriods(periods: RenewalPeriod[]): GroupedRenewals {
   const result: GroupedRenewals = {
     expiring_soon: [],
     grace_period: [],
@@ -276,6 +277,7 @@ export const StudentRenewalsProvider = ({ children }: { children: ReactNode }) =
 
         const fresh = await getRenewalPeriodById(newPeriod.period_id);
         dispatch({ type: "UPSERT_PERIOD", payload: fresh });
+        track("renewal_created", { durationMonths: req.period.duration_months });
       }),
     [withAsync, state.periods],
   );
@@ -298,6 +300,7 @@ export const StudentRenewalsProvider = ({ children }: { children: ReactNode }) =
 
         const fresh = await getRenewalPeriodById(periodId);
         dispatch({ type: "UPSERT_PERIOD", payload: fresh });
+        track("renewal_payment_added");
       }),
     [withAsync, state.periods],
   );
@@ -314,6 +317,7 @@ export const StudentRenewalsProvider = ({ children }: { children: ReactNode }) =
 
         const fresh = await getRenewalPeriodById(periodId);
         dispatch({ type: "UPSERT_PERIOD", payload: fresh });
+        track("renewal_payment_marked_paid");
       }),
     [withAsync, state.periods],
   );
@@ -335,6 +339,7 @@ export const StudentRenewalsProvider = ({ children }: { children: ReactNode }) =
       withAsync(async () => {
         await deleteRenewalPeriod(periodId);
         dispatch({ type: "REMOVE_PERIOD", payload: periodId });
+        track("renewal_deleted");
       }),
     [withAsync],
   );
@@ -357,6 +362,7 @@ export const StudentRenewalsProvider = ({ children }: { children: ReactNode }) =
         await resolveAsQuit(periodId, notes);
         const fresh = await getRenewalPeriodById(periodId);
         dispatch({ type: "UPSERT_PERIOD", payload: fresh });
+        track("renewal_student_quit");
       }),
     [withAsync],
   );
@@ -387,6 +393,7 @@ export const StudentRenewalsProvider = ({ children }: { children: ReactNode }) =
 
         const all = await getRenewalPeriods(schoolId);
         dispatch({ type: "SET_PERIODS", payload: all });
+        track("renewal_renewed", { durationMonths });
       }),
     [withAsync, schoolId],
   );

@@ -1,4 +1,6 @@
 import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from "react";
+import { track } from "../analytics/posthog";
+import { captureException } from "../analytics/sentry";
 import {
   InventoryItemWithAlert,
   InventoryTransaction,
@@ -90,9 +92,11 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
         setError(null);
         await apiCreateInventoryItem({ ...data, school_id: schoolId });
         await loadItems();
+        track("inventory_item_created", { category: data.category });
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to create item";
         setError(message);
+        captureException(err, { feature: "inventory", action: "createItem" });
         throw err;
       } finally {
         setLoading(false);
@@ -126,9 +130,11 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
         setError(null);
         await apiDeleteInventoryItem(itemId);
         await loadItems();
+        track("inventory_item_deleted");
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to delete item";
         setError(message);
+        captureException(err, { feature: "inventory", action: "deleteItem" });
         throw err;
       } finally {
         setLoading(false);
@@ -146,15 +152,22 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
         setError(null);
         await apiCreateTransaction({ ...data, school_id: schoolId });
         await Promise.all([loadItems(), loadTransactions()]);
+        const item = items.find((i) => i.item_id === data.item_id);
+        if (data.transaction_type === "sale") {
+          track("inventory_sale_recorded", { category: item?.category ?? "unknown" });
+        } else if (data.transaction_type === "restock") {
+          track("inventory_restock_recorded");
+        }
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to record transaction";
         setError(message);
+        captureException(err, { feature: "inventory", action: "recordTransaction" });
         throw err;
       } finally {
         setLoading(false);
       }
     },
-    [schoolId, loadItems, loadTransactions]
+    [schoolId, loadItems, loadTransactions, items]
   );
 
   const deleteTransactionRecord = useCallback(
@@ -167,6 +180,7 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to delete transaction";
         setError(message);
+        captureException(err, { feature: "inventory", action: "deleteTransaction" });
         throw err;
       } finally {
         setLoading(false);

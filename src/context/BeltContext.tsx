@@ -1,4 +1,6 @@
 import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from "react";
+import { track } from "../analytics/posthog";
+import { captureException } from "../analytics/sentry";
 import {
   BeltRank,
   PromotionWithRanks,
@@ -85,10 +87,12 @@ export const BeltProvider = ({ children }: { children: ReactNode }) => {
         setError(null);
         const newRank = await apiCreateBeltRank({ ...data, school_id: schoolId });
         await loadRanks();
+        track("belt_rank_created");
         return newRank;
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to create belt rank";
         setError(message);
+        captureException(err, { feature: "belts", action: "createRank" });
         throw err;
       } finally {
         setLoading(false);
@@ -122,9 +126,11 @@ export const BeltProvider = ({ children }: { children: ReactNode }) => {
         setError(null);
         await apiDeleteBeltRank(rankId);
         await loadRanks();
+        track("belt_rank_deleted");
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to delete belt rank";
         setError(message);
+        captureException(err, { feature: "belts", action: "deleteRank" });
         throw err;
       } finally {
         setLoading(false);
@@ -142,9 +148,11 @@ export const BeltProvider = ({ children }: { children: ReactNode }) => {
         setError(null);
         await apiCreatePromotion({ ...data, school_id: schoolId });
         await loadPromotions();
+        track("student_promoted", { promotionType: data.promotion_type ?? "manual" });
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to promote student";
         setError(message);
+        captureException(err, { feature: "belts", action: "promoteStudent" });
         throw err;
       } finally {
         setLoading(false);
@@ -160,9 +168,11 @@ export const BeltProvider = ({ children }: { children: ReactNode }) => {
         setError(null);
         await apiDeletePromotion(promotionId);
         await loadPromotions();
+        track("promotion_deleted");
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to delete promotion";
         setError(message);
+        captureException(err, { feature: "belts", action: "deletePromotion" });
         throw err;
       } finally {
         setLoading(false);

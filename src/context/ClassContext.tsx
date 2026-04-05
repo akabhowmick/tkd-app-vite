@@ -1,4 +1,6 @@
 import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from "react";
+import { track } from "../analytics/posthog";
+import { captureException } from "../analytics/sentry";
 import {
   Class,
   ClassSession,
@@ -66,10 +68,12 @@ export const ClassProvider = ({ children }: { children: ReactNode }) => {
         setError(null);
         const newClass = await apiCreateClass({ ...data, school_id: schoolId });
         await loadClasses();
+        track("class_created", { ageGroup: data.age_group });
         return newClass;
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to create class";
         setError(message);
+        captureException(err, { feature: "classes", action: "createClass" });
         throw err;
       } finally {
         setLoading(false);
@@ -103,9 +107,11 @@ export const ClassProvider = ({ children }: { children: ReactNode }) => {
         setError(null);
         await apiDeleteClass(classId);
         await loadClasses();
+        track("class_deleted");
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to delete class";
         setError(message);
+        captureException(err, { feature: "classes", action: "deleteClass" });
         throw err;
       } finally {
         setLoading(false);
@@ -123,10 +129,12 @@ export const ClassProvider = ({ children }: { children: ReactNode }) => {
         setError(null);
         const newSession = await apiCreateSession({ ...data, school_id: schoolId });
         await loadClasses();
+        track("class_session_added", { sessionType: data.session_type });
         return newSession;
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to create session";
         setError(message);
+        captureException(err, { feature: "classes", action: "createSession" });
         throw err;
       } finally {
         setLoading(false);
@@ -160,9 +168,11 @@ export const ClassProvider = ({ children }: { children: ReactNode }) => {
         setError(null);
         await apiDeleteSession(sessionId);
         await loadClasses();
+        track("class_session_deleted");
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to delete session";
         setError(message);
+        captureException(err, { feature: "classes", action: "deleteSession" });
         throw err;
       } finally {
         setLoading(false);

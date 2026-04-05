@@ -5,6 +5,8 @@ import { createAttendance, getAttendanceByDate } from "../api/Attendance/attenda
 import { getTodayDate } from "../utils/AttendanceUtils/DateUtils";
 import { AttendanceRecord } from "../types/attendance";
 import Swal from "sweetalert2";
+import { track } from "../analytics/posthog";
+import { captureException } from "../analytics/sentry";
 
 type AttendanceStatus = "present" | "absent";
 
@@ -107,7 +109,9 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           confirmButtonText: "OK",
         });
         console.error("Save error:", error);
+        captureException(error, { feature: "attendance", action: "saveAttendance" });
       } else {
+        track("attendance_saved", { studentCount: records.length, date: selectedDate });
         Swal.fire({
           icon: "success",
           title: "Attendance saved successfully.",
@@ -117,6 +121,7 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       }
     } catch (error) {
       console.error("Error saving attendance:", error);
+      captureException(error, { feature: "attendance", action: "saveAttendance" });
       Swal.fire({
         icon: "error",
         title: "Error",

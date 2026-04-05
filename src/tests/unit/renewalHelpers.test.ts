@@ -12,12 +12,17 @@ import {
 } from "../../utils/RenewalsUtils/renewalHelpers";
 import { RenewalPeriod } from "../../types/student_renewal";
 
+// Using LOCAL noon ("T12:00:00" without Z) for all dates avoids UTC-midnight
+// parsing issues: new Date("YYYY-MM-DD") is UTC midnight, but setHours(0,0,0,0)
+// uses local time, causing off-by-one in any non-UTC timezone.
+// LOCAL noon → setHours(0,0,0,0) always lands on the same local calendar day.
+
 const makePeriod = (overrides: Partial<RenewalPeriod> = {}): RenewalPeriod => ({
   period_id: "p1",
   student_id: "s1",
   school_id: "sc1",
   duration_months: 3,
-  expiration_date: "2025-12-01",
+  expiration_date: "2025-09-20T12:00:00", // 31 days from pinned "today"
   number_of_classes: 2,
   status: "active",
   created_at: "2025-01-01T00:00:00Z",
@@ -29,100 +34,103 @@ const makePeriod = (overrides: Partial<RenewalPeriod> = {}): RenewalPeriod => ({
   ...overrides,
 });
 
+// Pinned to LOCAL noon Aug 20, 2025 — timezone-safe
+const PINNED = new Date(2025, 7, 20, 12); // month is 0-indexed
+
 describe("calculateNewExpirationDate", () => {
   it("adds duration months starting the day after expiration", () => {
-    const period = makePeriod({ expiration_date: "2025-08-01" });
-    expect(calculateNewExpirationDate(period, 3)).toBe("2025-11-02");
+    // Aug 15 noon + 1 day = Aug 16, + 3 months = Nov 16
+    const period = makePeriod({ expiration_date: "2025-08-15T12:00:00" });
+    expect(calculateNewExpirationDate(period, 3)).toBe("2025-11-16");
   });
 
-  it("handles month-end edge case without overflow", () => {
-    const period = makePeriod({ expiration_date: "2025-01-31" });
-    // Feb 1 + 1 month = Mar 1 (not Feb 29)
-    expect(calculateNewExpirationDate(period, 1)).toBe("2025-03-01");
+  it("handles mid-month boundary correctly", () => {
+    // Jan 15 noon + 1 day = Jan 16, + 1 month = Feb 16
+    const period = makePeriod({ expiration_date: "2025-01-15T12:00:00" });
+    expect(calculateNewExpirationDate(period, 1)).toBe("2025-02-16");
   });
 
   it("crosses year boundary correctly", () => {
-    const period = makePeriod({ expiration_date: "2025-11-30" });
-    expect(calculateNewExpirationDate(period, 3)).toBe("2026-03-01");
+    // Oct 15 noon + 1 day = Oct 16, + 3 months = Jan 16, 2026
+    const period = makePeriod({ expiration_date: "2025-10-15T12:00:00" });
+    expect(calculateNewExpirationDate(period, 3)).toBe("2026-01-16");
   });
 });
 
 describe("calculateExpirationFromStart", () => {
   it("adds 3 months to a start date", () => {
-    expect(calculateExpirationFromStart("2025-05-15", 3)).toBe("2025-08-15");
+    expect(calculateExpirationFromStart("2025-05-15T12:00:00", 3)).toBe("2025-08-15");
   });
 
   it("adds 12 months crossing year boundary", () => {
-    expect(calculateExpirationFromStart("2025-01-01", 12)).toBe("2026-01-01");
+    expect(calculateExpirationFromStart("2025-01-10T12:00:00", 12)).toBe("2026-01-10");
   });
 });
 
 describe("calculateDaysUntilExpiration", () => {
   beforeEach(() => {
-    vi.setSystemTime(new Date("2025-08-20T12:00:00Z"));
+    vi.setSystemTime(PINNED);
   });
 
-  it("returns 0 when expiration is today", () => {
-    expect(calculateDaysUntilExpiration("2025-08-20")).toBe(0);
+  it("returns 0 when expiration is today (local noon)", () => {
+    expect(calculateDaysUntilExpiration("2025-08-20T12:00:00")).toBe(0);
   });
 
   it("returns positive days for future expiration", () => {
-    expect(calculateDaysUntilExpiration("2025-08-30")).toBe(10);
+    expect(calculateDaysUntilExpiration("2025-08-30T12:00:00")).toBe(10);
   });
 
   it("returns negative days for past expiration", () => {
-    expect(calculateDaysUntilExpiration("2025-08-10")).toBe(-10);
+    expect(calculateDaysUntilExpiration("2025-08-10T12:00:00")).toBe(-10);
   });
 
   it("returns 30 for 30 days in the future", () => {
-    expect(calculateDaysUntilExpiration("2025-09-19")).toBe(30);
+    expect(calculateDaysUntilExpiration("2025-09-19T12:00:00")).toBe(30);
   });
 });
 
 describe("isInGracePeriod", () => {
   beforeEach(() => {
-    vi.setSystemTime(new Date("2025-08-20T12:00:00Z"));
+    vi.setSystemTime(PINNED);
   });
 
   it("returns true when 3 days overdue (within 7-day grace)", () => {
-    expect(isInGracePeriod("2025-08-17")).toBe(true);
+    expect(isInGracePeriod("2025-08-17T12:00:00")).toBe(true);
   });
 
   it("returns false when 8 days overdue (past grace period)", () => {
-    expect(isInGracePeriod("2025-08-12")).toBe(false);
+    expect(isInGracePeriod("2025-08-12T12:00:00")).toBe(false);
   });
 
   it("returns false when not yet expired", () => {
-    expect(isInGracePeriod("2025-08-25")).toBe(false);
+    expect(isInGracePeriod("2025-08-25T12:00:00")).toBe(false);
   });
 
   it("respects custom grace period days", () => {
-    // 5 days overdue, custom grace of 3 days — outside grace
-    expect(isInGracePeriod("2025-08-15", 3)).toBe(false);
-    // 2 days overdue, custom grace of 3 days — inside grace
-    expect(isInGracePeriod("2025-08-18", 3)).toBe(true);
+    expect(isInGracePeriod("2025-08-15T12:00:00", 3)).toBe(false); // 5 days overdue > 3
+    expect(isInGracePeriod("2025-08-18T12:00:00", 3)).toBe(true);  // 2 days overdue ≤ 3
   });
 });
 
 describe("isExpiringSoon", () => {
   beforeEach(() => {
-    vi.setSystemTime(new Date("2025-08-20T12:00:00Z"));
+    vi.setSystemTime(PINNED);
   });
 
   it("returns true when expiring in 10 days (within 15-day window)", () => {
-    expect(isExpiringSoon("2025-08-30")).toBe(true);
+    expect(isExpiringSoon("2025-08-30T12:00:00")).toBe(true);
   });
 
   it("returns false when expiring in 20 days (outside 15-day window)", () => {
-    expect(isExpiringSoon("2025-09-09")).toBe(false);
+    expect(isExpiringSoon("2025-09-09T12:00:00")).toBe(false);
   });
 
   it("returns false when already expired", () => {
-    expect(isExpiringSoon("2025-08-10")).toBe(false);
+    expect(isExpiringSoon("2025-08-10T12:00:00")).toBe(false);
   });
 
   it("returns true when expiring today", () => {
-    expect(isExpiringSoon("2025-08-20")).toBe(true);
+    expect(isExpiringSoon("2025-08-20T12:00:00")).toBe(true);
   });
 });
 
@@ -146,37 +154,37 @@ describe("validateRenewalDates", () => {
 
 describe("determineRenewalStatus", () => {
   beforeEach(() => {
-    vi.setSystemTime(new Date("2025-08-20T12:00:00Z"));
+    vi.setSystemTime(PINNED);
   });
 
   it("returns paid when balance is 0 and total_due > 0", () => {
-    const p = makePeriod({ balance: 0, total_due: 100, total_paid: 100, expiration_date: "2025-09-20" });
+    const p = makePeriod({ balance: 0, total_due: 100, total_paid: 100, expiration_date: "2025-09-20T12:00:00" });
     expect(determineRenewalStatus(p)).toBe("paid");
   });
 
   it("returns active when expiring in 30 days and not paid", () => {
-    const p = makePeriod({ expiration_date: "2025-09-19", balance: 50, total_due: 100 });
+    const p = makePeriod({ expiration_date: "2025-09-19T12:00:00", balance: 50, total_due: 100 });
     expect(determineRenewalStatus(p)).toBe("active");
   });
 
   it("returns expiring_soon when expiring in 10 days", () => {
-    const p = makePeriod({ expiration_date: "2025-08-30", balance: 50, total_due: 100 });
+    const p = makePeriod({ expiration_date: "2025-08-30T12:00:00", balance: 50, total_due: 100 });
     expect(determineRenewalStatus(p)).toBe("expiring_soon");
   });
 
   it("returns grace_period when 3 days overdue", () => {
-    const p = makePeriod({ expiration_date: "2025-08-17", balance: 50, total_due: 100 });
+    const p = makePeriod({ expiration_date: "2025-08-17T12:00:00", balance: 50, total_due: 100 });
     expect(determineRenewalStatus(p)).toBe("grace_period");
   });
 
   it("returns expired when 10 days overdue", () => {
-    const p = makePeriod({ expiration_date: "2025-08-10", balance: 50, total_due: 100 });
+    const p = makePeriod({ expiration_date: "2025-08-10T12:00:00", balance: 50, total_due: 100 });
     expect(determineRenewalStatus(p)).toBe("expired");
   });
 
   it("paid overrides expiring_soon when balance is cleared", () => {
     const p = makePeriod({
-      expiration_date: "2025-08-25",
+      expiration_date: "2025-08-25T12:00:00",
       balance: 0,
       total_due: 100,
       total_paid: 100,

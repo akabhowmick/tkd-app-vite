@@ -46,6 +46,13 @@ const makePeriod = (overrides: Partial<RenewalPeriodWithUiStatus> = {}): Renewal
 
 const noop = vi.fn();
 
+// Badge span contains an icon + space + label split across text nodes.
+// Use getAllByText with exact:false to match the label portion.
+const getBadge = (label: string) =>
+  screen.getAllByText((_content, element) => {
+    return element?.tagName === "SPAN" && (element.textContent ?? "").includes(label);
+  })[0];
+
 describe("RenewalCard — badge states", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -56,7 +63,7 @@ describe("RenewalCard — badge states", () => {
       <RenewalCard period={makePeriod({ ui_status: "active", status_message: "Active" })}
         onMarkPaid={noop} onDelete={noop} />,
     );
-    expect(screen.getByText("Active")).toBeInTheDocument();
+    expect(getBadge("Active")).toBeInTheDocument();
   });
 
   it("renders Paid badge for paid period", () => {
@@ -66,7 +73,7 @@ describe("RenewalCard — badge states", () => {
         onMarkPaid={noop} onDelete={noop}
       />,
     );
-    expect(screen.getByText("Paid")).toBeInTheDocument();
+    expect(getBadge("Paid")).toBeInTheDocument();
   });
 
   it("renders Expiring Soon badge", () => {
@@ -76,7 +83,7 @@ describe("RenewalCard — badge states", () => {
         onMarkPaid={noop} onDelete={noop}
       />,
     );
-    expect(screen.getByText("Expiring Soon")).toBeInTheDocument();
+    expect(getBadge("Expiring Soon")).toBeInTheDocument();
   });
 
   it("renders Grace Period badge", () => {
@@ -86,7 +93,7 @@ describe("RenewalCard — badge states", () => {
         onMarkPaid={noop} onDelete={noop}
       />,
     );
-    expect(screen.getByText("Grace Period")).toBeInTheDocument();
+    expect(getBadge("Grace Period")).toBeInTheDocument();
   });
 
   it("renders Expired badge", () => {
@@ -96,7 +103,7 @@ describe("RenewalCard — badge states", () => {
         onMarkPaid={noop} onDelete={noop}
       />,
     );
-    expect(screen.getByText("Expired")).toBeInTheDocument();
+    expect(getBadge("Expired")).toBeInTheDocument();
   });
 });
 
