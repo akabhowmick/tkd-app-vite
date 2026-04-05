@@ -84,35 +84,43 @@ export const Header = () => {
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <div className="md:hidden border-t border-red-800 bg-red-700 px-4 pb-4">
-          {navLinks.map((link) => (
-            <Link
-              key={link.to}
-              to={link.to}
-              onClick={() => setMobileOpen(false)}
-              className="block py-3 text-sm font-medium text-red-200 hover:text-white"
-            >
-              {link.label}
-            </Link>
-          ))}
+        <>
+          {/* Backdrop — closes menu on outside click, works on iOS Safari */}
+          <div
+            className="fixed inset-0 z-40"
+            aria-hidden="true"
+            onClick={() => setMobileOpen(false)}
+          />
+          <div className="relative z-50 md:hidden border-t border-red-800 bg-red-700 px-4 pb-4">
+            {navLinks.map((link) => (
+              <Link
+                key={link.to}
+                to={link.to}
+                onClick={() => setMobileOpen(false)}
+                className="block py-3 text-sm font-medium text-red-200 hover:text-white"
+              >
+                {link.label}
+              </Link>
+            ))}
 
-          {user ? (
-            <button
-              onClick={handleLogout}
-              className="mt-2 w-full rounded-md bg-red-800 px-4 py-2 text-sm font-medium text-white"
-            >
-              Logout
-            </button>
-          ) : (
-            <Link
-              to="/login"
-              onClick={() => setMobileOpen(false)}
-              className="mt-2 block w-full rounded-md bg-white px-4 py-2 text-center text-sm font-medium text-red-700"
-            >
-              Get Started
-            </Link>
-          )}
-        </div>
+            {user ? (
+              <button
+                onClick={handleLogout}
+                className="mt-2 w-full rounded-md bg-red-800 px-4 py-2 text-sm font-medium text-white"
+              >
+                Logout
+              </button>
+            ) : (
+              <Link
+                to="/login"
+                onClick={() => setMobileOpen(false)}
+                className="mt-2 block w-full rounded-md bg-white px-4 py-2 text-center text-sm font-medium text-red-700"
+              >
+                Get Started
+              </Link>
+            )}
+          </div>
+        </>
       )}
     </nav>
   );

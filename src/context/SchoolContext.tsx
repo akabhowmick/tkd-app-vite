@@ -1,4 +1,3 @@
-// updated SchoolContext.tsx
 import React, {
   createContext,
   useContext,
@@ -49,19 +48,18 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const [lastStudentsFetch, setLastStudentsFetch] = useState<Map<string, number>>(new Map());
 
   const fetchSchool = async () => {
-    if (user) {
-      try {
-        setLoading(true);
-        const fetchedSchool = await getSchoolByAdmin(user.id!);
-        setSchool(fetchedSchool);
-        if (fetchedSchool) {
-          setSchoolId(fetchedSchool.id);
-        }
-      } catch (error) {
-        console.error("Error fetching school:", error);
-      } finally {
-        setLoading(false);
+    if (!user) return;
+    try {
+      setLoading(true);
+      const fetchedSchool = await getSchoolByAdmin(user.id!);
+      setSchool(fetchedSchool);
+      if (fetchedSchool) {
+        setSchoolId(fetchedSchool.id);
       }
+    } catch (error) {
+      console.error("Error fetching school:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -73,11 +71,10 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       if (!targetSchoolId) return;
 
       const now = Date.now();
-      const cacheTimeout = 5 * 60 * 1000; // 5 minutes
+      const cacheTimeout = 5 * 60 * 1000;
       const lastFetch = lastStudentsFetch.get(targetSchoolId) || 0;
       const cachedStudents = studentsCache.get(targetSchoolId);
 
-      // Return cached data if it's fresh and not forcing refresh
       if (!forceRefresh && cachedStudents && now - lastFetch < cacheTimeout) {
         setStudents(cachedStudents);
         return;
@@ -85,16 +82,16 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
       try {
         setLoading(true);
-        const allUsers = await getStudents(schoolId);
-
-        const filtered = allUsers.sort((a, b) =>
+        // Pass targetSchoolId directly so the query filters server-side,
+        // not client-side after fetching every student across all schools
+        const filtered = await getStudents(targetSchoolId);
+        const sorted = filtered.sort((a, b) =>
           getLastName(a.name).localeCompare(getLastName(b.name)),
         );
 
-        // Update cache
-        setStudentsCache((prev) => new Map(prev).set(targetSchoolId, filtered));
+        setStudentsCache((prev) => new Map(prev).set(targetSchoolId, sorted));
         setLastStudentsFetch((prev) => new Map(prev).set(targetSchoolId, now));
-        setStudents(filtered);
+        setStudents(sorted);
       } catch (error) {
         console.error("Error loading students:", error);
       } finally {
@@ -119,23 +116,19 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       });
 
       if (result.isConfirmed) {
-        // Show loading
         Swal.fire({
           title: "Deleting...",
           text: "Please wait while we delete the student.",
           allowOutsideClick: false,
           allowEscapeKey: false,
           showConfirmButton: false,
-          didOpen: () => {
-            Swal.showLoading();
-          },
+          didOpen: () => Swal.showLoading(),
         });
 
         try {
           await deleteStudent(id);
-          await loadStudents();
+          await loadStudents(schoolId, true);
 
-          // Success message
           Swal.fire({
             title: "Deleted!",
             text: "The student has been successfully deleted.",
@@ -145,7 +138,6 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
             timerProgressBar: true,
           });
         } catch (error) {
-          // Error message
           Swal.fire({
             title: "Error!",
             text: `Failed to delete the student. Please try again. ${error}`,
@@ -159,40 +151,28 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     }
   };
 
-  // Effect to fetch school data when user is available
   useEffect(() => {
-    if (user) {
-      fetchSchool();
-    }
+    if (user) fetchSchool();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  // Memoized students for the current school
-  const memoizedStudents = useMemo(() => {
-    return students;
-  }, [students]);
+  const memoizedStudents = useMemo(() => students, [students]);
 
-  // Function to force refresh students
   const refreshStudents = useCallback(async () => {
     await loadStudents(schoolId, true);
   }, [loadStudents, schoolId]);
 
-  // Effect to load students when schoolId changes
   useEffect(() => {
-    if (schoolId) {
-      loadStudents(schoolId);
-    }
+    if (schoolId) loadStudents(schoolId);
   }, [schoolId, loadStudents]);
 
-  // Effect to fetch metrics when schoolId is available
   useEffect(() => {
     const fetchMetrics = async () => {
-      if (schoolId === "") return;
+      if (!schoolId) return;
 
       try {
         setLoading(true);
 
-        // School record
         const { data: schoolData, error: schoolError } = await supabase
           .from("schools")
           .select("*")
@@ -202,7 +182,7 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         if (schoolError) throw schoolError;
         setSchool(schoolData);
 
-        // Student / client count
+        // Student count
         const { count: userCount, error: userError } = await supabase
           .from("students")
           .select("*", { count: "exact", head: true })
@@ -211,10 +191,10 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         if (userError) throw userError;
         setClients(userCount ?? 0);
 
-        // Today's attendance count — FIX #4a: correct table name
+        // Today's present attendance count
         const today = new Date().toISOString().split("T")[0];
         const { count: attendanceCount, error: attendanceError } = await supabase
-          .from("attendance_records") // was "attendance" — table doesn't exist
+          .from("attendance_records")
           .select("*", { count: "exact", head: true })
           .eq("school_id", schoolId)
           .eq("date", today)
@@ -223,16 +203,20 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         if (attendanceError) throw attendanceError;
         setAttendance(attendanceCount ?? 0);
 
-        // Sales total for today
+        // Today's revenue — now that sales has school_id, this query works
         const { data: salesData, error: salesError } = await supabase
           .from("sales")
           .select("amount")
           .eq("school_id", schoolId)
-          .gte("payment_date", today);
+          .gte("payment_date", `${today}T00:00:00`)
+          .lte("payment_date", `${today}T23:59:59`);
 
         if (salesError) throw salesError;
-        const todaysSales = salesData?.reduce((sum, sale) => sum + Number(sale.amount), 0) ?? 0;
-        setSales(todaysSales);
+        const totalSales = (salesData ?? []).reduce(
+          (sum: number, row: { amount: number }) => sum + row.amount,
+          0,
+        );
+        setSales(totalSales);
       } catch (err) {
         console.error("Error fetching school dashboard metrics:", err);
       } finally {
@@ -243,7 +227,6 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     fetchMetrics();
   }, [schoolId]);
 
-  // CRUD operations
   const createSchool = async (school: Omit<School, "id" | "created_at">) => {
     const { data, error } = await supabase.from("schools").insert(school).select().single();
     if (error) throw error;
@@ -268,16 +251,15 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     setSchool(null);
     setSchoolId("");
     setStudents([]);
-    // Clear cache for deleted school
     setStudentsCache((prev) => {
-      const newCache = new Map(prev);
-      newCache.delete(id);
-      return newCache;
+      const next = new Map(prev);
+      next.delete(id);
+      return next;
     });
     setLastStudentsFetch((prev) => {
-      const newCache = new Map(prev);
-      newCache.delete(id);
-      return newCache;
+      const next = new Map(prev);
+      next.delete(id);
+      return next;
     });
   };
 

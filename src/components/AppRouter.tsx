@@ -1,7 +1,7 @@
 import React from "react";
 import { BrowserRouter as Router, Route, Routes, useLocation, Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import Home from "../pages/Home";
+
 import Login from "../pages/Login";
 import SignUp from "../pages/Signup";
 import { Header } from "./Header";
@@ -15,6 +15,7 @@ import PricingPage from "../pages/Pricing";
 import AboutPage from "../pages/About";
 import AuthCallback from "../pages/AuthCallback";
 import ResetPassword from "../pages/ResetPassword";
+import Home from "../pages/Home";
 
 const NotFound = () => (
   <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">

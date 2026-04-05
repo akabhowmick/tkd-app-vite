@@ -1,11 +1,10 @@
-CREATE TABLE attendance_records
-(
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  student_id UUID NOT NULL,
-  status TEXT NOT NULL CHECK (status IN ('present', 'absent', 'tardy')),
-  school_id UUID NOT NULL,
-  date DATE NOT NULL,
-  note TEXT,
+CREATE TABLE attendance_records (
+  id         UUID        DEFAULT gen_random_uuid() PRIMARY KEY,
+  student_id UUID        NOT NULL,
+  status     TEXT        NOT NULL CHECK (status IN ('present', 'absent', 'tardy')),
+  school_id  UUID        NOT NULL,
+  date       DATE        NOT NULL,
+  note       TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -26,13 +25,10 @@ ALTER TABLE attendance_records ENABLE ROW LEVEL SECURITY;
 -- Uses schools table (not user_profiles, which doesn't exist)
 CREATE POLICY "Admins can view attendance for their school"
   ON attendance_records
-  FOR
-SELECT
+  FOR SELECT
   USING (
     school_id IN (
-      SELECT id
-  FROM schools
-  WHERE admin_id = auth.uid()
+      SELECT id FROM schools WHERE admin_id = auth.uid()
     )
   );
 
@@ -40,21 +36,13 @@ SELECT
 CREATE POLICY "Admins can manage attendance for their school"
   ON attendance_records
   FOR ALL
-  USING
-(
-    school_id IN
-(
-      SELECT id
-FROM schools
-WHERE admin_id = auth.uid()
+  USING (
+    school_id IN (
+      SELECT id FROM schools WHERE admin_id = auth.uid()
     )
-)
-  WITH CHECK
-(
-    school_id IN
-(
-      SELECT id
-FROM schools
-WHERE admin_id = auth.uid()
+  )
+  WITH CHECK (
+    school_id IN (
+      SELECT id FROM schools WHERE admin_id = auth.uid()
     )
-);
+  );

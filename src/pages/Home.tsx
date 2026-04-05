@@ -92,18 +92,19 @@ const Home = () => (
           transition={{ duration: 0.6, delay: 0.3 }}
           className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4"
         >
+          {/* Link instead of <a href> — prevents full page reload */}
           <Link
             to="/signup"
             className="inline-flex h-11 items-center justify-center rounded-md bg-primary px-8 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/25 hover:bg-primary/90 transition-colors"
           >
             Get Started Free
           </Link>
-          <a
-            href="#features"
+          <Link
+            to="/#features"
             className="inline-flex h-11 items-center justify-center rounded-md border-2 border-white/30 px-8 text-sm font-semibold text-white bg-transparent hover:bg-white/10 transition-colors"
           >
             See How It Works
-          </a>
+          </Link>
         </motion.div>
       </div>
     </section>

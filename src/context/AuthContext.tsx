@@ -40,6 +40,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     const fetchUser = async () => {
       const { data, error } = await supabase.auth.getUser();
+      // Only log when there's actually an error — previously this fired on every
+      // successful load because the check was missing
       if (error) {
         console.error("Error fetching user session:", error);
         return;
@@ -62,7 +64,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     fetchUser();
 
-    // Keep user state in sync with Supabase session (handles Google OAuth redirect)
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -112,7 +113,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     if (error) return { success: false, message: friendlyAuthError(error.message) };
 
-    // Supabase returns a user even when email confirmation is required
     if (data.user && !data.session) {
       return {
         success: false,
