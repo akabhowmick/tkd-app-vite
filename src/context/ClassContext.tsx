@@ -9,7 +9,6 @@ import {
   UpdateSessionRequest,
 } from "../types/classes";
 import {
-  getClasses,
   getClassesWithSessions,
   createClass as apiCreateClass,
   updateClass as apiUpdateClass,
@@ -76,7 +75,7 @@ export const ClassProvider = ({ children }: { children: ReactNode }) => {
         setLoading(false);
       }
     },
-    [schoolId, loadClasses]
+    [schoolId, loadClasses],
   );
 
   const updateClass = useCallback(
@@ -94,7 +93,7 @@ export const ClassProvider = ({ children }: { children: ReactNode }) => {
         setLoading(false);
       }
     },
-    [loadClasses]
+    [loadClasses],
   );
 
   const deleteClass = useCallback(
@@ -112,7 +111,7 @@ export const ClassProvider = ({ children }: { children: ReactNode }) => {
         setLoading(false);
       }
     },
-    [loadClasses]
+    [loadClasses],
   );
 
   const createSession = useCallback(
@@ -133,7 +132,7 @@ export const ClassProvider = ({ children }: { children: ReactNode }) => {
         setLoading(false);
       }
     },
-    [schoolId, loadClasses]
+    [schoolId, loadClasses],
   );
 
   const updateSession = useCallback(
@@ -151,7 +150,7 @@ export const ClassProvider = ({ children }: { children: ReactNode }) => {
         setLoading(false);
       }
     },
-    [loadClasses]
+    [loadClasses],
   );
 
   const deleteSession = useCallback(
@@ -169,7 +168,7 @@ export const ClassProvider = ({ children }: { children: ReactNode }) => {
         setLoading(false);
       }
     },
-    [loadClasses]
+    [loadClasses],
   );
 
   useEffect(() => {

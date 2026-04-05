@@ -2,6 +2,11 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./styles/index.css"
 import App from "./App.tsx";
+import { initSentry } from "./analytics/sentry";
+import { initPostHog } from "./analytics/posthog";
+
+initSentry();
+initPostHog();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

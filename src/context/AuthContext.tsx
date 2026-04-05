@@ -3,6 +3,8 @@ import { BaseUser, UserRole } from "../types/user";
 import { UserSignIn } from "../types/auth";
 import { School } from "../types/school";
 import { supabase } from "../api/supabase";
+import { identifyUser, resetIdentity, track } from "../analytics/posthog";
+import { setSentryUser, clearSentryUser } from "../analytics/sentry";
 
 interface AuthResult {
   success: boolean;

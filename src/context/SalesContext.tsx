@@ -1,15 +1,8 @@
 /* eslint-disable react-refresh/only-export-components */
-import React, {
-  createContext,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  useCallback,
-} from "react";
+import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from "react";
 import { Sale, SaleFormData, PaymentCategory, PaymentType } from "../types/sales";
 import { fetchTodaysSales, createSale } from "../api/SalesRequests/salesApi";
-
+import { useSchool } from "./SchoolContext";
 
 interface SalesContextValue {
   sales: Sale[];
@@ -28,18 +21,20 @@ export const useSales = () => {
 };
 
 export const SalesProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
+  const { schoolId } = useSchool();
   const [sales, setSales] = useState<Sale[]>([]);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
+    if (!schoolId) return;
     setLoading(true);
     try {
-      const data = await fetchTodaysSales();
+      const data = await fetchTodaysSales(schoolId); // ← pass it here
       setSales(data);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [schoolId]);
 
   useEffect(() => {
     refresh();
@@ -60,30 +55,29 @@ export const SalesProvider: React.FC<React.PropsWithChildren> = ({ children }) =
 
   const addSale = useCallback(
     async (form: SaleFormData) => {
+      if (!schoolId) throw new Error("No school found");
       const errs = validateForm(form);
       if (errs.length) throw new Error(errs.join("|"));
 
-      const newSale: Sale = {
-        sale_id: Date.now(),
+      const newSale = {
         student_id: form.student_id || undefined,
         amount: Number(form.amount),
         payment_type: form.payment_type as PaymentType,
         payment_date: new Date(form.payment_date).toISOString(),
         category: form.category as PaymentCategory,
         notes: form.notes || undefined,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        school_id: schoolId, // ← add this
       };
 
-      await createSale(newSale);
-      setSales((prev) => [newSale, ...prev]);
+      const saved = await createSale(newSale); // createSale returns the full Sale with sale_id
+      setSales((prev) => [saved, ...prev]);
     },
-    [validateForm]
+    [validateForm],
   );
 
   const value = useMemo(
     () => ({ sales, loading, refresh, addSale, validateForm }),
-    [sales, loading, refresh, addSale, validateForm]
+    [sales, loading, refresh, addSale, validateForm],
   );
 
   return <SalesContext.Provider value={value}>{children}</SalesContext.Provider>;
