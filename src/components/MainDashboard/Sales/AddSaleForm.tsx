@@ -1,13 +1,13 @@
 import React, { useMemo, useState } from "react";
 import { FaDollarSign } from "react-icons/fa";
 import { useSales } from "../../../context/SalesContext";
+import { useSchool } from "../../../context/SchoolContext";
 import {
   SaleFormData,
   PAYMENT_TYPES,
   PaymentCategory,
   PAYMENT_CATEGORIES,
 } from "../../../types/sales";
-import { mockStudents } from "../../../utils/SalesUtils/mockStudents";
 
 const emptyForm: SaleFormData = {
   student_id: undefined,
@@ -24,6 +24,7 @@ export const AddSaleForm: React.FC<{ onCancel: () => void; onSaved?: () => void 
   onSaved,
 }) => {
   const { addSale, validateForm } = useSales();
+  const { students } = useSchool();
   const [form, setForm] = useState<SaleFormData>(emptyForm);
   const [errors, setErrors] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
@@ -77,13 +78,13 @@ export const AddSaleForm: React.FC<{ onCancel: () => void; onSaved?: () => void 
           <label className="block text-sm font-medium text-gray-700 mb-2">Student (Optional)</label>
           <select
             value={form.student_id ?? ""}
-            onChange={(e) => setForm((p) => ({ ...p, student_id: e.target.value }))}
+            onChange={(e) => setForm((p) => ({ ...p, student_id: e.target.value || undefined }))}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="">Select a student (or leave blank)</option>
-            {mockStudents.map((s) => (
-              <option key={s.student_id} value={s.student_id}>
-                {s.first_name} {s.last_name}
+            {students.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
               </option>
             ))}
           </select>
@@ -159,6 +160,18 @@ export const AddSaleForm: React.FC<{ onCancel: () => void; onSaved?: () => void 
               </option>
             ))}
           </select>
+        </div>
+
+        {/* Processed By */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Processed By *</label>
+          <input
+            type="text"
+            value={form.processed_by}
+            onChange={(e) => setForm((p) => ({ ...p, processed_by: e.target.value }))}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="e.g. Admin, Jane"
+          />
         </div>
 
         {/* Notes */}

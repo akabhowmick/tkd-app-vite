@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { useSchool } from "../../../../context/SchoolContext";
 import { useAttendance } from "../../../../context/AttendanceContext";
-import { ChevronLeft, ChevronRight, FileText, ChevronDown } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 import { UserProfile } from "../../../../types/user";
 
+// "tardy" is UI-only for now — stored as "absent" in the DB.
+// Extend AttendanceContext + the attendance.sql check constraint later if needed.
 type AttendanceStatus = "present" | "absent" | "tardy";
 
 const STATUS_STYLES: Record<AttendanceStatus, string> = {
@@ -13,6 +15,7 @@ const STATUS_STYLES: Record<AttendanceStatus, string> = {
 };
 
 const WEEKDAYS = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+const MARK_ALL_OPTIONS: AttendanceStatus[] = ["present", "absent", "tardy"];
 
 function getTodayStr() {
   const d = new Date();
@@ -29,41 +32,67 @@ function buildCalendarDays(year: number, month: number): (string | null)[] {
   return days;
 }
 
-const MARK_ALL_OPTIONS: AttendanceStatus[] = ["present", "absent", "tardy"];
-
 export const TakeAttendance = () => {
   const { students } = useSchool();
-  const { handleDateChange, handleSubmit, selectedDate, isSubmitting, isLoading } = useAttendance();
 
-  const [attendance, setAttendance] = useState<Record<string, AttendanceStatus>>({});
+  // ── Use context state — this is what gets saved ──────────────────────────
+  const {
+    attendance: contextAttendance,
+    selectedDate,
+    handleDateChange,
+    handleAttendanceChange,
+    handleSubmit,
+    isSubmitting,
+    isLoading,
+  } = useAttendance();
+
+  // ── Local UI state (calendar nav, dropdowns, notes) ──────────────────────
+  // We keep a separate local map for "tardy" because AttendanceContext only
+  // accepts "present" | "absent". Tardy students are submitted as "absent"
+  // but displayed as tardy in the UI.
+  const [localOverrides, setLocalOverrides] = useState<Record<string, AttendanceStatus>>({});
   const [calYear, setCalYear] = useState(() => new Date().getFullYear());
   const [calMonth, setCalMonth] = useState(() => new Date().getMonth());
   const [markAllOpen, setMarkAllOpen] = useState(false);
   const [noteOpen, setNoteOpen] = useState<string | null>(null);
   const [notes, setNotes] = useState<Record<string, string>>({});
-  const today = getTodayStr();
 
+  const today = getTodayStr();
   const calDays = buildCalendarDays(calYear, calMonth);
   const monthLabel = new Date(calYear, calMonth, 1).toLocaleString("en-US", {
     month: "long",
     year: "numeric",
   });
 
+  // Reset local overrides when the date changes
   useEffect(() => {
-    // reset local attendance when date changes
-    setAttendance({});
+    setLocalOverrides({});
   }, [selectedDate]);
 
+  // ── Helpers ───────────────────────────────────────────────────────────────
+
+  // Effective status: local override (handles tardy) takes precedence, then
+  // fall back to what the context (and DB) says.
+  const getStatus = (id: string): AttendanceStatus | undefined => {
+    if (localOverrides[id]) return localOverrides[id];
+    return contextAttendance[id] as AttendanceStatus | undefined;
+  };
+
   const setStatus = (id: string, status: AttendanceStatus) => {
-    setAttendance((prev) => ({ ...prev, [id]: status }));
+    setLocalOverrides((prev) => ({ ...prev, [id]: status }));
+    // Push to context — map tardy → absent for DB storage
+    handleAttendanceChange(id, status === "tardy" ? "absent" : status);
   };
 
   const markAll = (status: AttendanceStatus) => {
-    const next: Record<string, AttendanceStatus> = {};
+    const nextOverrides: Record<string, AttendanceStatus> = {};
     students.forEach((s) => {
-      if (s.id) next[s.id] = status;
+      if (s.id) {
+        nextOverrides[s.id] = status;
+        handleAttendanceChange(s.id, status === "tardy" ? "absent" : status);
+      }
     });
-    setAttendance(next);
+    setLocalOverrides(nextOverrides);
     setMarkAllOpen(false);
   };
 
@@ -82,14 +111,13 @@ export const TakeAttendance = () => {
     });
   };
 
-  const markedCount = Object.keys(attendance).length;
+  const markedCount = students.filter((s) => s.id && getStatus(s.id) !== undefined).length;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* ── Left: Calendar ── */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="p-6">
-          {/* Month nav */}
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-gray-900">{monthLabel}</h2>
             <div className="flex items-center gap-2">
@@ -119,7 +147,6 @@ export const TakeAttendance = () => {
             </div>
           </div>
 
-          {/* Weekday headers */}
           <div className="grid grid-cols-7 mb-2">
             {WEEKDAYS.map((d) => (
               <div key={d} className="text-center text-xs font-semibold text-gray-500 py-2">
@@ -128,14 +155,12 @@ export const TakeAttendance = () => {
             ))}
           </div>
 
-          {/* Days */}
           <div className="grid grid-cols-7 gap-1">
             {calDays.map((date, i) => {
               if (!date) return <div key={i} />;
               const isSelected = date === selectedDate;
               const isToday = date === today;
               const dayNum = parseInt(date.split("-")[2]);
-
               return (
                 <button
                   key={date}
@@ -149,7 +174,6 @@ export const TakeAttendance = () => {
                   }`}
                 >
                   <span>{dayNum}</span>
-                  {/* Attendance badge placeholder */}
                   {markedCount > 0 && isSelected && (
                     <span className="mt-0.5 text-xs bg-green-500 text-white rounded px-1">
                       P:{markedCount}
@@ -162,20 +186,14 @@ export const TakeAttendance = () => {
         </div>
       </div>
 
-      {/* ── Right: Student List ── */}
+      {/* ── Right: Student list ── */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         {/* Header */}
         <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100 flex-wrap">
           <h3 className="text-sm font-semibold text-gray-800 shrink-0">
             Attendance for {selectedDate}
           </h3>
-
           <div className="flex items-center gap-2 ml-auto flex-wrap">
-            {/* Note button */}
-            <button className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-primary text-primary rounded-md hover:bg-primary/5 transition-colors">
-              <FileText size={14} /> Note
-            </button>
-
             {/* Mark All dropdown */}
             <div className="relative">
               <button
@@ -209,17 +227,17 @@ export const TakeAttendance = () => {
           {[
             {
               label: "Present",
-              count: Object.values(attendance).filter((s) => s === "present").length,
+              count: students.filter((s) => s.id && getStatus(s.id) === "present").length,
               color: "text-green-600",
             },
             {
               label: "Absent",
-              count: Object.values(attendance).filter((s) => s === "absent").length,
+              count: students.filter((s) => s.id && getStatus(s.id) === "absent").length,
               color: "text-red-600",
             },
             {
               label: "Tardy",
-              count: Object.values(attendance).filter((s) => s === "tardy").length,
+              count: students.filter((s) => s.id && getStatus(s.id) === "tardy").length,
               color: "text-yellow-600",
             },
           ].map((stat) => (
@@ -243,7 +261,7 @@ export const TakeAttendance = () => {
           ) : (
             students.map((student: UserProfile) => {
               const id = student.id!;
-              const currentStatus = attendance[id];
+              const currentStatus = getStatus(id);
               const hasNote = !!notes[id];
 
               return (
@@ -251,7 +269,6 @@ export const TakeAttendance = () => {
                   key={id}
                   className="flex items-center gap-3 px-6 py-3 border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
                 >
-                  {/* Checkbox-style indicator */}
                   <div
                     className={`h-8 w-8 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
                       currentStatus ? "border-primary bg-primary/10" : "border-gray-300"
@@ -260,13 +277,10 @@ export const TakeAttendance = () => {
                     {currentStatus && <div className="h-3 w-3 rounded-sm bg-primary" />}
                   </div>
 
-                  {/* Name */}
                   <span className="flex-1 text-sm font-medium text-gray-800">{student.name}</span>
 
-                  {/* Note indicator */}
                   {hasNote && <span className="text-sm text-primary mr-1">📝</span>}
 
-                  {/* Status buttons */}
                   <div className="flex flex-col gap-1">
                     <div className="flex gap-1">
                       {(["present", "absent"] as AttendanceStatus[]).map((s) => (
@@ -302,7 +316,6 @@ export const TakeAttendance = () => {
                       </button>
                     </div>
 
-                    {/* Inline note input */}
                     {noteOpen === id && (
                       <input
                         autoFocus

@@ -1,53 +1,26 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { SchoolForm } from "./SchoolForm";
 import { School } from "../../../../types/school";
-import { supabase } from "../../../../api/supabase";
-import { useAuth } from "../../../../context/AuthContext";
 import { useSchool } from "../../../../context/SchoolContext";
 import { School as SchoolIcon } from "lucide-react";
 
 export const SchoolManagement = () => {
-  const { user } = useAuth();
-  const { setSchoolId } = useSchool();
-  const [currentSchool, setCurrentSchool] = useState<School | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { school, loading, updateSchool, createSchool, deleteSchool } = useSchool();
   const [editing, setEditing] = useState(false);
 
-  const fetchSchool = async () => {
-    if (!user) return;
-    const { data, error } = await supabase.from("schools").select("*").eq("admin_id", user.id);
-    if (!error && data) {
-      setCurrentSchool(data[0] ?? null);
-      if (data[0]) setSchoolId(data[0].id);
-    } else {
-      console.error(error);
-    }
-    setLoading(false);
-  };
-
   const handleDelete = async () => {
-    if (!currentSchool) return;
-    const { error } = await supabase.from("schools").delete().eq("id", currentSchool.id);
-    if (!error) setCurrentSchool(null);
+    if (!school) return;
+    await deleteSchool(school.id);
   };
 
   const handleUpdateOrCreate = async (formData: Omit<School, "id" | "created_at">) => {
-    if (currentSchool?.id) {
-      await supabase.from("schools").update(formData).eq("id", currentSchool.id);
+    if (school?.id) {
+      await updateSchool(school.id, formData);
     } else {
-      const { error } = await supabase
-        .from("schools")
-        .insert([{ ...formData, admin_id: user?.id }]);
-      if (error) console.error(error);
+      await createSchool(formData);
     }
     setEditing(false);
-    fetchSchool();
   };
-
-  useEffect(() => {
-    fetchSchool();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
 
   if (loading) {
     return (
@@ -57,8 +30,7 @@ export const SchoolManagement = () => {
     );
   }
 
-  // Empty state — fresh signup with no school yet
-  if (!currentSchool && !editing) {
+  if (!school && !editing) {
     return (
       <div className="flex flex-col items-center justify-center text-center py-20 px-6">
         <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
@@ -80,17 +52,17 @@ export const SchoolManagement = () => {
   }
 
   if (editing) {
-    return <SchoolForm existingSchool={currentSchool} onSubmit={handleUpdateOrCreate} />;
+    return <SchoolForm existingSchool={school} onSubmit={handleUpdateOrCreate} />;
   }
 
   return (
     <div className="bg-white text-black rounded shadow p-6 max-w-md mx-auto space-y-4">
       <h2 className="text-2xl font-bold">Your School</h2>
       <p>
-        <strong>Name:</strong> {currentSchool!.name}
+        <strong>Name:</strong> {school!.name}
       </p>
       <p>
-        <strong>Address:</strong> {currentSchool!.address}
+        <strong>Address:</strong> {school!.address}
       </p>
       <div className="flex gap-2">
         <button
