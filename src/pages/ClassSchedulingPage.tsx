@@ -1,8 +1,7 @@
-import { useState } from "react";
 import { useClasses } from "../context/ClassContext";
-import { AgeGroup, ClassWithSessions, SessionType } from "../types/classes";
+import { AgeGroup, SessionType } from "../types/classes";
 import Swal from "sweetalert2";
-import { FaPlus, FaEdit, FaTrash, FaClock, FaUsers } from "react-icons/fa";
+import { FaPlus, FaTrash, FaClock, FaUsers } from "react-icons/fa";
 
 const DAYS_OF_WEEK = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -17,8 +16,8 @@ const CLASS_COLORS = [
 ];
 
 export const ClassSchedulingPage = () => {
-  const { classes, loading, createClass, updateClass, deleteClass, createSession, deleteSession } = useClasses();
-  const [selectedClass, setSelectedClass] = useState<ClassWithSessions | null>(null);
+  const { classes, loading, createClass, deleteClass, createSession, deleteSession } = useClasses();
+  // const [selectedClass, setSelectedClass] = useState<ClassWithSessions | null>(null);
 
   const handleCreateClass = async () => {
     const { value: formValues } = await Swal.fire({
@@ -206,7 +205,11 @@ export const ClassSchedulingPage = () => {
         await deleteSession(sessionId);
         Swal.fire("Deleted!", "Session deleted successfully", "success");
       } catch (err) {
-        Swal.fire("Error", err instanceof Error ? err.message : "Failed to delete session", "error");
+        Swal.fire(
+          "Error",
+          err instanceof Error ? err.message : "Failed to delete session",
+          "error",
+        );
       }
     }
   };
@@ -236,7 +239,9 @@ export const ClassSchedulingPage = () => {
           <div className="bg-white rounded-lg shadow p-8 text-center">
             <FaUsers className="mx-auto text-gray-300 text-5xl mb-4" />
             <h2 className="text-xl font-semibold text-gray-700 mb-2">No Classes Yet</h2>
-            <p className="text-gray-500 mb-4">Create your first class to get started with scheduling</p>
+            <p className="text-gray-500 mb-4">
+              Create your first class to get started with scheduling
+            </p>
             <button
               onClick={handleCreateClass}
               className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"

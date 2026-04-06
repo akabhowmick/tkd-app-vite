@@ -1,7 +1,12 @@
 import React, { useMemo, useState } from "react";
 import { FaDollarSign } from "react-icons/fa";
 import { useSales } from "../../../context/SalesContext";
-import { SaleFormData, PAYMENT_TYPES, PaymentCategory, PAYMENT_CATEGORIES } from "../../../types/sales";
+import {
+  SaleFormData,
+  PAYMENT_TYPES,
+  PaymentCategory,
+  PAYMENT_CATEGORIES,
+} from "../../../types/sales";
 import { mockStudents } from "../../../utils/SalesUtils/mockStudents";
 
 const emptyForm: SaleFormData = {
@@ -14,7 +19,10 @@ const emptyForm: SaleFormData = {
   processed_by: "",
 };
 
-export const AddSaleForm: React.FC<{ onCancel: () => void; onSaved?: () => void }> = ({ onCancel, onSaved }) => {
+export const AddSaleForm: React.FC<{ onCancel: () => void; onSaved?: () => void }> = ({
+  onCancel,
+  onSaved,
+}) => {
   const { addSale, validateForm } = useSales();
   const [form, setForm] = useState<SaleFormData>(emptyForm);
   const [errors, setErrors] = useState<string[]>([]);
@@ -69,7 +77,7 @@ export const AddSaleForm: React.FC<{ onCancel: () => void; onSaved?: () => void 
           <label className="block text-sm font-medium text-gray-700 mb-2">Student (Optional)</label>
           <select
             value={form.student_id ?? ""}
-            onChange={(e) => setForm((p) => ({ ...p, student_id: e.target.value ? Number(e.target.value) : undefined }))}
+            onChange={(e) => setForm((p) => ({ ...p, student_id: e.target.value }))}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="">Select a student (or leave blank)</option>

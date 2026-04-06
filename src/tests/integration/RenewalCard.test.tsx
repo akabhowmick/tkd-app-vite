@@ -1,4 +1,3 @@
-import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { RenewalCard } from "../../components/AccountDashboards/AdminFeatures/StudentRenewals/RenewalCard";
@@ -24,7 +23,9 @@ vi.mock("sweetalert2-react-content", () => ({
   default: (Swal: unknown) => Swal,
 }));
 
-const makePeriod = (overrides: Partial<RenewalPeriodWithUiStatus> = {}): RenewalPeriodWithUiStatus => ({
+const makePeriod = (
+  overrides: Partial<RenewalPeriodWithUiStatus> = {},
+): RenewalPeriodWithUiStatus => ({
   period_id: "p1",
   student_id: "s1",
   school_id: "sc1",
@@ -60,8 +61,11 @@ describe("RenewalCard — badge states", () => {
 
   it("renders Active badge for active period", () => {
     render(
-      <RenewalCard period={makePeriod({ ui_status: "active", status_message: "Active" })}
-        onMarkPaid={noop} onDelete={noop} />,
+      <RenewalCard
+        period={makePeriod({ ui_status: "active", status_message: "Active" })}
+        onMarkPaid={noop}
+        onDelete={noop}
+      />,
     );
     expect(getBadge("Active")).toBeInTheDocument();
   });
@@ -69,8 +73,14 @@ describe("RenewalCard — badge states", () => {
   it("renders Paid badge for paid period", () => {
     render(
       <RenewalCard
-        period={makePeriod({ ui_status: "paid", status_message: "Fully paid", balance: 0, total_paid: 100 })}
-        onMarkPaid={noop} onDelete={noop}
+        period={makePeriod({
+          ui_status: "paid",
+          status_message: "Fully paid",
+          balance: 0,
+          total_paid: 100,
+        })}
+        onMarkPaid={noop}
+        onDelete={noop}
       />,
     );
     expect(getBadge("Paid")).toBeInTheDocument();
@@ -80,7 +90,8 @@ describe("RenewalCard — badge states", () => {
     render(
       <RenewalCard
         period={makePeriod({ ui_status: "expiring_soon", status_message: "Expires in 5 days" })}
-        onMarkPaid={noop} onDelete={noop}
+        onMarkPaid={noop}
+        onDelete={noop}
       />,
     );
     expect(getBadge("Expiring Soon")).toBeInTheDocument();
@@ -89,8 +100,12 @@ describe("RenewalCard — badge states", () => {
   it("renders Grace Period badge", () => {
     render(
       <RenewalCard
-        period={makePeriod({ ui_status: "grace_period", status_message: "3 days overdue — grace period" })}
-        onMarkPaid={noop} onDelete={noop}
+        period={makePeriod({
+          ui_status: "grace_period",
+          status_message: "3 days overdue — grace period",
+        })}
+        onMarkPaid={noop}
+        onDelete={noop}
       />,
     );
     expect(getBadge("Grace Period")).toBeInTheDocument();
@@ -100,7 +115,8 @@ describe("RenewalCard — badge states", () => {
     render(
       <RenewalCard
         period={makePeriod({ ui_status: "expired", status_message: "Expired 10 days ago" })}
-        onMarkPaid={noop} onDelete={noop}
+        onMarkPaid={noop}
+        onDelete={noop}
       />,
     );
     expect(getBadge("Expired")).toBeInTheDocument();
@@ -109,9 +125,7 @@ describe("RenewalCard — badge states", () => {
 
 describe("RenewalCard — balance display", () => {
   it("shows balance owed when balance > 0", () => {
-    render(
-      <RenewalCard period={makePeriod({ balance: 50 })} onMarkPaid={noop} onDelete={noop} />,
-    );
+    render(<RenewalCard period={makePeriod({ balance: 50 })} onMarkPaid={noop} onDelete={noop} />);
     expect(screen.getByText(/Balance Owed/)).toBeInTheDocument();
   });
 
@@ -119,7 +133,8 @@ describe("RenewalCard — balance display", () => {
     render(
       <RenewalCard
         period={makePeriod({ balance: 0, total_paid: 100, ui_status: "paid" })}
-        onMarkPaid={noop} onDelete={noop}
+        onMarkPaid={noop}
+        onDelete={noop}
       />,
     );
     expect(screen.queryByText(/Balance Owed/)).not.toBeInTheDocument();
@@ -136,7 +151,8 @@ describe("RenewalCard — student name", () => {
     render(
       <RenewalCard
         period={makePeriod({ student_id: "unknown-id" })}
-        onMarkPaid={noop} onDelete={noop}
+        onMarkPaid={noop}
+        onDelete={noop}
       />,
     );
     expect(screen.getByText(/Unknown Student/)).toBeInTheDocument();
@@ -174,7 +190,8 @@ describe("RenewalCard — status message", () => {
     render(
       <RenewalCard
         period={makePeriod({ status_message: "Expires in 5 days" })}
-        onMarkPaid={noop} onDelete={noop}
+        onMarkPaid={noop}
+        onDelete={noop}
       />,
     );
     expect(screen.getByText("Expires in 5 days")).toBeInTheDocument();

@@ -4,9 +4,9 @@ import { HandleAddOrEditProps } from "../../../../types/school";
 import { useSchool } from "../../../../context/SchoolContext";
 import { createLoadingTemplate, createStatusTemplate } from "../../../../utils/modalTemplates";
 import "../../../../styles/AddStudentModal.css";
-import { UserProfile } from "../../../../types/user";
 import { getBaseModalOptions, getModalConfig } from "../../../../utils/modalConfig";
 import { validateFormData } from "../../../../utils/formValidation";
+import { Student } from "../../../../types/user";
 
 const MAX_BULK_STUDENTS = 20;
 
@@ -56,7 +56,7 @@ export const HandleAddOrEdit: React.FC<HandleAddOrEditProps> = ({
   const isEdit = !!student;
   const config = getModalConfig(isEdit);
 
-  const getSingleFormHTML = (prefill?: Partial<UserProfile>) => `
+  const getSingleFormHTML = (prefill?: Partial<Student>) => `
     <div class="swal-form-wrapper">
       <div class="swal-info-box">
         <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -260,7 +260,7 @@ export const HandleAddOrEdit: React.FC<HandleAddOrEditProps> = ({
             phone: s.phone,
             role: "Student",
             school_id: schoolId,
-          } as Omit<UserProfile, "id">);
+          } as Omit<Student, "id">);
         }
       } catch {
         failed.push(s.name || s.email);
@@ -300,7 +300,7 @@ export const HandleAddOrEdit: React.FC<HandleAddOrEditProps> = ({
   };
 
   // ─── Single submission ───────────────────────────────────────────────────────
-  const handleFormSubmission = async (formValues: Omit<UserProfile, "id">) => {
+  const handleFormSubmission = async (formValues: Omit<Student, "id">) => {
     Swal.fire({
       title: isEdit ? "Updating Student..." : "Creating Student...",
       html: createLoadingTemplate(

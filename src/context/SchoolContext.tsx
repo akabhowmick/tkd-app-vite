@@ -11,7 +11,7 @@ import { supabase } from "../api/supabase";
 import { School } from "../types/school";
 import { getSchoolByAdmin } from "../api/SchoolRequests/schoolRequests";
 import { useAuth } from "./AuthContext";
-import { UserProfile } from "../types/user";
+import { Student } from "../types/user";
 import { deleteStudent, getStudents } from "../api/StudentRequests/studentRequests";
 import Swal from "sweetalert2";
 
@@ -22,7 +22,7 @@ interface SchoolContextType {
   school: School | null;
   schoolId: string;
   loading: boolean;
-  students: UserProfile[];
+  students: Student[];
   fetchSchool: () => Promise<void>;
   loadStudents: (currentSchoolId?: string, forceRefresh?: boolean) => Promise<void>;
   handleDelete: (id: string) => Promise<void>;
@@ -42,9 +42,9 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const [clients, setClients] = useState<number>(0);
   const [school, setSchool] = useState<School | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const [students, setStudents] = useState<UserProfile[]>([]);
+  const [students, setStudents] = useState<Student[]>([]);
   const [schoolId, setSchoolId] = useState<string>("");
-  const [studentsCache, setStudentsCache] = useState<Map<string, UserProfile[]>>(new Map());
+  const [studentsCache, setStudentsCache] = useState<Map<string, Student[]>>(new Map());
   const [lastStudentsFetch, setLastStudentsFetch] = useState<Map<string, number>>(new Map());
 
   const fetchSchool = async () => {
@@ -82,8 +82,6 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
       try {
         setLoading(true);
-        // Pass targetSchoolId directly so the query filters server-side,
-        // not client-side after fetching every student across all schools
         const filtered = await getStudents(targetSchoolId);
         const sorted = filtered.sort((a, b) =>
           getLastName(a.name).localeCompare(getLastName(b.name)),

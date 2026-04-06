@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
-import { UserProfile } from "../../../../types/user";
+import { Student } from "../../../../types/user";
 import { HandleAddOrEdit } from "./HandleAddOrEdit";
 import { updateStudent, createStudent } from "../../../../api/StudentRequests/studentRequests";
 import { useSchool } from "../../../../context/SchoolContext";
 
 export const StudentListPage = () => {
   const { loadStudents, handleDelete, students } = useSchool();
-  const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
+  const [editingUser, setEditingUser] = useState<Student | null>(null);
 
-  const handleEdit = (user: UserProfile) => {
+  const handleEdit = (user: Student) => {
     setEditingUser(user);
   };
 

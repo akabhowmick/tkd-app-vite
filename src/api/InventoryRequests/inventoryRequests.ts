@@ -2,7 +2,6 @@ import { supabase } from "../supabase";
 import {
   InventoryItem,
   InventoryTransaction,
-  TransactionWithItem,
   CreateInventoryItemRequest,
   CreateTransactionRequest,
   UpdateInventoryItemRequest,
@@ -56,18 +55,19 @@ export async function getLowStockItems(schoolId: string): Promise<InventoryItemW
     .filter((item) => item.is_low_stock);
 }
 
-export async function createInventoryItem(itemData: CreateInventoryItemRequest): Promise<InventoryItem> {
-  const { data, error } = await supabase
-    .from("inventory_items")
-    .insert(itemData)
-    .select()
-    .single();
+export async function createInventoryItem(
+  itemData: CreateInventoryItemRequest,
+): Promise<InventoryItem> {
+  const { data, error } = await supabase.from("inventory_items").insert(itemData).select().single();
 
   if (error) throw error;
   return data;
 }
 
-export async function updateInventoryItem(itemId: string, updates: UpdateInventoryItemRequest): Promise<InventoryItem> {
+export async function updateInventoryItem(
+  itemId: string,
+  updates: UpdateInventoryItemRequest,
+): Promise<InventoryItem> {
   const { data, error } = await supabase
     .from("inventory_items")
     .update(updates)
@@ -80,10 +80,7 @@ export async function updateInventoryItem(itemId: string, updates: UpdateInvento
 }
 
 export async function deleteInventoryItem(itemId: string): Promise<void> {
-  const { error } = await supabase
-    .from("inventory_items")
-    .delete()
-    .eq("item_id", itemId);
+  const { error } = await supabase.from("inventory_items").delete().eq("item_id", itemId);
 
   if (error) throw error;
 }
@@ -114,7 +111,9 @@ export async function getItemTransactions(itemId: string): Promise<InventoryTran
   return data || [];
 }
 
-export async function createTransaction(transactionData: CreateTransactionRequest): Promise<InventoryTransaction> {
+export async function createTransaction(
+  transactionData: CreateTransactionRequest,
+): Promise<InventoryTransaction> {
   const { data, error } = await supabase
     .from("inventory_transactions")
     .insert(transactionData)

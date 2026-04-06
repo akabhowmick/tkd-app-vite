@@ -1,28 +1,28 @@
 import { supabase } from "../supabase";
-import { UserProfile } from "../../types/user";
+import { Student } from "../../types/user";
 
 // CREATE a student
-export const createStudent = async (student: Omit<UserProfile, "id">): Promise<void> => {
+export const createStudent = async (student: Omit<Student, "id">): Promise<void> => {
   const { error } = await supabase.from("students").insert([student]);
   if (error) throw error;
 };
 
 // READ all students by schoolId
-export const getStudents = async (schoolId: string): Promise<UserProfile[]> => {
+export const getStudents = async (schoolId: string): Promise<Student[]> => {
   let query = supabase.from("students").select("*");
   if (schoolId) query = query.eq("school_id", schoolId);
 
   const { data, error } = await query;
   if (error) throw error;
 
-  return (data as UserProfile[]).sort((a, b) => {
+  return (data as Student[]).sort((a, b) => {
     const getLastName = (name: string = "") => name.trim().split(" ").pop() ?? "";
     return getLastName(a.name).localeCompare(getLastName(b.name));
   });
 };
 
 // UPDATE a student => update the rule afterwards using better backend checks
-export const updateStudent = async (id: string, student: Partial<UserProfile>): Promise<void> => {
+export const updateStudent = async (id: string, student: Partial<Student>): Promise<void> => {
   const { error } = await supabase.from("students").update(student).eq("id", id);
   if (error) throw error;
 };

@@ -1,4 +1,4 @@
-import { UserProfile } from "./user";
+import { Student } from "./user";
 
 export interface School {
   id: string;
@@ -27,11 +27,11 @@ export type SchoolInput = {
 };
 
 export interface HandleAddOrEditProps {
-  student?: UserProfile;
+  student?: Student;
   onSuccess?: () => void;
   buttonText?: string;
   buttonClassName?: string;
-  createStudent?: (student: Omit<UserProfile, "id">) => Promise<void>;
-  updateStudent?: (id: string, student: Partial<UserProfile>) => Promise<void>;
+  createStudent?: (student: Omit<Student, "id">) => Promise<void>;
+  updateStudent?: (id: string, student: Partial<Student>) => Promise<void>;
   loadStudents?: () => Promise<void>;
 }

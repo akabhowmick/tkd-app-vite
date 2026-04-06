@@ -18,7 +18,15 @@ const BELT_COLORS = [
 ];
 
 export const BeltTrackingPage = () => {
-  const { ranks, promotions, loading, createRank, deleteRank, promoteStudent, deletePromotionRecord } = useBelts();
+  const {
+    ranks,
+    promotions,
+    loading,
+    createRank,
+    deleteRank,
+    promoteStudent,
+    deletePromotionRecord,
+  } = useBelts();
   const { students } = useSchool();
   const [activeTab, setActiveTab] = useState<"ranks" | "promotions">("ranks");
 
@@ -38,7 +46,7 @@ export const BeltTrackingPage = () => {
           <div>
             <label style="font-size:0.875rem;font-weight:600;color:#374151">Color</label>
             <select id="color-code" class="swal2-input" style="margin:4px 0 0 0;padding:8px">
-              ${BELT_COLORS.map((c) => `<option value="${c}" style="background:${c};color:${c === '#FFFFFF' ? '#000' : '#fff'}">${c}</option>`).join("")}
+              ${BELT_COLORS.map((c) => `<option value="${c}" style="background:${c};color:${c === "#FFFFFF" ? "#000" : "#fff"}">${c}</option>`).join("")}
             </select>
           </div>
         </div>
@@ -67,7 +75,10 @@ export const BeltTrackingPage = () => {
     const { value: studentId } = await Swal.fire({
       title: "Select Student",
       input: "select",
-      inputOptions: students.reduce((acc, s) => ({ ...acc, [s.id]: s.name }), {}),
+      inputOptions: students.reduce<Record<string, string>>(
+        (acc, s) => ({ ...acc, [String(s.id)]: s.name }),
+        {},
+      ),
       inputPlaceholder: "Choose a student",
       showCancelButton: true,
     });
@@ -75,7 +86,7 @@ export const BeltTrackingPage = () => {
     if (!studentId) return;
 
     const student = students.find((s) => s.id === studentId);
-    const currentRank = student ? ranks.find((r) => r.rank_id === (student as any).current_rank_id) : null;
+    const currentRank = student ? ranks.find((r) => r.rank_id === student.current_rank_id) : null;
 
     const { value: formValues } = await Swal.fire({
       title: `Promote ${student?.name}`,
@@ -83,7 +94,7 @@ export const BeltTrackingPage = () => {
         <div style="display:flex;flex-direction:column;gap:12px;text-align:left">
           <div>
             <label style="font-size:0.875rem;font-weight:600;color:#374151">Current Rank</label>
-            <input value="${currentRank?.rank_name || 'None'}" disabled class="swal2-input" style="margin:4px 0 0 0;padding:8px"/>
+            <input value="${currentRank?.rank_name || "None"}" disabled class="swal2-input" style="margin:4px 0 0 0;padding:8px"/>
           </div>
           <div>
             <label style="font-size:0.875rem;font-weight:600;color:#374151">Promote To</label>
@@ -120,7 +131,8 @@ export const BeltTrackingPage = () => {
       confirmButtonText: "Promote",
       confirmButtonColor: "#10b981",
       preConfirm: () => {
-        const promoType = (document.getElementById("promo-type") as HTMLSelectElement).value as PromotionType;
+        const promoType = (document.getElementById("promo-type") as HTMLSelectElement)
+          .value as PromotionType;
         const testScoreInput = (document.getElementById("test-score") as HTMLInputElement).value;
 
         return {
@@ -141,7 +153,11 @@ export const BeltTrackingPage = () => {
         await promoteStudent(formValues);
         Swal.fire("Success!", "Student promoted successfully", "success");
       } catch (err) {
-        Swal.fire("Error", err instanceof Error ? err.message : "Failed to promote student", "error");
+        Swal.fire(
+          "Error",
+          err instanceof Error ? err.message : "Failed to promote student",
+          "error",
+        );
       }
     }
   };
@@ -181,7 +197,11 @@ export const BeltTrackingPage = () => {
         await deletePromotionRecord(promotionId);
         Swal.fire("Deleted!", "Promotion deleted successfully", "success");
       } catch (err) {
-        Swal.fire("Error", err instanceof Error ? err.message : "Failed to delete promotion", "error");
+        Swal.fire(
+          "Error",
+          err instanceof Error ? err.message : "Failed to delete promotion",
+          "error",
+        );
       }
     }
   };
@@ -289,17 +309,27 @@ export const BeltTrackingPage = () => {
                     {promotions.map((promo) => {
                       const student = students.find((s) => s.id === promo.student_id);
                       return (
-                        <div key={promo.promotion_id} className="border rounded-lg p-4 flex justify-between items-center">
+                        <div
+                          key={promo.promotion_id}
+                          className="border rounded-lg p-4 flex justify-between items-center"
+                        >
                           <div>
-                            <h3 className="font-semibold text-gray-900">{student?.name || "Unknown Student"}</h3>
+                            <h3 className="font-semibold text-gray-900">
+                              {student?.name || "Unknown Student"}
+                            </h3>
                             <p className="text-sm text-gray-600">
-                              {promo.from_rank?.rank_name || "No rank"} → <span className="font-medium">{promo.to_rank.rank_name}</span>
+                              {promo.from_rank?.rank_name || "No rank"} →{" "}
+                              <span className="font-medium">{promo.to_rank.rank_name}</span>
                             </p>
                             <p className="text-xs text-gray-500 mt-1">
-                              {new Date(promo.promotion_date).toLocaleDateString()} · {promo.promotion_type}
-                              {promo.test_score && ` · Score: ${promo.test_score}`} · by {promo.promoted_by}
+                              {new Date(promo.promotion_date).toLocaleDateString()} ·{" "}
+                              {promo.promotion_type}
+                              {promo.test_score && ` · Score: ${promo.test_score}`} · by{" "}
+                              {promo.promoted_by}
                             </p>
-                            {promo.notes && <p className="text-xs text-gray-400 mt-1 italic">{promo.notes}</p>}
+                            {promo.notes && (
+                              <p className="text-xs text-gray-400 mt-1 italic">{promo.notes}</p>
+                            )}
                           </div>
                           <button
                             onClick={() => handleDeletePromotion(promo.promotion_id)}

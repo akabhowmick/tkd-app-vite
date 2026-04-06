@@ -72,7 +72,7 @@ export const SalesProvider: React.FC<React.PropsWithChildren> = ({ children }) =
       const saved = await createSale(newSale); // createSale returns the full Sale with sale_id
       setSales((prev) => [saved, ...prev]);
     },
-    [validateForm],
+    [validateForm, schoolId],
   );
 
   const value = useMemo(

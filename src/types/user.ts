@@ -54,10 +54,10 @@ export interface Parent extends BaseUser {
 }
 
 // Student Interface
-export interface Student extends BaseUser {
-  role: UserRole.Student; // Role is fixed as 'student'
-  age: number; // Age of the student
-  beltLevel: BeltLevel; // Taekwondo belt level
+export interface Student extends UserProfile {
+  role: "Student";
+  age?: number; // Age of the student
+  current_rank_id?: BeltLevel; // Taekwondo belt level
   parentId?: string; // Parent's ID (if applicable)
 }
 
@@ -93,7 +93,6 @@ export interface Availability {
   startTime: string; // Start time in HH:mm format (e.g., "09:00")
   endTime: string; // End time in HH:mm format (e.g., "12:00")
 }
-
 
 export interface UserProfile {
   id?: string;
