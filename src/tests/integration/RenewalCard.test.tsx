@@ -11,17 +11,6 @@ vi.mock("../../context/SchoolContext", () => ({
   }),
 }));
 
-// Mock Swal so no real dialogs open during tests
-vi.mock("sweetalert2", () => ({
-  default: {
-    fire: vi.fn().mockResolvedValue({ isConfirmed: false }),
-    close: vi.fn(),
-  },
-}));
-
-vi.mock("sweetalert2-react-content", () => ({
-  default: (Swal: unknown) => Swal,
-}));
 
 const makePeriod = (
   overrides: Partial<RenewalPeriodWithUiStatus> = {},

@@ -1,216 +1,173 @@
+import { useState } from "react";
 import { useClasses } from "../context/ClassContext";
 import { AgeGroup, SessionType } from "../types/classes";
-import Swal from "sweetalert2";
 import { FaPlus, FaTrash, FaClock, FaUsers } from "react-icons/fa";
+import { AppFormModal, AppConfirmModal, ModalField } from "../components/ui/modal";
+import { Input } from "../components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 
 const DAYS_OF_WEEK = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 const CLASS_COLORS = [
-  "#3b82f6", // blue
-  "#10b981", // green
-  "#f59e0b", // amber
-  "#ef4444", // red
-  "#8b5cf6", // purple
-  "#ec4899", // pink
-  "#06b6d4", // cyan
+  { value: "#3b82f6", label: "Blue" },
+  { value: "#10b981", label: "Green" },
+  { value: "#f59e0b", label: "Amber" },
+  { value: "#ef4444", label: "Red" },
+  { value: "#8b5cf6", label: "Purple" },
+  { value: "#ec4899", label: "Pink" },
+  { value: "#06b6d4", label: "Cyan" },
 ];
+
+type ClassForm = { class_name: string; age_group: AgeGroup; instructor: string; color: string };
+type RecurringForm = { day_of_week: string; start_time: string; end_time: string };
+type OneOffForm = { specific_date: string; start_time: string; end_time: string };
+
+const emptyClassForm = (): ClassForm => ({
+  class_name: "",
+  age_group: "Kids",
+  instructor: "",
+  color: "#3b82f6",
+});
+const emptyRecurring = (): RecurringForm => ({ day_of_week: "1", start_time: "", end_time: "" });
+const emptyOneOff = (): OneOffForm => ({ specific_date: "", start_time: "", end_time: "" });
 
 export const ClassSchedulingPage = () => {
   const { classes, loading, createClass, deleteClass, createSession, deleteSession } = useClasses();
-  // const [selectedClass, setSelectedClass] = useState<ClassWithSessions | null>(null);
 
-  const handleCreateClass = async () => {
-    const { value: formValues } = await Swal.fire({
-      title: "Create New Class",
-      html: `
-        <div style="display:flex;flex-direction:column;gap:12px;text-align:left">
-          <div>
-            <label style="font-size:0.875rem;font-weight:600;color:#374151">Class Name</label>
-            <input id="class-name" class="swal2-input" placeholder="e.g., Kids Beginners" style="margin:4px 0 0 0;padding:8px"/>
-          </div>
-          <div>
-            <label style="font-size:0.875rem;font-weight:600;color:#374151">Age Group</label>
-            <select id="age-group" class="swal2-input" style="margin:4px 0 0 0;padding:8px">
-              <option value="Kids">Kids</option>
-              <option value="Adults">Adults</option>
-              <option value="All">All</option>
-            </select>
-          </div>
-          <div>
-            <label style="font-size:0.875rem;font-weight:600;color:#374151">Instructor</label>
-            <input id="instructor" class="swal2-input" placeholder="e.g., Master Lee" style="margin:4px 0 0 0;padding:8px"/>
-          </div>
-          <div>
-            <label style="font-size:0.875rem;font-weight:600;color:#374151">Color</label>
-            <select id="color" class="swal2-input" style="margin:4px 0 0 0;padding:8px">
-              ${CLASS_COLORS.map((c) => `<option value="${c}" style="background:${c};color:white">${c}</option>`).join("")}
-            </select>
-          </div>
-        </div>
-      `,
-      showCancelButton: true,
-      confirmButtonText: "Create",
-      confirmButtonColor: "#3b82f6",
-      preConfirm: () => ({
-        class_name: (document.getElementById("class-name") as HTMLInputElement).value,
-        age_group: (document.getElementById("age-group") as HTMLSelectElement).value as AgeGroup,
-        instructor: (document.getElementById("instructor") as HTMLInputElement).value,
-        color: (document.getElementById("color") as HTMLSelectElement).value,
-      }),
-    });
+  // ── Create class modal ─────────────────────────────────────────────────────
+  const [classModalOpen, setClassModalOpen] = useState(false);
+  const [classForm, setClassForm] = useState<ClassForm>(emptyClassForm());
+  const [classLoading, setClassLoading] = useState(false);
+  const [classError, setClassError] = useState<string | null>(null);
 
-    if (formValues) {
-      try {
-        await createClass(formValues);
-        Swal.fire("Success!", "Class created successfully", "success");
-      } catch (err) {
-        Swal.fire("Error", err instanceof Error ? err.message : "Failed to create class", "error");
-      }
+  // ── Add session modals ─────────────────────────────────────────────────────
+  const [sessionTypeModal, setSessionTypeModal] = useState<{
+    open: boolean; classId: string; className: string;
+  }>({ open: false, classId: "", className: "" });
+  const [sessionType, setSessionType] = useState<SessionType | "">("");
+
+  const [recurringModal, setRecurringModal] = useState(false);
+  const [recurringForm, setRecurringForm] = useState<RecurringForm>(emptyRecurring());
+  const [recurringLoading, setRecurringLoading] = useState(false);
+  const [recurringError, setRecurringError] = useState<string | null>(null);
+
+  const [oneOffModal, setOneOffModal] = useState(false);
+  const [oneOffForm, setOneOffForm] = useState<OneOffForm>(emptyOneOff());
+  const [oneOffLoading, setOneOffLoading] = useState(false);
+  const [oneOffError, setOneOffError] = useState<string | null>(null);
+
+  // ── Delete confirms ────────────────────────────────────────────────────────
+  const [deleteClassConfirm, setDeleteClassConfirm] = useState<{
+    open: boolean; classId: string; className: string; loading: boolean;
+  }>({ open: false, classId: "", className: "", loading: false });
+
+  const [deleteSessionConfirm, setDeleteSessionConfirm] = useState<{
+    open: boolean; sessionId: string; loading: boolean;
+  }>({ open: false, sessionId: "", loading: false });
+
+  // ── Handlers ───────────────────────────────────────────────────────────────
+  const handleCreateClass = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setClassError(null);
+    if (!classForm.class_name.trim()) { setClassError("Class name is required."); return; }
+    if (!classForm.instructor.trim()) { setClassError("Instructor is required."); return; }
+    setClassLoading(true);
+    try {
+      await createClass({
+        class_name: classForm.class_name.trim(),
+        age_group: classForm.age_group,
+        instructor: classForm.instructor.trim(),
+        color: classForm.color,
+      });
+      setClassModalOpen(false);
+      setClassForm(emptyClassForm());
+    } catch (err) {
+      setClassError(err instanceof Error ? err.message : "Failed to create class.");
+    } finally {
+      setClassLoading(false);
     }
   };
 
-  const handleAddSession = async (classId: string, className: string) => {
-    const { value: sessionType } = await Swal.fire({
-      title: `Add Session to ${className}`,
-      input: "select",
-      inputOptions: {
-        recurring: "Recurring (Weekly)",
-        "one-off": "One-off Session",
-      },
-      inputPlaceholder: "Select session type",
-      showCancelButton: true,
-    });
+  const openSessionFlow = (classId: string, className: string) => {
+    setSessionType("");
+    setSessionTypeModal({ open: true, classId, className });
+  };
 
+  const handleSessionTypeSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
     if (!sessionType) return;
-
+    setSessionTypeModal((s) => ({ ...s, open: false }));
     if (sessionType === "recurring") {
-      const { value: formValues } = await Swal.fire({
-        title: "Recurring Session",
-        html: `
-          <div style="display:flex;flex-direction:column;gap:12px;text-align:left">
-            <div>
-              <label style="font-size:0.875rem;font-weight:600;color:#374151">Day of Week</label>
-              <select id="day-week" class="swal2-input" style="margin:4px 0 0 0;padding:8px">
-                ${DAYS_OF_WEEK.map((day, idx) => `<option value="${idx}">${day}</option>`).join("")}
-              </select>
-            </div>
-            <div>
-              <label style="font-size:0.875rem;font-weight:600;color:#374151">Start Time</label>
-              <input id="start-time" type="time" class="swal2-input" style="margin:4px 0 0 0;padding:8px"/>
-            </div>
-            <div>
-              <label style="font-size:0.875rem;font-weight:600;color:#374151">End Time</label>
-              <input id="end-time" type="time" class="swal2-input" style="margin:4px 0 0 0;padding:8px"/>
-            </div>
-          </div>
-        `,
-        showCancelButton: true,
-        confirmButtonText: "Add Session",
-        confirmButtonColor: "#3b82f6",
-        preConfirm: () => ({
-          day_of_week: parseInt((document.getElementById("day-week") as HTMLSelectElement).value),
-          start_time: (document.getElementById("start-time") as HTMLInputElement).value,
-          end_time: (document.getElementById("end-time") as HTMLInputElement).value,
-        }),
-      });
-
-      if (formValues) {
-        try {
-          await createSession({
-            class_id: classId,
-            session_type: "recurring" as SessionType,
-            ...formValues,
-          });
-          Swal.fire("Success!", "Session added successfully", "success");
-        } catch (err) {
-          Swal.fire("Error", err instanceof Error ? err.message : "Failed to add session", "error");
-        }
-      }
+      setRecurringForm(emptyRecurring());
+      setRecurringError(null);
+      setRecurringModal(true);
     } else {
-      const { value: formValues } = await Swal.fire({
-        title: "One-off Session",
-        html: `
-          <div style="display:flex;flex-direction:column;gap:12px;text-align:left">
-            <div>
-              <label style="font-size:0.875rem;font-weight:600;color:#374151">Date</label>
-              <input id="specific-date" type="date" class="swal2-input" style="margin:4px 0 0 0;padding:8px"/>
-            </div>
-            <div>
-              <label style="font-size:0.875rem;font-weight:600;color:#374151">Start Time</label>
-              <input id="start-time" type="time" class="swal2-input" style="margin:4px 0 0 0;padding:8px"/>
-            </div>
-            <div>
-              <label style="font-size:0.875rem;font-weight:600;color:#374151">End Time</label>
-              <input id="end-time" type="time" class="swal2-input" style="margin:4px 0 0 0;padding:8px"/>
-            </div>
-          </div>
-        `,
-        showCancelButton: true,
-        confirmButtonText: "Add Session",
-        confirmButtonColor: "#3b82f6",
-        preConfirm: () => ({
-          specific_date: (document.getElementById("specific-date") as HTMLInputElement).value,
-          start_time: (document.getElementById("start-time") as HTMLInputElement).value,
-          end_time: (document.getElementById("end-time") as HTMLInputElement).value,
-        }),
+      setOneOffForm(emptyOneOff());
+      setOneOffError(null);
+      setOneOffModal(true);
+    }
+  };
+
+  const handleAddRecurring = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setRecurringError(null);
+    if (!recurringForm.start_time) { setRecurringError("Start time is required."); return; }
+    if (!recurringForm.end_time) { setRecurringError("End time is required."); return; }
+    setRecurringLoading(true);
+    try {
+      await createSession({
+        class_id: sessionTypeModal.classId,
+        session_type: "recurring",
+        day_of_week: parseInt(recurringForm.day_of_week),
+        start_time: recurringForm.start_time,
+        end_time: recurringForm.end_time,
       });
-
-      if (formValues) {
-        try {
-          await createSession({
-            class_id: classId,
-            session_type: "one-off" as SessionType,
-            ...formValues,
-          });
-          Swal.fire("Success!", "Session added successfully", "success");
-        } catch (err) {
-          Swal.fire("Error", err instanceof Error ? err.message : "Failed to add session", "error");
-        }
-      }
+      setRecurringModal(false);
+    } catch (err) {
+      setRecurringError(err instanceof Error ? err.message : "Failed to add session.");
+    } finally {
+      setRecurringLoading(false);
     }
   };
 
-  const handleDeleteClass = async (classId: string, className: string) => {
-    const result = await Swal.fire({
-      title: "Delete Class?",
-      text: `Are you sure you want to delete "${className}"? All sessions will be removed.`,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#ef4444",
-      confirmButtonText: "Delete",
-    });
-
-    if (result.isConfirmed) {
-      try {
-        await deleteClass(classId);
-        Swal.fire("Deleted!", "Class deleted successfully", "success");
-      } catch (err) {
-        Swal.fire("Error", err instanceof Error ? err.message : "Failed to delete class", "error");
-      }
+  const handleAddOneOff = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setOneOffError(null);
+    if (!oneOffForm.specific_date) { setOneOffError("Date is required."); return; }
+    if (!oneOffForm.start_time) { setOneOffError("Start time is required."); return; }
+    if (!oneOffForm.end_time) { setOneOffError("End time is required."); return; }
+    setOneOffLoading(true);
+    try {
+      await createSession({
+        class_id: sessionTypeModal.classId,
+        session_type: "one-off",
+        specific_date: oneOffForm.specific_date,
+        start_time: oneOffForm.start_time,
+        end_time: oneOffForm.end_time,
+      });
+      setOneOffModal(false);
+    } catch (err) {
+      setOneOffError(err instanceof Error ? err.message : "Failed to add session.");
+    } finally {
+      setOneOffLoading(false);
     }
   };
 
-  const handleDeleteSession = async (sessionId: string) => {
-    const result = await Swal.fire({
-      title: "Delete Session?",
-      text: "Are you sure you want to delete this session?",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#ef4444",
-      confirmButtonText: "Delete",
-    });
+  const handleDeleteClass = async () => {
+    setDeleteClassConfirm((s) => ({ ...s, loading: true }));
+    try {
+      await deleteClass(deleteClassConfirm.classId);
+    } finally {
+      setDeleteClassConfirm({ open: false, classId: "", className: "", loading: false });
+    }
+  };
 
-    if (result.isConfirmed) {
-      try {
-        await deleteSession(sessionId);
-        Swal.fire("Deleted!", "Session deleted successfully", "success");
-      } catch (err) {
-        Swal.fire(
-          "Error",
-          err instanceof Error ? err.message : "Failed to delete session",
-          "error",
-        );
-      }
+  const handleDeleteSession = async () => {
+    setDeleteSessionConfirm((s) => ({ ...s, loading: true }));
+    try {
+      await deleteSession(deleteSessionConfirm.sessionId);
+    } finally {
+      setDeleteSessionConfirm({ open: false, sessionId: "", loading: false });
     }
   };
 
@@ -228,7 +185,7 @@ export const ClassSchedulingPage = () => {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-gray-900">Class Scheduling</h1>
           <button
-            onClick={handleCreateClass}
+            onClick={() => { setClassForm(emptyClassForm()); setClassError(null); setClassModalOpen(true); }}
             className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
           >
             <FaPlus /> New Class
@@ -239,11 +196,9 @@ export const ClassSchedulingPage = () => {
           <div className="bg-white rounded-lg shadow p-8 text-center">
             <FaUsers className="mx-auto text-gray-300 text-5xl mb-4" />
             <h2 className="text-xl font-semibold text-gray-700 mb-2">No Classes Yet</h2>
-            <p className="text-gray-500 mb-4">
-              Create your first class to get started with scheduling
-            </p>
+            <p className="text-gray-500 mb-4">Create your first class to get started with scheduling</p>
             <button
-              onClick={handleCreateClass}
+              onClick={() => { setClassForm(emptyClassForm()); setClassModalOpen(true); }}
               className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
             >
               Create First Class
@@ -260,14 +215,19 @@ export const ClassSchedulingPage = () => {
                       <h3 className="text-lg font-bold text-gray-900">{cls.class_name}</h3>
                       <p className="text-sm text-gray-500">{cls.instructor}</p>
                     </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleDeleteClass(cls.class_id, cls.class_name)}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        <FaTrash />
-                      </button>
-                    </div>
+                    <button
+                      onClick={() =>
+                        setDeleteClassConfirm({
+                          open: true,
+                          classId: cls.class_id,
+                          className: cls.class_name,
+                          loading: false,
+                        })
+                      }
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      <FaTrash />
+                    </button>
                   </div>
 
                   <div className="mb-3">
@@ -295,7 +255,13 @@ export const ClassSchedulingPage = () => {
                                 : `${session.specific_date} ${session.start_time}-${session.end_time}`}
                             </span>
                             <button
-                              onClick={() => handleDeleteSession(session.session_id)}
+                              onClick={() =>
+                                setDeleteSessionConfirm({
+                                  open: true,
+                                  sessionId: session.session_id,
+                                  loading: false,
+                                })
+                              }
                               className="text-red-500 hover:text-red-700"
                             >
                               <FaTrash size={10} />
@@ -307,7 +273,7 @@ export const ClassSchedulingPage = () => {
                   </div>
 
                   <button
-                    onClick={() => handleAddSession(cls.class_id, cls.class_name)}
+                    onClick={() => openSessionFlow(cls.class_id, cls.class_name)}
                     className="w-full bg-blue-50 text-blue-600 px-3 py-2 rounded text-sm font-medium hover:bg-blue-100 transition-colors"
                   >
                     + Add Session
@@ -318,6 +284,206 @@ export const ClassSchedulingPage = () => {
           </div>
         )}
       </div>
+
+      {/* ── Create Class Modal ── */}
+      <AppFormModal
+        open={classModalOpen}
+        onOpenChange={setClassModalOpen}
+        title="Create New Class"
+        size="compact"
+        onSubmit={handleCreateClass}
+        submitLabel="Create Class"
+        loading={classLoading}
+        error={classError}
+      >
+        <ModalField label="Class Name" required htmlFor="class-name">
+          <Input
+            id="class-name"
+            placeholder="e.g., Kids Beginners"
+            value={classForm.class_name}
+            onChange={(e) => setClassForm((f) => ({ ...f, class_name: e.target.value }))}
+          />
+        </ModalField>
+        <ModalField label="Age Group" required htmlFor="age-group">
+          <Select
+            value={classForm.age_group}
+            onValueChange={(v) => setClassForm((f) => ({ ...f, age_group: v as AgeGroup }))}
+          >
+            <SelectTrigger id="age-group"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Kids">Kids</SelectItem>
+              <SelectItem value="Adults">Adults</SelectItem>
+              <SelectItem value="All">All</SelectItem>
+            </SelectContent>
+          </Select>
+        </ModalField>
+        <ModalField label="Instructor" required htmlFor="instructor">
+          <Input
+            id="instructor"
+            placeholder="e.g., Master Lee"
+            value={classForm.instructor}
+            onChange={(e) => setClassForm((f) => ({ ...f, instructor: e.target.value }))}
+          />
+        </ModalField>
+        <ModalField label="Color" required htmlFor="class-color">
+          <div className="flex items-center gap-3">
+            <div
+              className="h-8 w-8 rounded-md border border-border shrink-0"
+              style={{ backgroundColor: classForm.color }}
+            />
+            <Select
+              value={classForm.color}
+              onValueChange={(v) => setClassForm((f) => ({ ...f, color: v }))}
+            >
+              <SelectTrigger id="class-color" className="flex-1"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {CLASS_COLORS.map((c) => (
+                  <SelectItem key={c.value} value={c.value}>
+                    <span className="flex items-center gap-2">
+                      <span
+                        className="inline-block h-3 w-3 rounded-sm"
+                        style={{ backgroundColor: c.value }}
+                      />
+                      {c.label}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </ModalField>
+      </AppFormModal>
+
+      {/* ── Session Type Modal ── */}
+      <AppFormModal
+        open={sessionTypeModal.open}
+        onOpenChange={(open) => setSessionTypeModal((s) => ({ ...s, open }))}
+        title={`Add Session — ${sessionTypeModal.className}`}
+        size="compact"
+        onSubmit={handleSessionTypeSubmit}
+        submitLabel="Continue"
+      >
+        <ModalField label="Session Type" required htmlFor="session-type">
+          <Select value={sessionType} onValueChange={(v) => setSessionType(v as SessionType)}>
+            <SelectTrigger id="session-type">
+              <SelectValue placeholder="Select type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="recurring">Recurring (Weekly)</SelectItem>
+              <SelectItem value="one-off">One-off Session</SelectItem>
+            </SelectContent>
+          </Select>
+        </ModalField>
+      </AppFormModal>
+
+      {/* ── Recurring Session Modal ── */}
+      <AppFormModal
+        open={recurringModal}
+        onOpenChange={setRecurringModal}
+        title="Recurring Session"
+        size="compact"
+        onSubmit={handleAddRecurring}
+        submitLabel="Add Session"
+        loading={recurringLoading}
+        error={recurringError}
+      >
+        <ModalField label="Day of Week" required htmlFor="day-of-week">
+          <Select
+            value={recurringForm.day_of_week}
+            onValueChange={(v) => setRecurringForm((f) => ({ ...f, day_of_week: v }))}
+          >
+            <SelectTrigger id="day-of-week"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {DAYS_OF_WEEK.map((day, idx) => (
+                <SelectItem key={idx} value={String(idx)}>{day}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </ModalField>
+        <div className="grid grid-cols-2 gap-4">
+          <ModalField label="Start Time" required htmlFor="start-time">
+            <Input
+              id="start-time"
+              type="time"
+              value={recurringForm.start_time}
+              onChange={(e) => setRecurringForm((f) => ({ ...f, start_time: e.target.value }))}
+            />
+          </ModalField>
+          <ModalField label="End Time" required htmlFor="end-time">
+            <Input
+              id="end-time"
+              type="time"
+              value={recurringForm.end_time}
+              onChange={(e) => setRecurringForm((f) => ({ ...f, end_time: e.target.value }))}
+            />
+          </ModalField>
+        </div>
+      </AppFormModal>
+
+      {/* ── One-off Session Modal ── */}
+      <AppFormModal
+        open={oneOffModal}
+        onOpenChange={setOneOffModal}
+        title="One-off Session"
+        size="compact"
+        onSubmit={handleAddOneOff}
+        submitLabel="Add Session"
+        loading={oneOffLoading}
+        error={oneOffError}
+      >
+        <ModalField label="Date" required htmlFor="specific-date">
+          <Input
+            id="specific-date"
+            type="date"
+            value={oneOffForm.specific_date}
+            onChange={(e) => setOneOffForm((f) => ({ ...f, specific_date: e.target.value }))}
+          />
+        </ModalField>
+        <div className="grid grid-cols-2 gap-4">
+          <ModalField label="Start Time" required htmlFor="one-off-start">
+            <Input
+              id="one-off-start"
+              type="time"
+              value={oneOffForm.start_time}
+              onChange={(e) => setOneOffForm((f) => ({ ...f, start_time: e.target.value }))}
+            />
+          </ModalField>
+          <ModalField label="End Time" required htmlFor="one-off-end">
+            <Input
+              id="one-off-end"
+              type="time"
+              value={oneOffForm.end_time}
+              onChange={(e) => setOneOffForm((f) => ({ ...f, end_time: e.target.value }))}
+            />
+          </ModalField>
+        </div>
+      </AppFormModal>
+
+      {/* ── Delete Class Confirm ── */}
+      <AppConfirmModal
+        open={deleteClassConfirm.open}
+        onOpenChange={(open) =>
+          !deleteClassConfirm.loading && setDeleteClassConfirm((s) => ({ ...s, open }))
+        }
+        title="Delete Class?"
+        description={`Are you sure you want to delete "${deleteClassConfirm.className}"? All sessions will be removed.`}
+        onConfirm={handleDeleteClass}
+        loading={deleteClassConfirm.loading}
+        confirmLabel="Delete Class"
+      />
+
+      {/* ── Delete Session Confirm ── */}
+      <AppConfirmModal
+        open={deleteSessionConfirm.open}
+        onOpenChange={(open) =>
+          !deleteSessionConfirm.loading && setDeleteSessionConfirm((s) => ({ ...s, open }))
+        }
+        title="Delete Session?"
+        description="Are you sure you want to delete this session?"
+        onConfirm={handleDeleteSession}
+        loading={deleteSessionConfirm.loading}
+        confirmLabel="Delete"
+      />
     </div>
   );
 };

@@ -3,10 +3,17 @@ import { Student } from "../../../../types/user";
 import { HandleAddOrEdit } from "./HandleAddOrEdit";
 import { updateStudent, createStudent } from "../../../../api/StudentRequests/studentRequests";
 import { useSchool } from "../../../../context/SchoolContext";
+import { AppConfirmModal } from "../../../ui/modal";
 
 export const StudentListPage = () => {
   const { loadStudents, handleDelete, students } = useSchool();
   const [editingUser, setEditingUser] = useState<Student | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    open: boolean;
+    studentId: string;
+    studentName: string;
+  }>({ open: false, studentId: "", studentName: "" });
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const handleEdit = (user: Student) => {
     setEditingUser(user);
@@ -14,6 +21,20 @@ export const StudentListPage = () => {
 
   const handleEditSuccess = () => {
     setEditingUser(null);
+  };
+
+  const requestDelete = (student: Student) => {
+    setDeleteConfirm({ open: true, studentId: student.id!, studentName: student.name });
+  };
+
+  const confirmDelete = async () => {
+    setDeleteLoading(true);
+    try {
+      await handleDelete(deleteConfirm.studentId);
+    } finally {
+      setDeleteLoading(false);
+      setDeleteConfirm({ open: false, studentId: "", studentName: "" });
+    }
   };
 
   useEffect(() => {
@@ -24,7 +45,7 @@ export const StudentListPage = () => {
   return (
     <div className="max-w-4xl mx-auto p-4">
       <h1 className="text-3xl font-bold mb-4 text-black">Student Management</h1>
-      {/* Add Student Button */}
+
       <div className="my-6 text-left">
         <HandleAddOrEdit
           createStudent={async (studentData) => {
@@ -35,7 +56,9 @@ export const StudentListPage = () => {
           buttonClassName="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-red-700 hover:bg-red-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-600"
         />
       </div>
+
       <h2 className="text-2xl font-bold mb-4 text-black">View Current Students</h2>
+
       {editingUser && (
         <div className="mb-6 border p-4 rounded bg-white shadow-md">
           <h3 className="text-lg font-semibold mb-3 text-gray-800">
@@ -89,7 +112,7 @@ export const StudentListPage = () => {
                     {editingUser?.id === student.id ? "Editing..." : "Edit"}
                   </button>
                   <button
-                    onClick={() => handleDelete(student.id!)}
+                    onClick={() => requestDelete(student)}
                     className="text-red-600 hover:underline focus:outline-none"
                   >
                     Delete
@@ -100,6 +123,17 @@ export const StudentListPage = () => {
           )}
         </tbody>
       </table>
+
+      <AppConfirmModal
+        open={deleteConfirm.open}
+        onOpenChange={(open) => !deleteLoading && setDeleteConfirm((s) => ({ ...s, open }))}
+        title="Delete Student?"
+        description={`Are you sure you want to delete ${deleteConfirm.studentName}? This action cannot be undone.`}
+        onConfirm={confirmDelete}
+        loading={deleteLoading}
+        variant="destructive"
+        confirmLabel="Delete Student"
+      />
     </div>
   );
 };

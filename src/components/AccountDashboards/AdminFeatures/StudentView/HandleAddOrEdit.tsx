@@ -1,47 +1,26 @@
-import React from "react";
-import Swal from "sweetalert2";
+import React, { useState } from "react";
 import { HandleAddOrEditProps } from "../../../../types/school";
 import { useSchool } from "../../../../context/SchoolContext";
-import { createLoadingTemplate, createStatusTemplate } from "../../../../utils/modalTemplates";
-import "../../../../styles/AddStudentModal.css";
-import { getBaseModalOptions, getModalConfig } from "../../../../utils/modalConfig";
 import { validateFormData } from "../../../../utils/formValidation";
 import { Student } from "../../../../types/user";
+import { AppFormModal, AppModal, ModalField, InfoBox } from "../../../ui/modal";
+import { Input } from "../../../ui/input";
+import { Button } from "../../../ui/button";
+import { Trash2, Plus, BookOpen } from "lucide-react";
 
 const MAX_BULK_STUDENTS = 20;
 
-const buildBulkRow = (index: number) => `
-  <div class="bulk-row" data-index="${index}" style="border:1px solid #e5e7eb; border-radius:8px; padding:12px; margin-bottom:10px; background:#f9fafb; position:relative;">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-      <span class="bulk-row-number" style="font-weight:600; font-size:0.9375rem; color:#374151;">Student ${index + 1}</span>
-      ${
-        index > 0
-          ? `
-        <button type="button" onclick="this.closest('.bulk-row').remove(); document.getElementById('bulk-add-row-btn').disabled = document.querySelectorAll('.bulk-row').length >= ${MAX_BULK_STUDENTS};"
-          style="background:none; border:none; cursor:pointer; color:#ef4444; font-size:18px; line-height:1;">&times;</button>
-      `
-          : ""
-      }
-    </div>
-    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;">
-      <div>
-        <label style="font-size:0.875rem; color:#6b7280; display:block; margin-bottom:3px;">Name *</label>
-        <input class="bulk-name" type="text" placeholder="Full name"
-          style="width:100%; padding:6px 8px; border:1px solid #d1d5db; border-radius:6px; font-size:0.9375rem;" />
-      </div>
-      <div>
-        <label style="font-size:0.875rem; color:#6b7280; display:block; margin-bottom:3px;">Email *</label>
-        <input class="bulk-email" type="email" placeholder="student@example.com"
-          style="width:100%; padding:6px 8px; border:1px solid #d1d5db; border-radius:6px; font-size:0.9375rem;" />
-      </div>
-      <div>
-        <label style="font-size:0.875rem; color:#6b7280; display:block; margin-bottom:3px;">Phone</label>
-        <input class="bulk-phone" type="tel" placeholder="(555) 123-4567"
-          style="width:100%; padding:6px 8px; border:1px solid #d1d5db; border-radius:6px; font-size:0.9375rem;" />
-      </div>
-    </div>
-  </div>
-`;
+type SingleForm = { name: string; email: string; phone: string };
+type BulkRow = { name: string; email: string; phone: string };
+type ModalMode = "closed" | "select" | "single" | "bulk" | "result";
+type ResultState = { success: boolean; message: string; subMessage?: string };
+
+const emptyBulkRow = (): BulkRow => ({ name: "", email: "", phone: "" });
+const emptySingleForm = (prefill?: Partial<Student>): SingleForm => ({
+  name: prefill?.name ?? "",
+  email: prefill?.email ?? "",
+  phone: prefill?.phone ?? "",
+});
 
 export const HandleAddOrEdit: React.FC<HandleAddOrEditProps> = ({
   student,
@@ -54,210 +33,104 @@ export const HandleAddOrEdit: React.FC<HandleAddOrEditProps> = ({
 }) => {
   const { schoolId } = useSchool();
   const isEdit = !!student;
-  const config = getModalConfig(isEdit);
 
-  const getSingleFormHTML = (prefill?: Partial<Student>) => `
-    <div class="swal-form-wrapper">
-      <div class="swal-info-box">
-        <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
-        </svg>
-        <div>
-          <div class="swal-info-title">Student Role</div>
-          <div class="swal-info-subtitle">This user will be assigned as a student</div>
-        </div>
-      </div>
-      <div class="swal-field-group">
-        <label for="swal-name">Full Name <span class="required">*</span></label>
-        <input id="swal-name" type="text" placeholder="Enter student's full name" autocomplete="name" value="${prefill?.name ?? ""}" />
-      </div>
-      <div class="swal-field-group">
-        <label for="swal-email">Email Address <span class="required">*</span></label>
-        <input id="swal-email" type="email" placeholder="student@example.com" autocomplete="email" value="${prefill?.email ?? ""}" />
-      </div>
-      <div class="swal-field-group">
-        <label for="swal-phone">Phone Number</label>
-        <input id="swal-phone" type="tel" placeholder="(555) 123-4567" autocomplete="tel" value="${prefill?.phone ?? ""}" />
-      </div>
-    </div>
-  `;
+  const [mode, setMode] = useState<ModalMode>("closed");
+  const [singleForm, setSingleForm] = useState<SingleForm>(emptySingleForm(student));
+  const [singleError, setSingleError] = useState<string | null>(null);
+  const [singleLoading, setSingleLoading] = useState(false);
 
-  const getBulkFormHTML = () => `
-    <div class="swal-form-wrapper">
-      <div class="swal-info-box">
-        <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
-        </svg>
-        <div>
-          <div class="swal-info-title">Bulk Add Students</div>
-          <div class="swal-info-subtitle">Fill in each row — only Name and Email are required (max ${MAX_BULK_STUDENTS})</div>
-        </div>
-      </div>
+  const [bulkRows, setBulkRows] = useState<BulkRow[]>([emptyBulkRow()]);
+  const [bulkError, setBulkError] = useState<string | null>(null);
+  const [bulkLoading, setBulkLoading] = useState(false);
 
-      <div id="bulk-rows-container">
-        ${buildBulkRow(0)}
-      </div>
+  const [result, setResult] = useState<ResultState | null>(null);
 
-      <button
-        type="button"
-        id="bulk-add-row-btn"
-        style="margin-top:12px; padding:6px 14px; background:#2563eb; color:#fff; border:none; border-radius:6px; cursor:pointer; font-size:0.9375rem;"
-      >
-        + Add Another Student
-      </button>
-    </div>
-  `;
+  const open = () => {
+    if (isEdit) {
+      setSingleForm(emptySingleForm(student));
+      setSingleError(null);
+      setMode("single");
+    } else {
+      setMode("select");
+    }
+  };
 
-  // ─── Main handler ────────────────────────────────────────────────────────────
-  const handleAddOrEdit = async () => {
+  const close = () => {
+    setMode("closed");
+    setBulkRows([emptyBulkRow()]);
+    setSingleForm(emptySingleForm(student));
+    setSingleError(null);
+    setBulkError(null);
+    setResult(null);
+  };
+
+  // ── Single submit ──────────────────────────────────────────────────────────
+  const handleSingleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSingleError(null);
+    const validationError = validateFormData({
+      name: singleForm.name,
+      email: singleForm.email,
+      phone: singleForm.phone,
+    });
+    if (validationError) { setSingleError(validationError); return; }
+
+    setSingleLoading(true);
     try {
-      if (isEdit) {
-        await handleSingleModal();
-      } else {
-        const { value: mode } = await Swal.fire({
-          ...getBaseModalOptions(),
-          title: "Add Students",
-          text: "Would you like to add a single student or multiple at once?",
-          showDenyButton: true,
-          confirmButtonText: "Single Student",
-          denyButtonText: "Bulk Add",
-          confirmButtonColor: "#2563eb",
-          denyButtonColor: "#7c3aed",
-        });
+      const payload: Omit<Student, "id"> = {
+        name: singleForm.name.trim(),
+        email: singleForm.email.trim(),
+        phone: singleForm.phone.trim(),
+        role: "Student",
+        school_id: schoolId,
+      };
 
-        if (mode === true) {
-          await handleSingleModal();
-        } else if (mode === false) {
-          await handleBulkModal();
-        }
+      if (isEdit && updateStudent && student) {
+        await updateStudent(student.id!, payload);
+      } else if (!isEdit && createStudent) {
+        await createStudent(payload);
       }
+
+      if (loadStudents) await loadStudents();
+
+      setResult({
+        success: true,
+        message: `${singleForm.name} has been ${isEdit ? "updated" : "created"} successfully.`,
+      });
+      setMode("result");
+      if (onSuccess) onSuccess();
     } catch (error) {
-      console.error("Error in handleAddOrEdit:", error);
+      setSingleError(
+        `Failed to ${isEdit ? "update" : "create"} student. Please check your connection and try again. ${error}`,
+      );
+    } finally {
+      setSingleLoading(false);
     }
   };
 
-  // ─── Single modal ────────────────────────────────────────────────────────────
-  const handleSingleModal = async () => {
-    const { value: formValues } = await Swal.fire({
-      ...getBaseModalOptions(),
-      ...config,
-      html: getSingleFormHTML(student),
-      preConfirm: () => {
-        const formData = {
-          name: (document.getElementById("swal-name") as HTMLInputElement).value.trim(),
-          email: (document.getElementById("swal-email") as HTMLInputElement).value.trim(),
-          phone: (document.getElementById("swal-phone") as HTMLInputElement).value.trim(),
-        };
+  // ── Bulk submit ────────────────────────────────────────────────────────────
+  const handleBulkSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBulkError(null);
 
-        const validationError = validateFormData(formData);
-        if (validationError) {
-          Swal.showValidationMessage(validationError);
-          return false;
-        }
+    const toSubmit = bulkRows.filter((r) => r.name || r.email || r.phone);
+    if (toSubmit.length === 0) { setBulkError("Please fill in at least one student."); return; }
 
-        return { ...formData, role: "Student", school_id: schoolId };
-      },
-    });
-
-    if (formValues) {
-      await handleFormSubmission(formValues);
+    for (let i = 0; i < toSubmit.length; i++) {
+      const err = validateFormData(toSubmit[i]);
+      if (err) { setBulkError(`Row ${i + 1}: ${err}`); return; }
     }
-  };
 
-  // ─── Bulk modal ──────────────────────────────────────────────────────────────
-  const handleBulkModal = async () => {
-    const { value: confirmed } = await Swal.fire({
-      ...getBaseModalOptions(),
-      title: "Bulk Add Students",
-      html: getBulkFormHTML(),
-      width: "min(96vw, 52rem)",
-      confirmButtonText: "Add All Students",
-      confirmButtonColor: "#10b981",
-      showCancelButton: true,
-      didOpen: () => {
-        const btn = document.getElementById("bulk-add-row-btn");
-        if (!btn) return;
-
-        btn.addEventListener("click", () => {
-          const container = document.getElementById("bulk-rows-container");
-          if (!container) return;
-
-          const currentRows = container.querySelectorAll(".bulk-row");
-          if (currentRows.length >= MAX_BULK_STUDENTS) return;
-
-          const count = currentRows.length;
-          const div = document.createElement("div");
-          div.innerHTML = buildBulkRow(count);
-          container.appendChild(div.firstElementChild!);
-
-          // Disable button if we've hit the cap
-          if (container.querySelectorAll(".bulk-row").length >= MAX_BULK_STUDENTS) {
-            (btn as HTMLButtonElement).disabled = true;
-            btn.style.opacity = "0.5";
-            btn.style.cursor = "not-allowed";
-            btn.textContent = `Max ${MAX_BULK_STUDENTS} students reached`;
-          }
-        });
-      },
-      preConfirm: () => {
-        const rows = document.querySelectorAll(".bulk-row");
-        const students: Array<Record<string, string>> = [];
-
-        for (let i = 0; i < rows.length; i++) {
-          const row = rows[i];
-          const name = (row.querySelector(".bulk-name") as HTMLInputElement).value.trim();
-          const email = (row.querySelector(".bulk-email") as HTMLInputElement).value.trim();
-          const phone = (row.querySelector(".bulk-phone") as HTMLInputElement).value.trim();
-
-          if (!name && !email && !phone) continue;
-
-          const validationError = validateFormData({ name, email, phone });
-          if (validationError) {
-            Swal.showValidationMessage(`Row ${i + 1}: ${validationError}`);
-            return false;
-          }
-
-          students.push({ name, email, phone });
-        }
-
-        if (students.length === 0) {
-          Swal.showValidationMessage("Please fill in at least one student.");
-          return false;
-        }
-
-        return students;
-      },
-    });
-
-    if (confirmed && Array.isArray(confirmed)) {
-      await handleBulkSubmission(confirmed);
-    }
-  };
-
-  // ─── Bulk submission ─────────────────────────────────────────────────────────
-  const handleBulkSubmission = async (studentsData: Array<Record<string, string>>) => {
-    Swal.fire({
-      title: "Adding Students...",
-      html: createLoadingTemplate(
-        "Adding Students...",
-        `Creating ${studentsData.length} student${studentsData.length > 1 ? "s" : ""}. Please wait.`,
-      ),
-      allowOutsideClick: false,
-      allowEscapeKey: false,
-      showConfirmButton: false,
-    });
-
+    setBulkLoading(true);
     const failed: string[] = [];
 
-    for (const s of studentsData) {
+    for (const s of toSubmit) {
       try {
         if (createStudent) {
           await createStudent({
-            name: s.name,
-            email: s.email,
-            phone: s.phone,
+            name: s.name.trim(),
+            email: s.email.trim(),
+            phone: s.phone.trim(),
             role: "Student",
             school_id: schoolId,
           } as Omit<Student, "id">);
@@ -269,88 +142,218 @@ export const HandleAddOrEdit: React.FC<HandleAddOrEditProps> = ({
 
     if (loadStudents) await loadStudents();
 
-    const successCount = studentsData.length - failed.length;
+    const successCount = toSubmit.length - failed.length;
+    setBulkLoading(false);
 
     if (failed.length === 0) {
-      await Swal.fire({
-        title: "All Done!",
-        html: createStatusTemplate(
-          "success",
-          `${successCount} student${successCount > 1 ? "s" : ""} added successfully.`,
-        ),
-        confirmButtonText: "Continue",
-        confirmButtonColor: "#10b981",
-        timer: 1500,
-        timerProgressBar: true,
+      setResult({
+        success: true,
+        message: `${successCount} student${successCount !== 1 ? "s" : ""} added successfully.`,
       });
     } else {
-      await Swal.fire({
-        title: "Partially Complete",
-        html: createStatusTemplate(
-          "error",
-          `${successCount} student${successCount > 1 ? "s" : ""} added. Failed: ${failed.join(", ")}`,
-          "Please retry the failed entries manually.",
-        ),
-        confirmButtonText: "OK",
-        confirmButtonColor: "#f59e0b",
+      setResult({
+        success: false,
+        message: `${successCount} student${successCount !== 1 ? "s" : ""} added.`,
+        subMessage: `Failed: ${failed.join(", ")}. Please retry manually.`,
       });
     }
 
+    setMode("result");
     if (onSuccess) onSuccess();
   };
 
-  // ─── Single submission ───────────────────────────────────────────────────────
-  const handleFormSubmission = async (formValues: Omit<Student, "id">) => {
-    Swal.fire({
-      title: isEdit ? "Updating Student..." : "Creating Student...",
-      html: createLoadingTemplate(
-        isEdit ? "Updating Student..." : "Creating Student...",
-        "Please wait while we process your request.",
-      ),
-      allowOutsideClick: false,
-      allowEscapeKey: false,
-      showConfirmButton: false,
-    });
+  const updateBulkRow = (idx: number, field: keyof BulkRow, value: string) => {
+    setBulkRows((rows) => rows.map((r, i) => (i === idx ? { ...r, [field]: value } : r)));
+  };
 
-    try {
-      if (isEdit && updateStudent && student) {
-        await updateStudent(student.id!, formValues);
-      } else if (!isEdit && createStudent) {
-        await createStudent(formValues);
-      }
+  const removeBulkRow = (idx: number) => {
+    setBulkRows((rows) => rows.filter((_, i) => i !== idx));
+  };
 
-      if (loadStudents) await loadStudents();
-
-      await Swal.fire({
-        title: "Success!",
-        html: createStatusTemplate(
-          "success",
-          `Student ${formValues.name} has been ${isEdit ? "updated" : "created"} successfully.`,
-        ),
-        confirmButtonText: "Continue",
-        confirmButtonColor: "#10b981",
-        timer: 1500,
-        timerProgressBar: true,
-      });
-
-      if (onSuccess) onSuccess();
-    } catch (error) {
-      Swal.fire({
-        title: "Oops! Something went wrong",
-        html: createStatusTemplate(
-          "error",
-          `Failed to ${isEdit ? "update" : "create"} student.`,
-          `Please check your connection and try again. ${error}`,
-        ),
-        confirmButtonText: "Try Again",
-        confirmButtonColor: "#ef4444",
-      });
+  const addBulkRow = () => {
+    if (bulkRows.length < MAX_BULK_STUDENTS) {
+      setBulkRows((rows) => [...rows, emptyBulkRow()]);
     }
   };
 
   return (
-    <button onClick={handleAddOrEdit} className={buttonClassName}>
-      {buttonText || (isEdit ? "Edit Student" : "Add Student")}
-    </button>
+    <>
+      <button onClick={open} className={buttonClassName}>
+        {buttonText || (isEdit ? "Edit Student" : "Add Student")}
+      </button>
+
+      {/* ── Mode selection ── */}
+      <AppFormModal
+        open={mode === "select"}
+        onOpenChange={(open) => !open && close()}
+        title="Add Students"
+        description="Would you like to add a single student or multiple at once?"
+        size="compact"
+        onSubmit={(e) => { e.preventDefault(); setMode("single"); setSingleForm(emptySingleForm()); setSingleError(null); }}
+        submitLabel="Single Student"
+        footerLeft={
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={() => { setMode("bulk"); setBulkRows([emptyBulkRow()]); setBulkError(null); }}
+          >
+            Bulk Add
+          </Button>
+        }
+      >
+        <InfoBox
+          icon={<BookOpen className="h-4 w-4" />}
+          title="Student Role"
+          subtitle="All added users will be assigned as students in your school."
+        />
+      </AppFormModal>
+
+      {/* ── Single add/edit modal ── */}
+      <AppFormModal
+        open={mode === "single"}
+        onOpenChange={(open) => !open && close()}
+        title={isEdit ? "Edit Student" : "Add Student"}
+        size="compact"
+        onSubmit={handleSingleSubmit}
+        submitLabel={isEdit ? "Update Student" : "Add Student"}
+        loading={singleLoading}
+        error={singleError}
+      >
+        <InfoBox
+          icon={<BookOpen className="h-4 w-4" />}
+          title="Student Role"
+          subtitle="This user will be assigned as a student."
+        />
+        <ModalField label="Full Name" required htmlFor="swal-name">
+          <Input
+            id="swal-name"
+            type="text"
+            placeholder="Enter student's full name"
+            autoComplete="name"
+            value={singleForm.name}
+            onChange={(e) => setSingleForm((f) => ({ ...f, name: e.target.value }))}
+          />
+        </ModalField>
+        <ModalField label="Email Address" required htmlFor="swal-email">
+          <Input
+            id="swal-email"
+            type="email"
+            placeholder="student@example.com"
+            autoComplete="email"
+            value={singleForm.email}
+            onChange={(e) => setSingleForm((f) => ({ ...f, email: e.target.value }))}
+          />
+        </ModalField>
+        <ModalField label="Phone Number" htmlFor="swal-phone" helper="Optional">
+          <Input
+            id="swal-phone"
+            type="tel"
+            placeholder="(555) 123-4567"
+            autoComplete="tel"
+            value={singleForm.phone}
+            onChange={(e) => setSingleForm((f) => ({ ...f, phone: e.target.value }))}
+          />
+        </ModalField>
+      </AppFormModal>
+
+      {/* ── Bulk add modal ── */}
+      <AppFormModal
+        open={mode === "bulk"}
+        onOpenChange={(open) => !open && close()}
+        title="Bulk Add Students"
+        description={`Fill in each row — Name and Email required (max ${MAX_BULK_STUDENTS})`}
+        size="wide"
+        onSubmit={handleBulkSubmit}
+        submitLabel={`Add ${bulkRows.filter((r) => r.name || r.email || r.phone).length || "All"} Students`}
+        loading={bulkLoading}
+        error={bulkError}
+        footerLeft={
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={addBulkRow}
+            disabled={bulkRows.length >= MAX_BULK_STUDENTS || bulkLoading}
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Add Row
+          </Button>
+        }
+      >
+        <InfoBox
+          icon={<BookOpen className="h-4 w-4" />}
+          title="Bulk Add Students"
+          subtitle={`Fill each row — only Name and Email are required (max ${MAX_BULK_STUDENTS})`}
+        />
+        <div className="flex flex-col gap-3 mt-1">
+          {/* Column headers */}
+          <div className="grid grid-cols-[1fr_1fr_1fr_2rem] gap-2 px-1">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Name *</span>
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Email *</span>
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Phone</span>
+            <span />
+          </div>
+          {bulkRows.map((row, idx) => (
+            <div
+              key={idx}
+              className="grid grid-cols-[1fr_1fr_1fr_2rem] gap-2 items-center p-3 rounded-lg border border-border bg-muted/20"
+            >
+              <Input
+                type="text"
+                placeholder="Full name"
+                value={row.name}
+                onChange={(e) => updateBulkRow(idx, "name", e.target.value)}
+              />
+              <Input
+                type="email"
+                placeholder="student@example.com"
+                value={row.email}
+                onChange={(e) => updateBulkRow(idx, "email", e.target.value)}
+              />
+              <Input
+                type="tel"
+                placeholder="(555) 123-4567"
+                value={row.phone}
+                onChange={(e) => updateBulkRow(idx, "phone", e.target.value)}
+              />
+              <button
+                type="button"
+                onClick={() => removeBulkRow(idx)}
+                disabled={bulkRows.length === 1}
+                className="flex items-center justify-center h-8 w-8 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-30"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+      </AppFormModal>
+
+      {/* ── Result modal ── */}
+      <AppModal
+        open={mode === "result"}
+        onOpenChange={(open) => !open && close()}
+        title={result?.success ? "Done!" : "Partially Complete"}
+        size="compact"
+      >
+        <div className="flex flex-col items-center gap-4 py-2 text-center">
+          <div
+            className={`h-12 w-12 rounded-full flex items-center justify-center ${
+              result?.success ? "bg-green-100" : "bg-yellow-100"
+            }`}
+          >
+            <span className="text-2xl">{result?.success ? "✓" : "⚠"}</span>
+          </div>
+          <p className="text-sm text-foreground font-medium">{result?.message}</p>
+          {result?.subMessage && (
+            <p className="text-xs text-muted-foreground">{result.subMessage}</p>
+          )}
+          <Button size="sm" onClick={close} className="mt-2">
+            Continue
+          </Button>
+        </div>
+      </AppModal>
+    </>
   );
 };

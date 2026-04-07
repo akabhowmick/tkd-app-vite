@@ -2,209 +2,155 @@ import { useState } from "react";
 import { useBelts } from "../context/BeltContext";
 import { useSchool } from "../context/SchoolContext";
 import { PromotionType } from "../types/belts";
-import Swal from "sweetalert2";
 import { FaPlus, FaTrophy, FaTrash, FaMedal } from "react-icons/fa";
+import { AppFormModal, AppConfirmModal, ModalField, InfoBox } from "../components/ui/modal";
+import { Input } from "../components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
+import { Textarea } from "../components/ui/textarea";
 
 const BELT_COLORS = [
-  "#FFFFFF", // White
-  "#FFEB3B", // Yellow
-  "#FF9800", // Orange
-  "#4CAF50", // Green
-  "#2196F3", // Blue
-  "#9C27B0", // Purple
-  "#F44336", // Red
-  "#795548", // Brown
-  "#000000", // Black
+  { value: "#FFFFFF", label: "White" },
+  { value: "#FFEB3B", label: "Yellow" },
+  { value: "#FF9800", label: "Orange" },
+  { value: "#4CAF50", label: "Green" },
+  { value: "#2196F3", label: "Blue" },
+  { value: "#9C27B0", label: "Purple" },
+  { value: "#F44336", label: "Red" },
+  { value: "#795548", label: "Brown" },
+  { value: "#000000", label: "Black" },
 ];
 
+type RankForm = { rank_name: string; rank_order: string; color_code: string };
+type PromoForm = {
+  student_id: string;
+  to_rank_id: string;
+  promotion_date: string;
+  promotion_type: PromotionType;
+  test_score: string;
+  promoted_by: string;
+  notes: string;
+};
+
+const emptyRankForm = (): RankForm => ({ rank_name: "", rank_order: "1", color_code: "#FFFFFF" });
+const emptyPromoForm = (): PromoForm => ({
+  student_id: "",
+  to_rank_id: "",
+  promotion_date: new Date().toISOString().split("T")[0],
+  promotion_type: "manual",
+  test_score: "",
+  promoted_by: "",
+  notes: "",
+});
+
 export const BeltTrackingPage = () => {
-  const {
-    ranks,
-    promotions,
-    loading,
-    createRank,
-    deleteRank,
-    promoteStudent,
-    deletePromotionRecord,
-  } = useBelts();
+  const { ranks, promotions, loading, createRank, deleteRank, promoteStudent, deletePromotionRecord } =
+    useBelts();
   const { students } = useSchool();
   const [activeTab, setActiveTab] = useState<"ranks" | "promotions">("ranks");
 
-  const handleCreateRank = async () => {
-    const { value: formValues } = await Swal.fire({
-      title: "Create Belt Rank",
-      html: `
-        <div style="display:flex;flex-direction:column;gap:12px;text-align:left">
-          <div>
-            <label style="font-size:0.875rem;font-weight:600;color:#374151">Rank Name</label>
-            <input id="rank-name" class="swal2-input" placeholder="e.g., White Belt" style="margin:4px 0 0 0;padding:8px"/>
-          </div>
-          <div>
-            <label style="font-size:0.875rem;font-weight:600;color:#374151">Rank Order</label>
-            <input id="rank-order" type="number" class="swal2-input" placeholder="1" style="margin:4px 0 0 0;padding:8px"/>
-          </div>
-          <div>
-            <label style="font-size:0.875rem;font-weight:600;color:#374151">Color</label>
-            <select id="color-code" class="swal2-input" style="margin:4px 0 0 0;padding:8px">
-              ${BELT_COLORS.map((c) => `<option value="${c}" style="background:${c};color:${c === "#FFFFFF" ? "#000" : "#fff"}">${c}</option>`).join("")}
-            </select>
-          </div>
-        </div>
-      `,
-      showCancelButton: true,
-      confirmButtonText: "Create",
-      confirmButtonColor: "#3b82f6",
-      preConfirm: () => ({
-        rank_name: (document.getElementById("rank-name") as HTMLInputElement).value,
-        rank_order: parseInt((document.getElementById("rank-order") as HTMLInputElement).value),
-        color_code: (document.getElementById("color-code") as HTMLSelectElement).value,
-      }),
-    });
+  // ── Create rank modal ──────────────────────────────────────────────────────
+  const [rankModalOpen, setRankModalOpen] = useState(false);
+  const [rankForm, setRankForm] = useState<RankForm>(emptyRankForm());
+  const [rankLoading, setRankLoading] = useState(false);
+  const [rankError, setRankError] = useState<string | null>(null);
 
-    if (formValues) {
-      try {
-        await createRank(formValues);
-        Swal.fire("Success!", "Belt rank created successfully", "success");
-      } catch (err) {
-        Swal.fire("Error", err instanceof Error ? err.message : "Failed to create rank", "error");
-      }
+  // ── Promote student modal ──────────────────────────────────────────────────
+  const [promoModalOpen, setPromoModalOpen] = useState(false);
+  const [promoForm, setPromoForm] = useState<PromoForm>(emptyPromoForm());
+  const [promoLoading, setPromoLoading] = useState(false);
+  const [promoError, setPromoError] = useState<string | null>(null);
+
+  // ── Delete confirms ────────────────────────────────────────────────────────
+  const [deleteRankConfirm, setDeleteRankConfirm] = useState<{
+    open: boolean;
+    rankId: string;
+    rankName: string;
+    loading: boolean;
+  }>({ open: false, rankId: "", rankName: "", loading: false });
+
+  const [deletePromoConfirm, setDeletePromoConfirm] = useState<{
+    open: boolean;
+    promotionId: string;
+    loading: boolean;
+  }>({ open: false, promotionId: "", loading: false });
+
+  // ── Handlers ───────────────────────────────────────────────────────────────
+  const handleCreateRank = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setRankError(null);
+    if (!rankForm.rank_name.trim()) {
+      setRankError("Rank name is required.");
+      return;
+    }
+    setRankLoading(true);
+    try {
+      await createRank({
+        rank_name: rankForm.rank_name.trim(),
+        rank_order: parseInt(rankForm.rank_order) || 1,
+        color_code: rankForm.color_code,
+      });
+      setRankModalOpen(false);
+      setRankForm(emptyRankForm());
+    } catch (err) {
+      setRankError(err instanceof Error ? err.message : "Failed to create rank.");
+    } finally {
+      setRankLoading(false);
     }
   };
 
-  const handlePromoteStudent = async () => {
-    const { value: studentId } = await Swal.fire({
-      title: "Select Student",
-      input: "select",
-      inputOptions: students.reduce<Record<string, string>>(
-        (acc, s) => ({ ...acc, [String(s.id)]: s.name }),
-        {},
-      ),
-      inputPlaceholder: "Choose a student",
-      showCancelButton: true,
-    });
+  const handlePromoteStudent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPromoError(null);
+    if (!promoForm.student_id) { setPromoError("Please select a student."); return; }
+    if (!promoForm.to_rank_id) { setPromoError("Please select a target rank."); return; }
+    if (!promoForm.promoted_by.trim()) { setPromoError("Promoted By is required."); return; }
 
-    if (!studentId) return;
-
-    const student = students.find((s) => s.id === studentId);
+    const student = students.find((s) => s.id === promoForm.student_id);
     const currentRank = student ? ranks.find((r) => r.rank_id === student.current_rank_id) : null;
 
-    const { value: formValues } = await Swal.fire({
-      title: `Promote ${student?.name}`,
-      html: `
-        <div style="display:flex;flex-direction:column;gap:12px;text-align:left">
-          <div>
-            <label style="font-size:0.875rem;font-weight:600;color:#374151">Current Rank</label>
-            <input value="${currentRank?.rank_name || "None"}" disabled class="swal2-input" style="margin:4px 0 0 0;padding:8px"/>
-          </div>
-          <div>
-            <label style="font-size:0.875rem;font-weight:600;color:#374151">Promote To</label>
-            <select id="to-rank" class="swal2-input" style="margin:4px 0 0 0;padding:8px">
-              ${ranks.map((r) => `<option value="${r.rank_id}">${r.rank_name}</option>`).join("")}
-            </select>
-          </div>
-          <div>
-            <label style="font-size:0.875rem;font-weight:600;color:#374151">Promotion Date</label>
-            <input id="promo-date" type="date" value="${new Date().toISOString().split("T")[0]}" class="swal2-input" style="margin:4px 0 0 0;padding:8px"/>
-          </div>
-          <div>
-            <label style="font-size:0.875rem;font-weight:600;color:#374151">Promotion Type</label>
-            <select id="promo-type" class="swal2-input" style="margin:4px 0 0 0;padding:8px">
-              <option value="manual">Manual</option>
-              <option value="test">Test-based</option>
-            </select>
-          </div>
-          <div>
-            <label style="font-size:0.875rem;font-weight:600;color:#374151">Test Score (optional)</label>
-            <input id="test-score" type="number" step="0.01" class="swal2-input" placeholder="95.5" style="margin:4px 0 0 0;padding:8px"/>
-          </div>
-          <div>
-            <label style="font-size:0.875rem;font-weight:600;color:#374151">Promoted By</label>
-            <input id="promoted-by" class="swal2-input" placeholder="Master Lee" style="margin:4px 0 0 0;padding:8px"/>
-          </div>
-          <div>
-            <label style="font-size:0.875rem;font-weight:600;color:#374151">Notes (optional)</label>
-            <textarea id="promo-notes" class="swal2-textarea" placeholder="Additional notes..." style="margin:4px 0 0 0;padding:8px"></textarea>
-          </div>
-        </div>
-      `,
-      showCancelButton: true,
-      confirmButtonText: "Promote",
-      confirmButtonColor: "#10b981",
-      preConfirm: () => {
-        const promoType = (document.getElementById("promo-type") as HTMLSelectElement)
-          .value as PromotionType;
-        const testScoreInput = (document.getElementById("test-score") as HTMLInputElement).value;
-
-        return {
-          student_id: studentId,
-          from_rank_id: currentRank?.rank_id,
-          to_rank_id: (document.getElementById("to-rank") as HTMLSelectElement).value,
-          promotion_date: (document.getElementById("promo-date") as HTMLInputElement).value,
-          promotion_type: promoType,
-          test_score: testScoreInput ? parseFloat(testScoreInput) : undefined,
-          promoted_by: (document.getElementById("promoted-by") as HTMLInputElement).value,
-          notes: (document.getElementById("promo-notes") as HTMLTextAreaElement).value || undefined,
-        };
-      },
-    });
-
-    if (formValues) {
-      try {
-        await promoteStudent(formValues);
-        Swal.fire("Success!", "Student promoted successfully", "success");
-      } catch (err) {
-        Swal.fire(
-          "Error",
-          err instanceof Error ? err.message : "Failed to promote student",
-          "error",
-        );
-      }
+    setPromoLoading(true);
+    try {
+      await promoteStudent({
+        student_id: promoForm.student_id,
+        from_rank_id: currentRank?.rank_id,
+        to_rank_id: promoForm.to_rank_id,
+        promotion_date: promoForm.promotion_date,
+        promotion_type: promoForm.promotion_type,
+        test_score: promoForm.test_score ? parseFloat(promoForm.test_score) : undefined,
+        promoted_by: promoForm.promoted_by.trim(),
+        notes: promoForm.notes.trim() || undefined,
+      });
+      setPromoModalOpen(false);
+      setPromoForm(emptyPromoForm());
+    } catch (err) {
+      setPromoError(err instanceof Error ? err.message : "Failed to promote student.");
+    } finally {
+      setPromoLoading(false);
     }
   };
 
-  const handleDeleteRank = async (rankId: string, rankName: string) => {
-    const result = await Swal.fire({
-      title: "Delete Rank?",
-      text: `Are you sure you want to delete "${rankName}"?`,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#ef4444",
-      confirmButtonText: "Delete",
-    });
-
-    if (result.isConfirmed) {
-      try {
-        await deleteRank(rankId);
-        Swal.fire("Deleted!", "Rank deleted successfully", "success");
-      } catch (err) {
-        Swal.fire("Error", err instanceof Error ? err.message : "Failed to delete rank", "error");
-      }
+  const handleDeleteRank = async () => {
+    setDeleteRankConfirm((s) => ({ ...s, loading: true }));
+    try {
+      await deleteRank(deleteRankConfirm.rankId);
+    } finally {
+      setDeleteRankConfirm({ open: false, rankId: "", rankName: "", loading: false });
     }
   };
 
-  const handleDeletePromotion = async (promotionId: string) => {
-    const result = await Swal.fire({
-      title: "Delete Promotion?",
-      text: "Are you sure you want to delete this promotion record?",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#ef4444",
-      confirmButtonText: "Delete",
-    });
-
-    if (result.isConfirmed) {
-      try {
-        await deletePromotionRecord(promotionId);
-        Swal.fire("Deleted!", "Promotion deleted successfully", "success");
-      } catch (err) {
-        Swal.fire(
-          "Error",
-          err instanceof Error ? err.message : "Failed to delete promotion",
-          "error",
-        );
-      }
+  const handleDeletePromotion = async () => {
+    setDeletePromoConfirm((s) => ({ ...s, loading: true }));
+    try {
+      await deletePromotionRecord(deletePromoConfirm.promotionId);
+    } finally {
+      setDeletePromoConfirm({ open: false, promotionId: "", loading: false });
     }
   };
+
+  const selectedStudent = students.find((s) => s.id === promoForm.student_id);
+  const currentRank = selectedStudent
+    ? ranks.find((r) => r.rank_id === selectedStudent.current_rank_id)
+    : null;
 
   if (loading && ranks.length === 0) {
     return (
@@ -221,13 +167,13 @@ export const BeltTrackingPage = () => {
           <h1 className="text-3xl font-bold text-gray-900">Belt Tracking</h1>
           <div className="flex gap-2">
             <button
-              onClick={handlePromoteStudent}
+              onClick={() => { setPromoForm(emptyPromoForm()); setPromoError(null); setPromoModalOpen(true); }}
               className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
             >
               <FaTrophy /> Promote Student
             </button>
             <button
-              onClick={handleCreateRank}
+              onClick={() => { setRankForm(emptyRankForm()); setRankError(null); setRankModalOpen(true); }}
               className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
             >
               <FaPlus /> New Rank
@@ -267,7 +213,7 @@ export const BeltTrackingPage = () => {
                   <h2 className="text-xl font-semibold text-gray-700 mb-2">No Belt Ranks Yet</h2>
                   <p className="text-gray-500 mb-4">Create your first belt rank to get started</p>
                   <button
-                    onClick={handleCreateRank}
+                    onClick={() => { setRankForm(emptyRankForm()); setRankModalOpen(true); }}
                     className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
                   >
                     Create First Rank
@@ -285,7 +231,14 @@ export const BeltTrackingPage = () => {
                             <p className="text-sm text-gray-500">Order: {rank.rank_order}</p>
                           </div>
                           <button
-                            onClick={() => handleDeleteRank(rank.rank_id, rank.rank_name)}
+                            onClick={() =>
+                              setDeleteRankConfirm({
+                                open: true,
+                                rankId: rank.rank_id,
+                                rankName: rank.rank_name,
+                                loading: false,
+                              })
+                            }
                             className="text-red-500 hover:text-red-700"
                           >
                             <FaTrash />
@@ -332,7 +285,13 @@ export const BeltTrackingPage = () => {
                             )}
                           </div>
                           <button
-                            onClick={() => handleDeletePromotion(promo.promotion_id)}
+                            onClick={() =>
+                              setDeletePromoConfirm({
+                                open: true,
+                                promotionId: promo.promotion_id,
+                                loading: false,
+                              })
+                            }
                             className="text-red-500 hover:text-red-700"
                           >
                             <FaTrash />
@@ -347,6 +306,203 @@ export const BeltTrackingPage = () => {
           </div>
         </div>
       </div>
+
+      {/* ── Create Rank Modal ── */}
+      <AppFormModal
+        open={rankModalOpen}
+        onOpenChange={setRankModalOpen}
+        title="Create Belt Rank"
+        size="compact"
+        onSubmit={handleCreateRank}
+        submitLabel="Create Rank"
+        loading={rankLoading}
+        error={rankError}
+      >
+        <ModalField label="Rank Name" required htmlFor="rank-name">
+          <Input
+            id="rank-name"
+            placeholder="e.g., White Belt"
+            value={rankForm.rank_name}
+            onChange={(e) => setRankForm((f) => ({ ...f, rank_name: e.target.value }))}
+          />
+        </ModalField>
+        <ModalField label="Rank Order" required htmlFor="rank-order">
+          <Input
+            id="rank-order"
+            type="number"
+            min={1}
+            placeholder="1"
+            value={rankForm.rank_order}
+            onChange={(e) => setRankForm((f) => ({ ...f, rank_order: e.target.value }))}
+          />
+        </ModalField>
+        <ModalField label="Color" required htmlFor="color-code">
+          <div className="flex items-center gap-3">
+            <div
+              className="h-8 w-8 rounded-md border border-border shrink-0"
+              style={{ backgroundColor: rankForm.color_code }}
+            />
+            <Select
+              value={rankForm.color_code}
+              onValueChange={(v) => setRankForm((f) => ({ ...f, color_code: v }))}
+            >
+              <SelectTrigger id="color-code" className="flex-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {BELT_COLORS.map((c) => (
+                  <SelectItem key={c.value} value={c.value}>
+                    <span className="flex items-center gap-2">
+                      <span
+                        className="inline-block h-3 w-3 rounded-sm border border-border"
+                        style={{ backgroundColor: c.value }}
+                      />
+                      {c.label}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </ModalField>
+      </AppFormModal>
+
+      {/* ── Promote Student Modal ── */}
+      <AppFormModal
+        open={promoModalOpen}
+        onOpenChange={setPromoModalOpen}
+        title="Promote Student"
+        size="default"
+        onSubmit={handlePromoteStudent}
+        submitLabel="Promote"
+        loading={promoLoading}
+        error={promoError}
+      >
+        <ModalField label="Student" required htmlFor="promo-student">
+          <Select
+            value={promoForm.student_id}
+            onValueChange={(v) => setPromoForm((f) => ({ ...f, student_id: v }))}
+          >
+            <SelectTrigger id="promo-student">
+              <SelectValue placeholder="Choose a student" />
+            </SelectTrigger>
+            <SelectContent>
+              {students.map((s) => (
+                <SelectItem key={String(s.id)} value={String(s.id)}>
+                  {s.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </ModalField>
+
+        {selectedStudent && (
+          <InfoBox
+            title="Current Rank"
+            subtitle={currentRank?.rank_name ?? "None"}
+          />
+        )}
+
+        <ModalField label="Promote To" required htmlFor="promo-to-rank">
+          <Select
+            value={promoForm.to_rank_id}
+            onValueChange={(v) => setPromoForm((f) => ({ ...f, to_rank_id: v }))}
+          >
+            <SelectTrigger id="promo-to-rank">
+              <SelectValue placeholder="Select rank" />
+            </SelectTrigger>
+            <SelectContent>
+              {ranks.map((r) => (
+                <SelectItem key={r.rank_id} value={r.rank_id}>
+                  {r.rank_name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </ModalField>
+
+        <div className="grid grid-cols-2 gap-4">
+          <ModalField label="Promotion Date" required htmlFor="promo-date">
+            <Input
+              id="promo-date"
+              type="date"
+              value={promoForm.promotion_date}
+              onChange={(e) => setPromoForm((f) => ({ ...f, promotion_date: e.target.value }))}
+            />
+          </ModalField>
+          <ModalField label="Promotion Type" required htmlFor="promo-type">
+            <Select
+              value={promoForm.promotion_type}
+              onValueChange={(v) => setPromoForm((f) => ({ ...f, promotion_type: v as PromotionType }))}
+            >
+              <SelectTrigger id="promo-type">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="manual">Manual</SelectItem>
+                <SelectItem value="test">Test-based</SelectItem>
+              </SelectContent>
+            </Select>
+          </ModalField>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <ModalField label="Test Score" htmlFor="promo-score" helper="Optional">
+            <Input
+              id="promo-score"
+              type="number"
+              step="0.01"
+              placeholder="95.5"
+              value={promoForm.test_score}
+              onChange={(e) => setPromoForm((f) => ({ ...f, test_score: e.target.value }))}
+            />
+          </ModalField>
+          <ModalField label="Promoted By" required htmlFor="promo-by">
+            <Input
+              id="promo-by"
+              placeholder="Master Lee"
+              value={promoForm.promoted_by}
+              onChange={(e) => setPromoForm((f) => ({ ...f, promoted_by: e.target.value }))}
+            />
+          </ModalField>
+        </div>
+
+        <ModalField label="Notes" htmlFor="promo-notes" helper="Optional">
+          <Textarea
+            id="promo-notes"
+            placeholder="Additional notes..."
+            rows={3}
+            value={promoForm.notes}
+            onChange={(e) => setPromoForm((f) => ({ ...f, notes: e.target.value }))}
+          />
+        </ModalField>
+      </AppFormModal>
+
+      {/* ── Delete Rank Confirm ── */}
+      <AppConfirmModal
+        open={deleteRankConfirm.open}
+        onOpenChange={(open) =>
+          !deleteRankConfirm.loading && setDeleteRankConfirm((s) => ({ ...s, open }))
+        }
+        title="Delete Rank?"
+        description={`Are you sure you want to delete "${deleteRankConfirm.rankName}"?`}
+        onConfirm={handleDeleteRank}
+        loading={deleteRankConfirm.loading}
+        confirmLabel="Delete Rank"
+      />
+
+      {/* ── Delete Promotion Confirm ── */}
+      <AppConfirmModal
+        open={deletePromoConfirm.open}
+        onOpenChange={(open) =>
+          !deletePromoConfirm.loading && setDeletePromoConfirm((s) => ({ ...s, open }))
+        }
+        title="Delete Promotion?"
+        description="Are you sure you want to delete this promotion record?"
+        onConfirm={handleDeletePromotion}
+        loading={deletePromoConfirm.loading}
+        confirmLabel="Delete"
+      />
     </div>
   );
 };

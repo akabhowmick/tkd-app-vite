@@ -141,6 +141,7 @@ export const StatCards = () => {
             <button
               key={action.label}
               className={`${action.color} text-white text-sm font-medium py-2.5 px-4 rounded-lg transition-colors`}
+              // onClick={}
             >
               {action.label}
             </button>

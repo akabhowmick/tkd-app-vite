@@ -2,203 +2,163 @@ import { useState } from "react";
 import { useInventory } from "../context/InventoryContext";
 import { useSchool } from "../context/SchoolContext";
 import { InventoryCategory, TransactionType } from "../types/inventory";
-import Swal from "sweetalert2";
 import { FaPlus, FaExclamationTriangle, FaBoxOpen, FaTrash, FaHistory } from "react-icons/fa";
+import { AppFormModal, AppConfirmModal, ModalField } from "../components/ui/modal";
+import { Input } from "../components/ui/input";
+import { Textarea } from "../components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 
 const CATEGORIES: InventoryCategory[] = ["Uniforms", "Gear", "Belts", "Merchandise"];
 
+type ItemForm = {
+  item_name: string;
+  category: InventoryCategory;
+  price: string;
+  stock_quantity: string;
+  low_stock_threshold: string;
+  size: string;
+  color: string;
+};
+type SellForm = { quantity: string; student_id: string; price_per_unit: string; notes: string };
+type RestockForm = { quantity: string; cost: string; notes: string };
+
+const emptyItemForm = (): ItemForm => ({
+  item_name: "",
+  category: "Uniforms",
+  price: "",
+  stock_quantity: "0",
+  low_stock_threshold: "5",
+  size: "",
+  color: "",
+});
+const emptySellForm = (price: number): SellForm => ({
+  quantity: "1",
+  student_id: "",
+  price_per_unit: String(price),
+  notes: "",
+});
+const emptyRestockForm = (): RestockForm => ({ quantity: "", cost: "", notes: "" });
+
 export const InventoryPage = () => {
-  const { items, lowStockItems, transactions, loading, createItem, deleteItem, recordTransaction } = useInventory();
+  const { items, lowStockItems, transactions, loading, createItem, deleteItem, recordTransaction } =
+    useInventory();
   const { students } = useSchool();
   const [activeTab, setActiveTab] = useState<"items" | "transactions">("items");
   const [selectedCategory, setSelectedCategory] = useState<InventoryCategory | "All">("All");
 
-  const filteredItems = selectedCategory === "All"
-    ? items
-    : items.filter((item) => item.category === selectedCategory);
+  const filteredItems =
+    selectedCategory === "All" ? items : items.filter((item) => item.category === selectedCategory);
 
-  const handleAddItem = async () => {
-    const { value: formValues } = await Swal.fire({
-      title: "Add Inventory Item",
-      html: `
-        <div style="display:flex;flex-direction:column;gap:12px;text-align:left">
-          <div>
-            <label style="font-size:0.875rem;font-weight:600;color:#374151">Item Name</label>
-            <input id="item-name" class="swal2-input" placeholder="e.g., White Uniform" style="margin:4px 0 0 0;padding:8px"/>
-          </div>
-          <div>
-            <label style="font-size:0.875rem;font-weight:600;color:#374151">Category</label>
-            <select id="category" class="swal2-input" style="margin:4px 0 0 0;padding:8px">
-              ${CATEGORIES.map((c) => `<option value="${c}">${c}</option>`).join("")}
-            </select>
-          </div>
-          <div>
-            <label style="font-size:0.875rem;font-weight:600;color:#374151">Price</label>
-            <input id="price" type="number" step="0.01" class="swal2-input" placeholder="29.99" style="margin:4px 0 0 0;padding:8px"/>
-          </div>
-          <div>
-            <label style="font-size:0.875rem;font-weight:600;color:#374151">Initial Stock</label>
-            <input id="stock" type="number" class="swal2-input" placeholder="10" value="0" style="margin:4px 0 0 0;padding:8px"/>
-          </div>
-          <div>
-            <label style="font-size:0.875rem;font-weight:600;color:#374151">Low Stock Alert</label>
-            <input id="low-stock" type="number" class="swal2-input" placeholder="5" value="5" style="margin:4px 0 0 0;padding:8px"/>
-          </div>
-          <div>
-            <label style="font-size:0.875rem;font-weight:600;color:#374151">Size (optional)</label>
-            <input id="size" class="swal2-input" placeholder="M" style="margin:4px 0 0 0;padding:8px"/>
-          </div>
-          <div>
-            <label style="font-size:0.875rem;font-weight:600;color:#374151">Color (optional)</label>
-            <input id="color" class="swal2-input" placeholder="White" style="margin:4px 0 0 0;padding:8px"/>
-          </div>
-        </div>
-      `,
-      showCancelButton: true,
-      confirmButtonText: "Add Item",
-      confirmButtonColor: "#3b82f6",
-      preConfirm: () => ({
-        item_name: (document.getElementById("item-name") as HTMLInputElement).value,
-        category: (document.getElementById("category") as HTMLSelectElement).value as InventoryCategory,
-        price: parseFloat((document.getElementById("price") as HTMLInputElement).value),
-        stock_quantity: parseInt((document.getElementById("stock") as HTMLInputElement).value),
-        low_stock_threshold: parseInt((document.getElementById("low-stock") as HTMLInputElement).value),
-        size: (document.getElementById("size") as HTMLInputElement).value || undefined,
-        color: (document.getElementById("color") as HTMLInputElement).value || undefined,
-      }),
-    });
+  // ── Add item modal ─────────────────────────────────────────────────────────
+  const [addItemOpen, setAddItemOpen] = useState(false);
+  const [itemForm, setItemForm] = useState<ItemForm>(emptyItemForm());
+  const [itemLoading, setItemLoading] = useState(false);
+  const [itemError, setItemError] = useState<string | null>(null);
 
-    if (formValues) {
-      try {
-        await createItem(formValues);
-        Swal.fire("Success!", "Item added to inventory", "success");
-      } catch (err) {
-        Swal.fire("Error", err instanceof Error ? err.message : "Failed to add item", "error");
-      }
+  // ── Sell modal ─────────────────────────────────────────────────────────────
+  const [sellModal, setSellModal] = useState<{
+    open: boolean; itemId: string; itemName: string; price: number; currentStock: number;
+  }>({ open: false, itemId: "", itemName: "", price: 0, currentStock: 0 });
+  const [sellForm, setSellForm] = useState<SellForm>(emptySellForm(0));
+  const [sellLoading, setSellLoading] = useState(false);
+  const [sellError, setSellError] = useState<string | null>(null);
+
+  // ── Restock modal ──────────────────────────────────────────────────────────
+  const [restockModal, setRestockModal] = useState<{
+    open: boolean; itemId: string; itemName: string;
+  }>({ open: false, itemId: "", itemName: "" });
+  const [restockForm, setRestockForm] = useState<RestockForm>(emptyRestockForm());
+  const [restockLoading, setRestockLoading] = useState(false);
+  const [restockError, setRestockError] = useState<string | null>(null);
+
+  // ── Delete confirm ─────────────────────────────────────────────────────────
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    open: boolean; itemId: string; itemName: string; loading: boolean;
+  }>({ open: false, itemId: "", itemName: "", loading: false });
+
+  // ── Handlers ───────────────────────────────────────────────────────────────
+  const handleAddItem = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setItemError(null);
+    if (!itemForm.item_name.trim()) { setItemError("Item name is required."); return; }
+    if (!itemForm.price) { setItemError("Price is required."); return; }
+    setItemLoading(true);
+    try {
+      await createItem({
+        item_name: itemForm.item_name.trim(),
+        category: itemForm.category,
+        price: parseFloat(itemForm.price),
+        stock_quantity: parseInt(itemForm.stock_quantity) || 0,
+        low_stock_threshold: parseInt(itemForm.low_stock_threshold) || 5,
+        size: itemForm.size.trim() || undefined,
+        color: itemForm.color.trim() || undefined,
+      });
+      setAddItemOpen(false);
+      setItemForm(emptyItemForm());
+    } catch (err) {
+      setItemError(err instanceof Error ? err.message : "Failed to add item.");
+    } finally {
+      setItemLoading(false);
     }
   };
 
-  const handleSellItem = async (itemId: string, itemName: string, price: number, currentStock: number) => {
-    const { value: formValues } = await Swal.fire({
-      title: `Sell ${itemName}`,
-      html: `
-        <div style="display:flex;flex-direction:column;gap:12px;text-align:left">
-          <div>
-            <label style="font-size:0.875rem;font-weight:600;color:#374151">Quantity</label>
-            <input id="quantity" type="number" min="1" max="${currentStock}" class="swal2-input" placeholder="1" style="margin:4px 0 0 0;padding:8px"/>
-          </div>
-          <div>
-            <label style="font-size:0.875rem;font-weight:600;color:#374151">Student (optional)</label>
-            <select id="student" class="swal2-input" style="margin:4px 0 0 0;padding:8px">
-              <option value="">-- No Student --</option>
-              ${students.map((s) => `<option value="${s.id}">${s.name}</option>`).join("")}
-            </select>
-          </div>
-          <div>
-            <label style="font-size:0.875rem;font-weight:600;color:#374151">Price Per Unit</label>
-            <input id="price-per-unit" type="number" step="0.01" value="${price}" class="swal2-input" style="margin:4px 0 0 0;padding:8px"/>
-          </div>
-          <div>
-            <label style="font-size:0.875rem;font-weight:600;color:#374151">Notes (optional)</label>
-            <textarea id="notes" class="swal2-textarea" placeholder="Additional notes..." style="margin:4px 0 0 0;padding:8px"></textarea>
-          </div>
-        </div>
-      `,
-      showCancelButton: true,
-      confirmButtonText: "Record Sale",
-      confirmButtonColor: "#10b981",
-      preConfirm: () => {
-        const qty = parseInt((document.getElementById("quantity") as HTMLInputElement).value);
-        const pricePerUnit = parseFloat((document.getElementById("price-per-unit") as HTMLInputElement).value);
-        const studentId = (document.getElementById("student") as HTMLSelectElement).value || undefined;
-
-        return {
-          item_id: itemId,
-          transaction_type: "sale" as TransactionType,
-          quantity: -qty, // negative for sales
-          price_per_unit: pricePerUnit,
-          total_amount: pricePerUnit * qty,
-          student_id: studentId,
-          notes: (document.getElementById("notes") as HTMLTextAreaElement).value || undefined,
-        };
-      },
-    });
-
-    if (formValues) {
-      try {
-        await recordTransaction(formValues);
-        Swal.fire("Success!", "Sale recorded successfully", "success");
-      } catch (err) {
-        Swal.fire("Error", err instanceof Error ? err.message : "Failed to record sale", "error");
-      }
+  const handleSell = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSellError(null);
+    const qty = parseInt(sellForm.quantity);
+    if (!qty || qty < 1) { setSellError("Quantity must be at least 1."); return; }
+    if (qty > sellModal.currentStock) { setSellError(`Only ${sellModal.currentStock} in stock.`); return; }
+    const pricePerUnit = parseFloat(sellForm.price_per_unit);
+    if (isNaN(pricePerUnit) || pricePerUnit < 0) { setSellError("Invalid price."); return; }
+    setSellLoading(true);
+    try {
+      await recordTransaction({
+        item_id: sellModal.itemId,
+        transaction_type: "sale" as TransactionType,
+        quantity: -qty,
+        price_per_unit: pricePerUnit,
+        total_amount: pricePerUnit * qty,
+        student_id: sellForm.student_id || undefined,
+        notes: sellForm.notes.trim() || undefined,
+      });
+      setSellModal((s) => ({ ...s, open: false }));
+    } catch (err) {
+      setSellError(err instanceof Error ? err.message : "Failed to record sale.");
+    } finally {
+      setSellLoading(false);
     }
   };
 
-  const handleRestockItem = async (itemId: string, itemName: string) => {
-    const { value: formValues } = await Swal.fire({
-      title: `Restock ${itemName}`,
-      html: `
-        <div style="display:flex;flex-direction:column;gap:12px;text-align:left">
-          <div>
-            <label style="font-size:0.875rem;font-weight:600;color:#374151">Quantity to Add</label>
-            <input id="quantity" type="number" min="1" class="swal2-input" placeholder="10" style="margin:4px 0 0 0;padding:8px"/>
-          </div>
-          <div>
-            <label style="font-size:0.875rem;font-weight:600;color:#374151">Cost Per Unit (optional)</label>
-            <input id="cost" type="number" step="0.01" class="swal2-input" placeholder="10.00" style="margin:4px 0 0 0;padding:8px"/>
-          </div>
-          <div>
-            <label style="font-size:0.875rem;font-weight:600;color:#374151">Notes (optional)</label>
-            <textarea id="notes" class="swal2-textarea" placeholder="Supplier, PO number..." style="margin:4px 0 0 0;padding:8px"></textarea>
-          </div>
-        </div>
-      `,
-      showCancelButton: true,
-      confirmButtonText: "Record Restock",
-      confirmButtonColor: "#3b82f6",
-      preConfirm: () => {
-        const qty = parseInt((document.getElementById("quantity") as HTMLInputElement).value);
-        const costInput = (document.getElementById("cost") as HTMLInputElement).value;
-        const cost = costInput ? parseFloat(costInput) : undefined;
-
-        return {
-          item_id: itemId,
-          transaction_type: "restock" as TransactionType,
-          quantity: qty,
-          price_per_unit: cost,
-          total_amount: cost ? cost * qty : undefined,
-          notes: (document.getElementById("notes") as HTMLTextAreaElement).value || undefined,
-        };
-      },
-    });
-
-    if (formValues) {
-      try {
-        await recordTransaction(formValues);
-        Swal.fire("Success!", "Restock recorded successfully", "success");
-      } catch (err) {
-        Swal.fire("Error", err instanceof Error ? err.message : "Failed to record restock", "error");
-      }
+  const handleRestock = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setRestockError(null);
+    const qty = parseInt(restockForm.quantity);
+    if (!qty || qty < 1) { setRestockError("Quantity must be at least 1."); return; }
+    setRestockLoading(true);
+    try {
+      const cost = restockForm.cost ? parseFloat(restockForm.cost) : undefined;
+      await recordTransaction({
+        item_id: restockModal.itemId,
+        transaction_type: "restock" as TransactionType,
+        quantity: qty,
+        price_per_unit: cost,
+        total_amount: cost ? cost * qty : undefined,
+        notes: restockForm.notes.trim() || undefined,
+      });
+      setRestockModal((s) => ({ ...s, open: false }));
+    } catch (err) {
+      setRestockError(err instanceof Error ? err.message : "Failed to record restock.");
+    } finally {
+      setRestockLoading(false);
     }
   };
 
-  const handleDeleteItem = async (itemId: string, itemName: string) => {
-    const result = await Swal.fire({
-      title: "Delete Item?",
-      text: `Are you sure you want to delete "${itemName}"? This will also delete all transaction history.`,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#ef4444",
-      confirmButtonText: "Delete",
-    });
-
-    if (result.isConfirmed) {
-      try {
-        await deleteItem(itemId);
-        Swal.fire("Deleted!", "Item deleted successfully", "success");
-      } catch (err) {
-        Swal.fire("Error", err instanceof Error ? err.message : "Failed to delete item", "error");
-      }
+  const handleDeleteItem = async () => {
+    setDeleteConfirm((s) => ({ ...s, loading: true }));
+    try {
+      await deleteItem(deleteConfirm.itemId);
+    } finally {
+      setDeleteConfirm({ open: false, itemId: "", itemName: "", loading: false });
     }
   };
 
@@ -216,7 +176,7 @@ export const InventoryPage = () => {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-gray-900">Inventory Management</h1>
           <button
-            onClick={handleAddItem}
+            onClick={() => { setItemForm(emptyItemForm()); setItemError(null); setAddItemOpen(true); }}
             className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
           >
             <FaPlus /> Add Item
@@ -262,17 +222,7 @@ export const InventoryPage = () => {
             {activeTab === "items" ? (
               <>
                 <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
-                  <button
-                    onClick={() => setSelectedCategory("All")}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap ${
-                      selectedCategory === "All"
-                        ? "bg-blue-600 text-white"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
-                  >
-                    All
-                  </button>
-                  {CATEGORIES.map((cat) => (
+                  {(["All", ...CATEGORIES] as const).map((cat) => (
                     <button
                       key={cat}
                       onClick={() => setSelectedCategory(cat)}
@@ -293,7 +243,7 @@ export const InventoryPage = () => {
                     <h2 className="text-xl font-semibold text-gray-700 mb-2">No Items Found</h2>
                     <p className="text-gray-500 mb-4">Add your first inventory item to get started</p>
                     <button
-                      onClick={handleAddItem}
+                      onClick={() => { setItemForm(emptyItemForm()); setAddItemOpen(true); }}
                       className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
                     >
                       Add First Item
@@ -316,7 +266,14 @@ export const InventoryPage = () => {
                             </p>
                           </div>
                           <button
-                            onClick={() => handleDeleteItem(item.item_id, item.item_name)}
+                            onClick={() =>
+                              setDeleteConfirm({
+                                open: true,
+                                itemId: item.item_id,
+                                itemName: item.item_name,
+                                loading: false,
+                              })
+                            }
                             className="text-red-500 hover:text-red-700"
                           >
                             <FaTrash size={14} />
@@ -338,14 +295,28 @@ export const InventoryPage = () => {
 
                         <div className="flex gap-2">
                           <button
-                            onClick={() => handleSellItem(item.item_id, item.item_name, item.price, item.stock_quantity)}
-                            className="flex-1 bg-green-600 text-white px-3 py-2 rounded text-sm font-medium hover:bg-green-700 transition-colors"
+                            onClick={() => {
+                              setSellForm(emptySellForm(item.price));
+                              setSellError(null);
+                              setSellModal({
+                                open: true,
+                                itemId: item.item_id,
+                                itemName: item.item_name,
+                                price: item.price,
+                                currentStock: item.stock_quantity,
+                              });
+                            }}
+                            className="flex-1 bg-green-600 text-white px-3 py-2 rounded text-sm font-medium hover:bg-green-700 transition-colors disabled:opacity-50"
                             disabled={item.stock_quantity === 0}
                           >
                             Sell
                           </button>
                           <button
-                            onClick={() => handleRestockItem(item.item_id, item.item_name)}
+                            onClick={() => {
+                              setRestockForm(emptyRestockForm());
+                              setRestockError(null);
+                              setRestockModal({ open: true, itemId: item.item_id, itemName: item.item_name });
+                            }}
                             className="flex-1 bg-blue-600 text-white px-3 py-2 rounded text-sm font-medium hover:bg-blue-700 transition-colors"
                           >
                             Restock
@@ -370,23 +341,27 @@ export const InventoryPage = () => {
                       const item = items.find((i) => i.item_id === txn.item_id);
                       const student = students.find((s) => s.id === txn.student_id);
                       return (
-                        <div key={txn.transaction_id} className="border rounded-lg p-3 flex justify-between items-center">
+                        <div
+                          key={txn.transaction_id}
+                          className="border rounded-lg p-3 flex justify-between items-center"
+                        >
                           <div className="flex-1">
-                            <h4 className="font-semibold text-gray-900">{item?.item_name || "Unknown Item"}</h4>
+                            <h4 className="font-semibold text-gray-900">
+                              {item?.item_name || "Unknown Item"}
+                            </h4>
                             <p className="text-sm text-gray-600">
                               <span
                                 className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
                                   txn.transaction_type === "sale"
                                     ? "bg-green-100 text-green-800"
                                     : txn.transaction_type === "restock"
-                                    ? "bg-blue-100 text-blue-800"
-                                    : "bg-gray-100 text-gray-800"
+                                      ? "bg-blue-100 text-blue-800"
+                                      : "bg-gray-100 text-gray-800"
                                 }`}
                               >
                                 {txn.transaction_type}
                               </span>
-                              {" · "}
-                              Qty: {Math.abs(txn.quantity)}
+                              {" · "}Qty: {Math.abs(txn.quantity)}
                               {txn.total_amount && ` · $${txn.total_amount.toFixed(2)}`}
                               {student && ` · ${student.name}`}
                             </p>
@@ -405,6 +380,198 @@ export const InventoryPage = () => {
           </div>
         </div>
       </div>
+
+      {/* ── Add Item Modal ── */}
+      <AppFormModal
+        open={addItemOpen}
+        onOpenChange={setAddItemOpen}
+        title="Add Inventory Item"
+        size="default"
+        onSubmit={handleAddItem}
+        submitLabel="Add Item"
+        loading={itemLoading}
+        error={itemError}
+      >
+        <ModalField label="Item Name" required htmlFor="item-name">
+          <Input
+            id="item-name"
+            placeholder="e.g., White Uniform"
+            value={itemForm.item_name}
+            onChange={(e) => setItemForm((f) => ({ ...f, item_name: e.target.value }))}
+          />
+        </ModalField>
+        <div className="grid grid-cols-2 gap-4">
+          <ModalField label="Category" required htmlFor="item-category">
+            <Select
+              value={itemForm.category}
+              onValueChange={(v) => setItemForm((f) => ({ ...f, category: v as InventoryCategory }))}
+            >
+              <SelectTrigger id="item-category"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </ModalField>
+          <ModalField label="Price" required htmlFor="item-price">
+            <Input
+              id="item-price"
+              type="number"
+              step="0.01"
+              placeholder="29.99"
+              value={itemForm.price}
+              onChange={(e) => setItemForm((f) => ({ ...f, price: e.target.value }))}
+            />
+          </ModalField>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <ModalField label="Initial Stock" required htmlFor="item-stock">
+            <Input
+              id="item-stock"
+              type="number"
+              value={itemForm.stock_quantity}
+              onChange={(e) => setItemForm((f) => ({ ...f, stock_quantity: e.target.value }))}
+            />
+          </ModalField>
+          <ModalField label="Low Stock Alert" required htmlFor="item-low-stock">
+            <Input
+              id="item-low-stock"
+              type="number"
+              value={itemForm.low_stock_threshold}
+              onChange={(e) => setItemForm((f) => ({ ...f, low_stock_threshold: e.target.value }))}
+            />
+          </ModalField>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <ModalField label="Size" htmlFor="item-size" helper="Optional">
+            <Input
+              id="item-size"
+              placeholder="M"
+              value={itemForm.size}
+              onChange={(e) => setItemForm((f) => ({ ...f, size: e.target.value }))}
+            />
+          </ModalField>
+          <ModalField label="Color" htmlFor="item-color" helper="Optional">
+            <Input
+              id="item-color"
+              placeholder="White"
+              value={itemForm.color}
+              onChange={(e) => setItemForm((f) => ({ ...f, color: e.target.value }))}
+            />
+          </ModalField>
+        </div>
+      </AppFormModal>
+
+      {/* ── Sell Modal ── */}
+      <AppFormModal
+        open={sellModal.open}
+        onOpenChange={(open) => setSellModal((s) => ({ ...s, open }))}
+        title={`Sell — ${sellModal.itemName}`}
+        description={`${sellModal.currentStock} in stock`}
+        size="compact"
+        onSubmit={handleSell}
+        submitLabel="Record Sale"
+        loading={sellLoading}
+        error={sellError}
+      >
+        <ModalField label="Quantity" required htmlFor="sell-qty">
+          <Input
+            id="sell-qty"
+            type="number"
+            min={1}
+            max={sellModal.currentStock}
+            value={sellForm.quantity}
+            onChange={(e) => setSellForm((f) => ({ ...f, quantity: e.target.value }))}
+          />
+        </ModalField>
+        <ModalField label="Price Per Unit" required htmlFor="sell-price">
+          <Input
+            id="sell-price"
+            type="number"
+            step="0.01"
+            value={sellForm.price_per_unit}
+            onChange={(e) => setSellForm((f) => ({ ...f, price_per_unit: e.target.value }))}
+          />
+        </ModalField>
+        <ModalField label="Student" htmlFor="sell-student" helper="Optional">
+          <Select
+            value={sellForm.student_id}
+            onValueChange={(v) => setSellForm((f) => ({ ...f, student_id: v }))}
+          >
+            <SelectTrigger id="sell-student">
+              <SelectValue placeholder="No student" />
+            </SelectTrigger>
+            <SelectContent>
+              {students.map((s) => (
+                <SelectItem key={String(s.id)} value={String(s.id)}>{s.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </ModalField>
+        <ModalField label="Notes" htmlFor="sell-notes" helper="Optional">
+          <Textarea
+            id="sell-notes"
+            placeholder="Additional notes..."
+            rows={2}
+            value={sellForm.notes}
+            onChange={(e) => setSellForm((f) => ({ ...f, notes: e.target.value }))}
+          />
+        </ModalField>
+      </AppFormModal>
+
+      {/* ── Restock Modal ── */}
+      <AppFormModal
+        open={restockModal.open}
+        onOpenChange={(open) => setRestockModal((s) => ({ ...s, open }))}
+        title={`Restock — ${restockModal.itemName}`}
+        size="compact"
+        onSubmit={handleRestock}
+        submitLabel="Record Restock"
+        loading={restockLoading}
+        error={restockError}
+      >
+        <ModalField label="Quantity to Add" required htmlFor="restock-qty">
+          <Input
+            id="restock-qty"
+            type="number"
+            min={1}
+            placeholder="10"
+            value={restockForm.quantity}
+            onChange={(e) => setRestockForm((f) => ({ ...f, quantity: e.target.value }))}
+          />
+        </ModalField>
+        <ModalField label="Cost Per Unit" htmlFor="restock-cost" helper="Optional">
+          <Input
+            id="restock-cost"
+            type="number"
+            step="0.01"
+            placeholder="10.00"
+            value={restockForm.cost}
+            onChange={(e) => setRestockForm((f) => ({ ...f, cost: e.target.value }))}
+          />
+        </ModalField>
+        <ModalField label="Notes" htmlFor="restock-notes" helper="Optional">
+          <Textarea
+            id="restock-notes"
+            placeholder="Supplier, PO number..."
+            rows={2}
+            value={restockForm.notes}
+            onChange={(e) => setRestockForm((f) => ({ ...f, notes: e.target.value }))}
+          />
+        </ModalField>
+      </AppFormModal>
+
+      {/* ── Delete Confirm ── */}
+      <AppConfirmModal
+        open={deleteConfirm.open}
+        onOpenChange={(open) =>
+          !deleteConfirm.loading && setDeleteConfirm((s) => ({ ...s, open }))
+        }
+        title="Delete Item?"
+        description={`Are you sure you want to delete "${deleteConfirm.itemName}"? This will also delete all transaction history.`}
+        onConfirm={handleDeleteItem}
+        loading={deleteConfirm.loading}
+        confirmLabel="Delete Item"
+      />
     </div>
   );
 };

@@ -4,7 +4,6 @@ import { useSchool } from "../context/SchoolContext";
 import { createAttendance, getAttendanceByDate } from "../api/Attendance/attendanceRequests";
 import { getTodayDate } from "../utils/AttendanceUtils/DateUtils";
 import { AttendanceRecord } from "../types/attendance";
-import Swal from "sweetalert2";
 import { track } from "../analytics/posthog";
 import { captureException } from "../analytics/sentry";
 
@@ -19,7 +18,7 @@ interface AttendanceContextType {
   canSubmit: boolean;
   handleDateChange: (date: string) => void;
   handleAttendanceChange: (studentId: string, status: AttendanceStatus) => void;
-  handleSubmit: () => Promise<void>;
+  handleSubmit: () => Promise<{ success: boolean; error?: string }>;
 }
 
 const AttendanceContext = createContext<AttendanceContextType | undefined>(undefined);
@@ -85,8 +84,8 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setAttendance((prev) => ({ ...prev, [studentId]: status }));
   };
 
-  const handleSubmit = async () => {
-    if (!schoolId || !user) return;
+  const handleSubmit = async (): Promise<{ success: boolean; error?: string }> => {
+    if (!schoolId || !user) return { success: false, error: "Not authenticated." };
     setIsSubmitting(true);
 
     try {
@@ -97,37 +96,20 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         date: selectedDate,
       }));
 
-      // FIX #3: Added explicit onConflict to ensure re-saving the same
-      // date updates existing records instead of attempting duplicate inserts.
       const { error } = await createAttendance(records);
 
       if (error) {
-        Swal.fire({
-          icon: "error",
-          title: "Error",
-          text: "Failed to save attendance.",
-          confirmButtonText: "OK",
-        });
         console.error("Save error:", error);
         captureException(error, { feature: "attendance", action: "saveAttendance" });
-      } else {
-        track("attendance_saved", { studentCount: records.length, date: selectedDate });
-        Swal.fire({
-          icon: "success",
-          title: "Attendance saved successfully.",
-          showConfirmButton: false,
-          timer: 1000,
-        });
+        return { success: false, error: "Failed to save attendance." };
       }
+
+      track("attendance_saved", { studentCount: records.length, date: selectedDate });
+      return { success: true };
     } catch (error) {
       console.error("Error saving attendance:", error);
       captureException(error, { feature: "attendance", action: "saveAttendance" });
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: "Failed to save attendance.",
-        confirmButtonText: "OK",
-      });
+      return { success: false, error: "Failed to save attendance." };
     } finally {
       setIsSubmitting(false);
     }

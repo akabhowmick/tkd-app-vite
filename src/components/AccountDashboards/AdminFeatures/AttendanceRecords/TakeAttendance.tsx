@@ -3,9 +3,9 @@ import { useSchool } from "../../../../context/SchoolContext";
 import { useAttendance } from "../../../../context/AttendanceContext";
 import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 import { UserProfile } from "../../../../types/user";
+import { supabase } from "../../../../api/supabase";
 
-// "tardy" is UI-only for now — stored as "absent" in the DB.
-// Extend AttendanceContext + the attendance.sql check constraint later if needed.
+// "tardy" is UI-only — stored as "absent" in the DB.
 type AttendanceStatus = "present" | "absent" | "tardy";
 
 const STATUS_STYLES: Record<AttendanceStatus, string> = {
@@ -33,9 +33,8 @@ function buildCalendarDays(year: number, month: number): (string | null)[] {
 }
 
 export const TakeAttendance = () => {
-  const { students } = useSchool();
+  const { students, schoolId } = useSchool();
 
-  // ── Use context state — this is what gets saved ──────────────────────────
   const {
     attendance: contextAttendance,
     selectedDate,
@@ -46,16 +45,19 @@ export const TakeAttendance = () => {
     isLoading,
   } = useAttendance();
 
-  // ── Local UI state (calendar nav, dropdowns, notes) ──────────────────────
-  // We keep a separate local map for "tardy" because AttendanceContext only
-  // accepts "present" | "absent". Tardy students are submitted as "absent"
-  // but displayed as tardy in the UI.
+  // ── Local UI state ────────────────────────────────────────────────────────
   const [localOverrides, setLocalOverrides] = useState<Record<string, AttendanceStatus>>({});
+  const [clearedIds, setClearedIds] = useState<Set<string>>(new Set());
   const [calYear, setCalYear] = useState(() => new Date().getFullYear());
   const [calMonth, setCalMonth] = useState(() => new Date().getMonth());
   const [markAllOpen, setMarkAllOpen] = useState(false);
   const [noteOpen, setNoteOpen] = useState<string | null>(null);
   const [notes, setNotes] = useState<Record<string, string>>({});
+
+  // Dates that have at least one attendance record in the DB
+  const [markedDates, setMarkedDates] = useState<Set<string>>(new Set());
+  const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle");
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const today = getTodayStr();
   const calDays = buildCalendarDays(calYear, calMonth);
@@ -64,23 +66,60 @@ export const TakeAttendance = () => {
     year: "numeric",
   });
 
-  // Reset local overrides when the date changes
+  // ── Fetch all dates that have attendance for this school ──────────────────
+  useEffect(() => {
+    if (!schoolId) return;
+
+    const fetchMarkedDates = async () => {
+      const { data } = await supabase
+        .from("attendance_records")
+        .select("date")
+        .eq("school_id", schoolId);
+
+      if (data) {
+        const dates = new Set(data.map((r: { date: string }) => r.date));
+        setMarkedDates(dates);
+      }
+    };
+
+    fetchMarkedDates();
+  }, [schoolId]);
+
+  // ── Reset local state when date changes ───────────────────────────────────
   useEffect(() => {
     setLocalOverrides({});
+    setClearedIds(new Set());
   }, [selectedDate]);
 
-  // ── Helpers ───────────────────────────────────────────────────────────────
-
-  // Effective status: local override (handles tardy) takes precedence, then
-  // fall back to what the context (and DB) says.
+  // ── Status helpers ────────────────────────────────────────────────────────
   const getStatus = (id: string): AttendanceStatus | undefined => {
+    if (clearedIds.has(id)) return undefined;
     if (localOverrides[id]) return localOverrides[id];
     return contextAttendance[id] as AttendanceStatus | undefined;
   };
 
   const setStatus = (id: string, status: AttendanceStatus) => {
+    const current = getStatus(id);
+
+    // Clicking the active status toggles it off
+    if (current === status) {
+      setLocalOverrides((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+      setClearedIds((prev) => new Set(prev).add(id));
+      return;
+    }
+
+    // Clear from clearedIds if re-marking
+    setClearedIds((prev) => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+
     setLocalOverrides((prev) => ({ ...prev, [id]: status }));
-    // Push to context — map tardy → absent for DB storage
     handleAttendanceChange(id, status === "tardy" ? "absent" : status);
   };
 
@@ -93,6 +132,7 @@ export const TakeAttendance = () => {
       }
     });
     setLocalOverrides(nextOverrides);
+    setClearedIds(new Set());
     setMarkAllOpen(false);
   };
 
@@ -109,6 +149,20 @@ export const TakeAttendance = () => {
       }
       return next;
     });
+  };
+
+  const handleSave = async () => {
+    setSubmitStatus("idle");
+    setSubmitError(null);
+    const result = await handleSubmit();
+    if (result.success) {
+      setMarkedDates((prev) => new Set(prev).add(selectedDate));
+      setSubmitStatus("success");
+      setTimeout(() => setSubmitStatus("idle"), 3000);
+    } else {
+      setSubmitStatus("error");
+      setSubmitError(result.error ?? "Failed to save attendance.");
+    }
   };
 
   const markedCount = students.filter((s) => s.id && getStatus(s.id) !== undefined).length;
@@ -160,6 +214,7 @@ export const TakeAttendance = () => {
               if (!date) return <div key={i} />;
               const isSelected = date === selectedDate;
               const isToday = date === today;
+              const isMarked = markedDates.has(date);
               const dayNum = parseInt(date.split("-")[2]);
               return (
                 <button
@@ -174,10 +229,12 @@ export const TakeAttendance = () => {
                   }`}
                 >
                   <span>{dayNum}</span>
-                  {markedCount > 0 && isSelected && (
-                    <span className="mt-0.5 text-xs bg-green-500 text-white rounded px-1">
-                      P:{markedCount}
-                    </span>
+                  {isMarked && (
+                    <span
+                      className={`mt-1 w-1.5 h-1.5 rounded-full ${
+                        isSelected ? "bg-green-400" : "bg-green-500"
+                      }`}
+                    />
                   )}
                 </button>
               );
@@ -194,7 +251,6 @@ export const TakeAttendance = () => {
             Attendance for {selectedDate}
           </h3>
           <div className="flex items-center gap-2 ml-auto flex-wrap">
-            {/* Mark All dropdown */}
             <div className="relative">
               <button
                 onClick={() => setMarkAllOpen(!markAllOpen)}
@@ -335,17 +391,25 @@ export const TakeAttendance = () => {
         </div>
 
         {/* Footer save bar */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100 bg-gray-50">
-          <span className="text-sm text-gray-600">
-            {markedCount} of {students.length} students marked
-          </span>
-          <button
-            onClick={handleSubmit}
-            disabled={isSubmitting || markedCount === 0}
-            className="px-5 py-2 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {isSubmitting ? "Saving..." : "Save Attendance"}
-          </button>
+        <div className="flex flex-col gap-1 px-6 py-4 border-t border-gray-100 bg-gray-50">
+          {submitStatus === "success" && (
+            <p className="text-xs font-medium text-green-700 text-right">Attendance saved.</p>
+          )}
+          {submitStatus === "error" && (
+            <p className="text-xs font-medium text-red-600 text-right">{submitError}</p>
+          )}
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-gray-600">
+              {markedCount} of {students.length} students marked
+            </span>
+            <button
+              onClick={handleSave}
+              disabled={isSubmitting || markedCount === 0}
+              className="px-5 py-2 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {isSubmitting ? "Saving..." : "Save Attendance"}
+            </button>
+          </div>
         </div>
       </div>
     </div>

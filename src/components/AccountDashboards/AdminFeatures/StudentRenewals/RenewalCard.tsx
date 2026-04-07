@@ -1,11 +1,10 @@
 import React, { useState } from "react";
-import Swal from "sweetalert2";
-import withReactContent from "sweetalert2-react-content";
 import { FaCog, FaChevronDown, FaChevronUp } from "react-icons/fa";
 import { RenewalCardProps, RenewalPayment } from "../../../../types/student_renewal";
 import { useSchool } from "../../../../context/SchoolContext";
-
-const MySwal = withReactContent(Swal);
+import { AppModal, AppFormModal, AppConfirmModal, ModalField } from "../../../ui/modal";
+import { Input } from "../../../ui/input";
+import { Button } from "../../../ui/button";
 
 const STATUS_STYLES: Record<string, { card: string; badge: string; icon: string; label: string }> =
   {
@@ -41,6 +40,13 @@ const STATUS_STYLES: Record<string, { card: string; badge: string; icon: string;
     },
   };
 
+type PaymentForm = {
+  payment_date: string;
+  amount_due: string;
+  amount_paid: string;
+  paid_to: string;
+};
+
 export const RenewalCard: React.FC<RenewalCardProps> = ({
   period,
   onMarkPaid,
@@ -51,127 +57,60 @@ export const RenewalCard: React.FC<RenewalCardProps> = ({
 }) => {
   const { students } = useSchool();
   const [paymentsOpen, setPaymentsOpen] = useState(false);
+  const [manageOpen, setManageOpen] = useState(false);
+  const [addPaymentOpen, setAddPaymentOpen] = useState(false);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   const student = students.find((s) => s.id === period.student_id);
-  // ui_status now includes "paid" so this lookup will always find a match
   const style = STATUS_STYLES[period.ui_status] ?? STATUS_STYLES.active;
   const isPaid = period.balance <= 0 && period.total_due > 0;
 
-  const modalBtnStyle = "w-full text-white py-2 rounded-md text-sm font-semibold mb-2";
+  const nextInstallment = period.payments.length + 1;
+  const [paymentForm, setPaymentForm] = useState<PaymentForm>({
+    payment_date: new Date().toISOString().split("T")[0],
+    amount_due: String(period.balance.toFixed(2)),
+    amount_paid: "0",
+    paid_to: "",
+  });
 
-  const handleManage = () => {
-    MySwal.fire({
-      title: "Manage Renewal",
-      html: (
-        <div className="flex flex-col gap-2 items-center">
-          {!isPaid && (
-            <button
-              onClick={() => {
-                const firstUnpaid = period.payments.find((p) => p.amount_paid < p.amount_due);
-                if (firstUnpaid) {
-                  onMarkPaid(period.period_id, firstUnpaid.payment_id);
-                }
-                Swal.close();
-              }}
-              className={`${modalBtnStyle} bg-green-600`}
-            >
-              ✓ Mark Next Payment Paid
-            </button>
-          )}
-          {onAddPayment && (
-            <button
-              onClick={() => {
-                handleAddPayment();
-                Swal.close();
-              }}
-              className={`${modalBtnStyle} bg-blue-600`}
-            >
-              ＋ Add Payment Installment
-            </button>
-          )}
-          {onRenew && (
-            <button
-              onClick={() => {
-                onRenew(period);
-                Swal.close();
-              }}
-              className={`${modalBtnStyle} bg-purple-600`}
-            >
-              🔄 Renew
-            </button>
-          )}
-          {onResolveAsQuit && (
-            <button
-              onClick={() => {
-                onResolveAsQuit(period.period_id);
-                Swal.close();
-              }}
-              className={`${modalBtnStyle} bg-yellow-500`}
-            >
-              🚪 Mark as Quit
-            </button>
-          )}
-          <button
-            onClick={() => {
-              onDelete(period.period_id);
-              Swal.close();
-            }}
-            className={`${modalBtnStyle} bg-red-600`}
-          >
-            🗑 Delete
-          </button>
-        </div>
-      ),
-      showConfirmButton: false,
+  const openAddPayment = () => {
+    setPaymentForm({
+      payment_date: new Date().toISOString().split("T")[0],
+      amount_due: String(period.balance.toFixed(2)),
+      amount_paid: "0",
+      paid_to: "",
     });
+    setPaymentError(null);
+    setManageOpen(false);
+    setAddPaymentOpen(true);
   };
 
-  const handleAddPayment = async () => {
-    if (!onAddPayment) return;
+  const handleAddPaymentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPaymentError(null);
+    if (!paymentForm.payment_date) { setPaymentError("Payment date is required."); return; }
+    if (!paymentForm.paid_to.trim()) { setPaymentError("Paid To is required."); return; }
+    const amountDue = parseFloat(paymentForm.amount_due);
+    const amountPaid = parseFloat(paymentForm.amount_paid);
+    if (isNaN(amountDue) || amountDue < 0) { setPaymentError("Invalid amount due."); return; }
+    if (isNaN(amountPaid) || amountPaid < 0) { setPaymentError("Invalid amount paid."); return; }
 
-    const nextInstallment = period.payments.length + 1;
-    const remaining = period.balance;
-
-    const { value } = await Swal.fire({
-      title: `Add Installment #${nextInstallment}`,
-      html: `
-        <div style="display:flex;flex-direction:column;gap:12px;text-align:left">
-          <div>
-            <label style="font-size:0.875rem;font-weight:600;color:#374151">Payment Date</label>
-            <input id="pay-date" type="date" value="${new Date().toISOString().split("T")[0]}"
-              style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;margin-top:4px"/>
-          </div>
-          <div>
-            <label style="font-size:0.875rem;font-weight:600;color:#374151">Amount Due (Balance: $${remaining.toFixed(2)})</label>
-            <input id="pay-due" type="number" step="0.01" value="${remaining.toFixed(2)}"
-              style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;margin-top:4px"/>
-          </div>
-          <div>
-            <label style="font-size:0.875rem;font-weight:600;color:#374151">Amount Paid</label>
-            <input id="pay-paid" type="number" step="0.01" value="0"
-              style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;margin-top:4px"/>
-          </div>
-          <div>
-            <label style="font-size:0.875rem;font-weight:600;color:#374151">Paid To</label>
-            <input id="pay-to" type="text" placeholder="e.g. MR, Amy"
-              style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;margin-top:4px"/>
-          </div>
-        </div>
-      `,
-      showCancelButton: true,
-      confirmButtonText: "Add Payment",
-      confirmButtonColor: "#2563eb",
-      preConfirm: () => ({
-        payment_date: (document.getElementById("pay-date") as HTMLInputElement).value,
-        amount_due: parseFloat((document.getElementById("pay-due") as HTMLInputElement).value),
-        amount_paid: parseFloat((document.getElementById("pay-paid") as HTMLInputElement).value),
-        paid_to: (document.getElementById("pay-to") as HTMLInputElement).value,
-        installment_number: nextInstallment,
-      }),
-    });
-
-    if (value) {
-      onAddPayment(period.period_id, value);
+    setPaymentLoading(true);
+    try {
+      if (onAddPayment) {
+        onAddPayment(period.period_id, {
+          payment_date: paymentForm.payment_date,
+          amount_due: amountDue,
+          amount_paid: amountPaid,
+          paid_to: paymentForm.paid_to.trim(),
+          installment_number: nextInstallment,
+        });
+      }
+      setAddPaymentOpen(false);
+    } finally {
+      setPaymentLoading(false);
     }
   };
 
@@ -190,7 +129,7 @@ export const RenewalCard: React.FC<RenewalCardProps> = ({
             {style.icon} {style.label}
           </span>
           <button
-            onClick={handleManage}
+            onClick={() => setManageOpen(true)}
             className="text-gray-500 hover:text-gray-800 transition-colors"
             title="Manage"
           >
@@ -247,11 +186,7 @@ export const RenewalCard: React.FC<RenewalCardProps> = ({
                   <span className="font-medium text-gray-700">
                     Installment {payment.installment_number}
                   </span>
-                  <span
-                    className={
-                      settled ? "text-green-600 font-semibold" : "text-red-500 font-semibold"
-                    }
-                  >
+                  <span className={settled ? "text-green-600 font-semibold" : "text-red-500 font-semibold"}>
                     {settled
                       ? "Paid"
                       : `Bal: $${(payment.amount_due - payment.amount_paid).toFixed(2)}`}
@@ -270,6 +205,121 @@ export const RenewalCard: React.FC<RenewalCardProps> = ({
           })}
         </div>
       )}
+
+      {/* ── Manage Modal ── */}
+      <AppModal
+        open={manageOpen}
+        onOpenChange={setManageOpen}
+        title="Manage Renewal"
+        size="compact"
+      >
+        <div className="flex flex-col gap-2">
+          {!isPaid && (
+            <Button
+              variant="default"
+              className="w-full bg-green-600 hover:bg-green-700"
+              onClick={() => {
+                const firstUnpaid = period.payments.find((p) => p.amount_paid < p.amount_due);
+                if (firstUnpaid) onMarkPaid(period.period_id, firstUnpaid.payment_id);
+                setManageOpen(false);
+              }}
+            >
+              ✓ Mark Next Payment Paid
+            </Button>
+          )}
+          {onAddPayment && (
+            <Button variant="default" className="w-full" onClick={openAddPayment}>
+              ＋ Add Payment Installment
+            </Button>
+          )}
+          {onRenew && (
+            <Button
+              variant="secondary"
+              className="w-full"
+              onClick={() => { onRenew(period); setManageOpen(false); }}
+            >
+              🔄 Renew
+            </Button>
+          )}
+          {onResolveAsQuit && (
+            <Button
+              variant="outline"
+              className="w-full border-yellow-400 text-yellow-700 hover:bg-yellow-50"
+              onClick={() => { onResolveAsQuit(period.period_id); setManageOpen(false); }}
+            >
+              🚪 Mark as Quit
+            </Button>
+          )}
+          <Button
+            variant="destructive"
+            className="w-full"
+            onClick={() => { setManageOpen(false); setDeleteConfirmOpen(true); }}
+          >
+            🗑 Delete
+          </Button>
+        </div>
+      </AppModal>
+
+      {/* ── Add Payment Modal ── */}
+      <AppFormModal
+        open={addPaymentOpen}
+        onOpenChange={setAddPaymentOpen}
+        title={`Add Installment #${nextInstallment}`}
+        description={`Balance remaining: $${period.balance.toFixed(2)}`}
+        size="compact"
+        onSubmit={handleAddPaymentSubmit}
+        submitLabel="Add Payment"
+        loading={paymentLoading}
+        error={paymentError}
+      >
+        <ModalField label="Payment Date" required htmlFor="pay-date">
+          <Input
+            id="pay-date"
+            type="date"
+            value={paymentForm.payment_date}
+            onChange={(e) => setPaymentForm((f) => ({ ...f, payment_date: e.target.value }))}
+          />
+        </ModalField>
+        <div className="grid grid-cols-2 gap-4">
+          <ModalField label="Amount Due" required htmlFor="pay-due">
+            <Input
+              id="pay-due"
+              type="number"
+              step="0.01"
+              value={paymentForm.amount_due}
+              onChange={(e) => setPaymentForm((f) => ({ ...f, amount_due: e.target.value }))}
+            />
+          </ModalField>
+          <ModalField label="Amount Paid" required htmlFor="pay-paid">
+            <Input
+              id="pay-paid"
+              type="number"
+              step="0.01"
+              value={paymentForm.amount_paid}
+              onChange={(e) => setPaymentForm((f) => ({ ...f, amount_paid: e.target.value }))}
+            />
+          </ModalField>
+        </div>
+        <ModalField label="Paid To" required htmlFor="pay-to">
+          <Input
+            id="pay-to"
+            type="text"
+            placeholder="e.g., MR, Amy"
+            value={paymentForm.paid_to}
+            onChange={(e) => setPaymentForm((f) => ({ ...f, paid_to: e.target.value }))}
+          />
+        </ModalField>
+      </AppFormModal>
+
+      {/* ── Delete Confirm ── */}
+      <AppConfirmModal
+        open={deleteConfirmOpen}
+        onOpenChange={setDeleteConfirmOpen}
+        title="Delete Renewal?"
+        description="Are you sure you want to delete this renewal period? This cannot be undone."
+        onConfirm={() => { onDelete(period.period_id); setDeleteConfirmOpen(false); }}
+        confirmLabel="Delete"
+      />
     </div>
   );
 };

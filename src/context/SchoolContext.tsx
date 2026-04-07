@@ -13,7 +13,6 @@ import { getSchoolByAdmin } from "../api/SchoolRequests/schoolRequests";
 import { useAuth } from "./AuthContext";
 import { Student } from "../types/user";
 import { deleteStudent, getStudents } from "../api/StudentRequests/studentRequests";
-import Swal from "sweetalert2";
 
 interface SchoolContextType {
   sales: number;
@@ -106,53 +105,8 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   );
 
   const handleDelete = async (id: string) => {
-    try {
-      const result = await Swal.fire({
-        title: "Delete Student?",
-        text: "Are you sure you want to delete this student? This action cannot be undone.",
-        icon: "warning",
-        showCancelButton: true,
-        confirmButtonColor: "#ef4444",
-        cancelButtonColor: "#6b7280",
-        confirmButtonText: "Yes, delete it!",
-        cancelButtonText: "Cancel",
-        reverseButtons: true,
-      });
-
-      if (result.isConfirmed) {
-        Swal.fire({
-          title: "Deleting...",
-          text: "Please wait while we delete the student.",
-          allowOutsideClick: false,
-          allowEscapeKey: false,
-          showConfirmButton: false,
-          didOpen: () => Swal.showLoading(),
-        });
-
-        try {
-          await deleteStudent(id);
-          await loadStudents(schoolId, true);
-
-          Swal.fire({
-            title: "Deleted!",
-            text: "The student has been successfully deleted.",
-            icon: "success",
-            confirmButtonColor: "#10b981",
-            timer: 1000,
-            timerProgressBar: true,
-          });
-        } catch (error) {
-          Swal.fire({
-            title: "Error!",
-            text: `Failed to delete the student. Please try again. ${error}`,
-            icon: "error",
-            confirmButtonColor: "#ef4444",
-          });
-        }
-      }
-    } catch (error) {
-      console.error("Error in handleDelete:", error);
-    }
+    await deleteStudent(id);
+    await loadStudents(schoolId, true);
   };
 
   useEffect(() => {
