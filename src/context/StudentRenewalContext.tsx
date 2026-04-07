@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useReducer, useCallback, useMemo, ReactNode } from "react";
 import { track } from "../analytics/posthog";
 import {
@@ -207,6 +208,7 @@ interface StudentRenewalsContextType {
   grouped: GroupedRenewals;
   loading: boolean;
   error: string | null;
+  recentActivity: { text: string; time: string; dot: string }[];
   loadPeriods: () => Promise<void>;
   createRenewal: (req: CreateRenewalRequest) => Promise<void>;
   addPayment: (
@@ -225,7 +227,7 @@ const StudentRenewalsContext = createContext<StudentRenewalsContextType | undefi
 
 export const StudentRenewalsProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(reducer, initialState);
-  const { schoolId } = useSchool();
+  const { schoolId, students } = useSchool();
 
   // ── Async wrapper
   const withAsync = useCallback(async <T,>(fn: () => Promise<T>): Promise<T> => {
@@ -401,6 +403,35 @@ export const StudentRenewalsProvider = ({ children }: { children: ReactNode }) =
   // ── Derived grouped data — memoized
   const grouped = useMemo(() => groupPeriods(state.periods), [state.periods]);
 
+  const recentActivity = useMemo(() => {
+    return [...state.periods]
+      .sort(
+        (a, b) =>
+          new Date(b.updated_at ?? b.created_at).getTime() -
+          new Date(a.updated_at ?? a.created_at).getTime(),
+      )
+      .slice(0, 5)
+      .map((p) => {
+        const uiStatus = deriveUiStatus(p);
+        const student = students.find((s) => s.id === p.student_id);
+        const displayName = student?.name ?? p.student_id;
+        const dot =
+          uiStatus === "paid"
+            ? "bg-green-500"
+            : uiStatus === "expiring_soon"
+              ? "bg-yellow-500"
+              : uiStatus === "grace_period" || uiStatus === "expired"
+                ? "bg-red-500"
+                : "bg-blue-500";
+
+        return {
+          text: `Renewal ${uiStatus.replace("_", " ")}: ${displayName}`,
+          time: new Date(p.updated_at ?? p.created_at).toLocaleDateString(),
+          dot,
+        };
+      });
+  }, [state.periods, students]);
+
   const value: StudentRenewalsContextType = {
     periods: state.periods,
     grouped,
@@ -415,6 +446,7 @@ export const StudentRenewalsProvider = ({ children }: { children: ReactNode }) =
     deletePayment,
     quitRenewal,
     renewPeriod,
+    recentActivity,
   };
 
   return (
@@ -422,7 +454,6 @@ export const StudentRenewalsProvider = ({ children }: { children: ReactNode }) =
   );
 };
 
-// eslint-disable-next-line react-refresh/only-export-components
 export const useStudentRenewals = (): StudentRenewalsContextType => {
   const ctx = useContext(StudentRenewalsContext);
   if (!ctx) throw new Error("useStudentRenewals must be used within StudentRenewalsProvider");

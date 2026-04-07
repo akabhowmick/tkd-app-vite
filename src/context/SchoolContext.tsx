@@ -23,6 +23,9 @@ interface SchoolContextType {
   schoolId: string;
   loading: boolean;
   students: Student[];
+  salesChange: number | null;
+  attendanceChange: number | null;
+  clientsChange: number | null;
   fetchSchool: () => Promise<void>;
   loadStudents: (currentSchoolId?: string, forceRefresh?: boolean) => Promise<void>;
   handleDelete: (id: string) => Promise<void>;
@@ -46,6 +49,9 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const [schoolId, setSchoolId] = useState<string>("");
   const [studentsCache, setStudentsCache] = useState<Map<string, Student[]>>(new Map());
   const [lastStudentsFetch, setLastStudentsFetch] = useState<Map<string, number>>(new Map());
+  const [salesChange, setSalesChange] = useState<number | null>(null);
+  const [attendanceChange, setAttendanceChange] = useState<number | null>(null);
+  const [clientsChange, setClientsChange] = useState<number | null>(null);
 
   const fetchSchool = async () => {
     if (!user) return;
@@ -180,7 +186,6 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         if (schoolError) throw schoolError;
         setSchool(schoolData);
 
-        // Student count
         const { count: userCount, error: userError } = await supabase
           .from("students")
           .select("*", { count: "exact", head: true })
@@ -189,7 +194,6 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         if (userError) throw userError;
         setClients(userCount ?? 0);
 
-        // Today's present attendance count
         const today = new Date().toISOString().split("T")[0];
         const { count: attendanceCount, error: attendanceError } = await supabase
           .from("attendance_records")
@@ -201,7 +205,6 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         if (attendanceError) throw attendanceError;
         setAttendance(attendanceCount ?? 0);
 
-        // Today's revenue — now that sales has school_id, this query works
         const { data: salesData, error: salesError } = await supabase
           .from("sales")
           .select("amount")
@@ -215,6 +218,39 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
           0,
         );
         setSales(totalSales);
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yDate = yesterday.toISOString().split("T")[0];
+
+        const { data: yesterdaySales } = await supabase
+          .from("sales")
+          .select("amount")
+          .eq("school_id", schoolId)
+          .gte("payment_date", `${yDate}T00:00:00`)
+          .lte("payment_date", `${yDate}T23:59:59`);
+
+        const yesterdayTotal = (yesterdaySales ?? []).reduce(
+          (sum: number, row: { amount: number }) => sum + row.amount,
+          0,
+        );
+        setSalesChange(
+          yesterdayTotal === 0
+            ? null
+            : Math.round(((totalSales - yesterdayTotal) / yesterdayTotal) * 100),
+        );
+
+        const { count: yesterdayAttendance } = await supabase
+          .from("attendance_records")
+          .select("*", { count: "exact", head: true })
+          .eq("school_id", schoolId)
+          .eq("date", yDate)
+          .eq("status", "present");
+
+        const yAtt = yesterdayAttendance ?? 0;
+        setAttendanceChange(
+          yAtt === 0 ? null : Math.round((((attendanceCount ?? 0) - yAtt) / yAtt) * 100),
+        );
+        setClientsChange(null);
       } catch (err) {
         console.error("Error fetching school dashboard metrics:", err);
       } finally {
@@ -272,6 +308,9 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         school,
         loading,
         schoolId,
+        salesChange,
+        attendanceChange,
+        clientsChange,
         loadStudents,
         handleDelete,
         refreshStudents,

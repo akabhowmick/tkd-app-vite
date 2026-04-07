@@ -1,11 +1,11 @@
 import {
   DollarSign,
   Users,
-  UserPlus,
   CalendarCheck,
   AlertCircle,
   TrendingUp,
   TrendingDown,
+  Minus,
 } from "lucide-react";
 import { useSchool } from "../../../context/SchoolContext";
 import { useStudentRenewals } from "../../../context/StudentRenewalContext";
@@ -17,9 +17,8 @@ const CARDS = [
     iconColor: "text-green-600",
     title: "Today's Revenue",
     key: "sales" as const,
+    changeKey: "salesChange" as const,
     format: (v: number) => `$${v.toLocaleString()}`,
-    change: "+5%",
-    positive: true,
   },
   {
     icon: CalendarCheck,
@@ -27,9 +26,8 @@ const CARDS = [
     iconColor: "text-blue-600",
     title: "Today's Attendance",
     key: "attendance" as const,
+    changeKey: "attendanceChange" as const,
     format: (v: number) => String(v),
-    change: "+3%",
-    positive: true,
   },
   {
     icon: Users,
@@ -37,19 +35,8 @@ const CARDS = [
     iconColor: "text-purple-600",
     title: "Total Students",
     key: "clients" as const,
+    changeKey: "clientsChange" as const,
     format: (v: number) => String(v),
-    change: "-2%",
-    positive: false,
-  },
-  {
-    icon: UserPlus,
-    iconBg: "bg-orange-100",
-    iconColor: "text-orange-600",
-    title: "New This Month",
-    key: "clients" as const,
-    format: (v: number) => String(Math.ceil(v * 0.1)),
-    change: "+12%",
-    positive: true,
   },
   {
     icon: AlertCircle,
@@ -57,15 +44,40 @@ const CARDS = [
     iconColor: "text-red-600",
     title: "Expiring Renewals",
     key: "expiring" as const,
+    changeKey: null,
     format: (v: number) => String(v),
-    change: "",
-    positive: false,
   },
 ];
 
+const ChangeBadge = ({ change }: { change: number | null | undefined }) => {
+  if (change == null) {
+    return (
+      <span className="flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full text-gray-400 bg-gray-100">
+        <Minus size={12} />
+        N/A
+      </span>
+    );
+  }
+
+  const positive = change >= 0;
+  const TrendIcon = positive ? TrendingUp : TrendingDown;
+  const label = `${positive ? "+" : ""}${change}%`;
+
+  return (
+    <span
+      className={`flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full ${
+        positive ? "text-green-700 bg-green-100" : "text-red-600 bg-red-100"
+      }`}
+    >
+      <TrendIcon size={12} />
+      {label}
+    </span>
+  );
+};
+
 export const StatCards = () => {
   const schoolData = useSchool();
-  const { grouped } = useStudentRenewals();
+  const { grouped, recentActivity } = useStudentRenewals();
 
   const expiringCount = grouped.expiring_soon.length + grouped.grace_period.length;
 
@@ -81,7 +93,12 @@ export const StatCards = () => {
 
           const value = card.format(raw);
           const Icon = card.icon;
-          const TrendIcon = card.positive ? TrendingUp : TrendingDown;
+
+          // Pull change from real data; null means unavailable
+          const change: number | null =
+            card.changeKey != null
+              ? ((schoolData[card.changeKey as keyof typeof schoolData] as number | null) ?? null)
+              : null;
 
           return (
             <div key={i} className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
@@ -89,24 +106,19 @@ export const StatCards = () => {
                 <div className={`p-2.5 rounded-lg ${card.iconBg}`}>
                   <Icon size={20} className={card.iconColor} />
                 </div>
-                {card.change ? (
-                  <span
-                    className={`flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full ${
-                      card.positive ? "text-green-700 bg-green-100" : "text-red-600 bg-red-100"
-                    }`}
-                  >
-                    <TrendIcon size={12} />
-                    {card.change}
-                  </span>
-                ) : // Expiring renewals shows a live count badge instead of a trend
-                expiringCount > 0 ? (
-                  <span className="text-xs font-semibold px-2 py-1 rounded-full text-red-600 bg-red-100">
-                    Needs attention
-                  </span>
+
+                {card.key === "expiring" ? (
+                  expiringCount > 0 ? (
+                    <span className="text-xs font-semibold px-2 py-1 rounded-full text-red-600 bg-red-100">
+                      Needs attention
+                    </span>
+                  ) : (
+                    <span className="text-xs font-semibold px-2 py-1 rounded-full text-green-700 bg-green-100">
+                      All clear
+                    </span>
+                  )
                 ) : (
-                  <span className="text-xs font-semibold px-2 py-1 rounded-full text-green-700 bg-green-100">
-                    All clear
-                  </span>
+                  <ChangeBadge change={change} />
                 )}
               </div>
               <p className="text-2xl font-bold text-gray-900">{value}</p>
@@ -136,29 +148,25 @@ export const StatCards = () => {
         </div>
       </div>
 
-      {/* Recent activity */}
+      {/* Recent Activity */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
         <h2 className="text-base font-semibold text-gray-900 mb-4">Recent Activity</h2>
-        <div className="space-y-3">
-          {[
-            {
-              text: "Attendance recorded for Taekwondo class",
-              time: "2 min ago",
-              dot: "bg-green-500",
-            },
-            { text: "New student added: Jane Smith", time: "1 hr ago", dot: "bg-blue-500" },
-            { text: "Renewal expiring: John Doe", time: "3 hr ago", dot: "bg-yellow-500" },
-            { text: "Payment received: $120.00", time: "Yesterday", dot: "bg-purple-500" },
-          ].map((item, i) => (
-            <div key={i} className="flex items-start gap-3">
-              <div className={`mt-1.5 h-2 w-2 rounded-full shrink-0 ${item.dot}`} />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-gray-700">{item.text}</p>
-                <p className="text-xs text-gray-400">{item.time}</p>
+
+        {!recentActivity || recentActivity.length === 0 ? (
+          <p className="text-sm text-gray-400 italic">No recent activity to show.</p>
+        ) : (
+          <div className="space-y-3">
+            {recentActivity.map((item, i) => (
+              <div key={i} className="flex items-start gap-3">
+                <div className={`mt-1.5 h-2 w-2 rounded-full shrink-0 ${item.dot}`} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-gray-700">{item.text}</p>
+                  <p className="text-xs text-gray-400">{item.time}</p>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
