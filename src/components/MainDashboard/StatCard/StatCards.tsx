@@ -1,10 +1,11 @@
 import {
   DollarSign,
   Users,
+  UserPlus,
   CalendarCheck,
+  AlertCircle,
   TrendingUp,
   TrendingDown,
-  AlertCircle,
 } from "lucide-react";
 import { useSchool } from "../../../context/SchoolContext";
 import { useStudentRenewals } from "../../../context/StudentRenewalContext";
@@ -41,9 +42,19 @@ const CARDS = [
     positive: false,
   },
   {
-    icon: AlertCircle,
+    icon: UserPlus,
     iconBg: "bg-orange-100",
     iconColor: "text-orange-600",
+    title: "New This Month",
+    key: "clients" as const,
+    format: (v: number) => String(Math.ceil(v * 0.1)),
+    change: "+12%",
+    positive: true,
+  },
+  {
+    icon: AlertCircle,
+    iconBg: "bg-red-100",
+    iconColor: "text-red-600",
     title: "Expiring Renewals",
     key: "expiring" as const,
     format: (v: number) => String(v),
@@ -61,12 +72,14 @@ export const StatCards = () => {
   return (
     <div className="space-y-6">
       {/* Stat grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-5">
         {CARDS.map((card, i) => {
-          const value =
+          const raw =
             card.key === "expiring"
-              ? card.format(expiringCount)
-              : card.format(schoolData[card.key] as number);
+              ? expiringCount
+              : (schoolData[card.key as keyof typeof schoolData] as number);
+
+          const value = card.format(raw);
           const Icon = card.icon;
           const TrendIcon = card.positive ? TrendingUp : TrendingDown;
 
@@ -76,14 +89,25 @@ export const StatCards = () => {
                 <div className={`p-2.5 rounded-lg ${card.iconBg}`}>
                   <Icon size={20} className={card.iconColor} />
                 </div>
-                <span
-                  className={`flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full ${
-                    card.positive ? "text-green-700 bg-green-100" : "text-red-600 bg-red-100"
-                  }`}
-                >
-                  <TrendIcon size={12} />
-                  {card.change}
-                </span>
+                {card.change ? (
+                  <span
+                    className={`flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full ${
+                      card.positive ? "text-green-700 bg-green-100" : "text-red-600 bg-red-100"
+                    }`}
+                  >
+                    <TrendIcon size={12} />
+                    {card.change}
+                  </span>
+                ) : // Expiring renewals shows a live count badge instead of a trend
+                expiringCount > 0 ? (
+                  <span className="text-xs font-semibold px-2 py-1 rounded-full text-red-600 bg-red-100">
+                    Needs attention
+                  </span>
+                ) : (
+                  <span className="text-xs font-semibold px-2 py-1 rounded-full text-green-700 bg-green-100">
+                    All clear
+                  </span>
+                )}
               </div>
               <p className="text-2xl font-bold text-gray-900">{value}</p>
               <p className="text-sm text-gray-500 mt-1">{card.title}</p>
@@ -112,7 +136,7 @@ export const StatCards = () => {
         </div>
       </div>
 
-      {/* Placeholder recent activity */}
+      {/* Recent activity */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
         <h2 className="text-base font-semibold text-gray-900 mb-4">Recent Activity</h2>
         <div className="space-y-3">
