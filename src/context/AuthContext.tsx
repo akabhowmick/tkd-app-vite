@@ -14,6 +14,7 @@ interface AuthResult {
 interface AuthContextType {
   user: BaseUser | null;
   school: School | null;
+  loading: boolean;
   login: (email: string, password: string) => Promise<AuthResult>;
   signup: (newUser: UserSignIn, password: string) => Promise<AuthResult>;
   logout: () => void;
@@ -38,6 +39,7 @@ const friendlyAuthError = (message: string): string => {
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<BaseUser | null>(null);
   const [school, setSchool] = useState<School | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -46,6 +48,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       // successful load because the check was missing
       if (error) {
         console.error("Error fetching user session:", error);
+        setLoading(false);
         return;
       }
       if (data?.user) {
@@ -61,6 +64,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           schoolId: m?.schoolId || "",
         });
         if (storedSchool) setSchool(JSON.parse(storedSchool));
+        setLoading(false);
       }
     };
 
@@ -153,7 +157,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   return (
-    <AuthContext.Provider value={{ user, school, login, signup, logout }}>
+    <AuthContext.Provider value={{ user, school, loading, login, signup, logout }}>
       {children}
     </AuthContext.Provider>
   );

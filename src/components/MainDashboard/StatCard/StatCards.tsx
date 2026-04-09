@@ -121,7 +121,13 @@ export const StatCards = () => {
                   <ChangeBadge change={change} />
                 )}
               </div>
-              <p className="text-2xl font-bold text-gray-900">{value}</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {schoolData.loading ? (
+                  <span className="inline-block w-12 h-6 bg-gray-200 rounded animate-pulse" />
+                ) : (
+                  value
+                )}
+              </p>
               <p className="text-sm text-gray-500 mt-1">{card.title}</p>
             </div>
           );

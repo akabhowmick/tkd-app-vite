@@ -8,10 +8,10 @@ const tiers = [
     name: "Starter",
     monthlyPrice: 39,
     annualPrice: 35,
-    studentCap: "Up to 75 students",
+    studentCap: "Up to 50 students",
     desc: "Perfect for smaller schools getting organized",
     features: [
-      "Up to 75 students",
+      "Up to 50 students",
       "Attendance tracking",
       "Student profiles & belt tracking",
       "Renewal management",

@@ -36,7 +36,13 @@ const VIEW_TITLES: Record<string, string> = {
 };
 
 export const MainDashboard = () => {
-  const [activeView, setActiveView] = useState("home");
+  const [activeView, setActiveView] = useState(
+    () => sessionStorage.getItem("activeView") ?? "home",
+  );
+  const handleViewChange = (view: string) => {
+    setActiveView(view);
+    sessionStorage.setItem("activeView", view);
+  };
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -60,7 +66,7 @@ export const MainDashboard = () => {
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
-      <Sidebar setActive={setActiveView} activeView={activeView} />
+      <Sidebar setActive={handleViewChange} activeView={activeView} />
 
       {/* Main area */}
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
@@ -72,7 +78,7 @@ export const MainDashboard = () => {
             <input
               type="text"
               placeholder="Search..."
-                className="bg-transparent text-sm outline-none text-gray-700 placeholder-gray-500 w-full"
+              className="bg-transparent text-sm outline-none text-gray-700 placeholder-gray-500 w-full"
             />
           </div>
 

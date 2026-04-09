@@ -33,13 +33,14 @@ const NotFound = () => (
 );
 
 const AppContent: React.FC = () => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const location = useLocation();
   useAnalyticsPageTracking();
   const isDashboard = location.pathname.startsWith("/dashboard");
 
   const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     // Navigate (not NavLink) properly redirects unauthenticated users
+    if (loading) return null;
     return user ? <>{children}</> : <Navigate to="/login" replace />;
   };
 
