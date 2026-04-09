@@ -1,36 +1,56 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Check, ArrowRight } from "lucide-react";
+import { Check, ArrowRight, Gift } from "lucide-react";
 import { Button } from "../components/ui/button";
 
 const tiers = [
   {
     name: "Starter",
-    price: { monthly: "Free", annual: "Free" },
-    desc: "For small schools getting started",
-    features: ["Up to 30 students", "Attendance tracking", "Basic student profiles"],
-    cta: "Get Started",
+    monthlyPrice: 39,
+    annualPrice: 35,
+    studentCap: "Up to 75 students",
+    desc: "Perfect for smaller schools getting organized",
+    features: [
+      "Up to 75 students",
+      "Attendance tracking",
+      "Student profiles & belt tracking",
+      "Renewal management",
+      "Sales tracking",
+    ],
+    cta: "Start Free Trial",
     popular: false,
   },
   {
     name: "Growth",
-    price: { monthly: "$29", annual: "$23" },
-    desc: "For growing schools that need more",
+    monthlyPrice: 59,
+    annualPrice: 53,
+    studentCap: "Up to 200 students",
+    desc: "For growing schools that want to save time",
     features: [
-      "Up to 150 students",
-      "Full renewal management",
-      "Sales tracking",
+      "Up to 200 students",
+      "Everything in Starter",
+      "Automated renewal reminders",
       "Parent contacts",
+      "Role-based instructor access",
+      "Data exports",
     ],
     cta: "Start Free Trial",
     popular: true,
   },
   {
     name: "Pro",
-    price: { monthly: "$59", annual: "$47" },
+    monthlyPrice: 79,
+    annualPrice: 71,
+    studentCap: "Unlimited students",
     desc: "For established schools that want it all",
-    features: ["Unlimited students", "All features", "Priority support", "Data exports"],
-    cta: "Contact Us",
+    features: [
+      "Unlimited students",
+      "Everything in Growth",
+      "Priority support",
+      "Multi-location (coming soon)",
+      "Early access to new features",
+    ],
+    cta: "Start Free Trial",
     popular: false,
   },
 ];
@@ -42,7 +62,7 @@ const PricingPage = () => {
     <section className="container py-20 md:py-28">
       <h1 className="text-3xl md:text-5xl font-bold text-center">Simple, transparent pricing</h1>
       <p className="mt-4 text-center text-muted-foreground text-lg">
-        No surprise fees. Cancel anytime.
+        No surprise fees. Cancel anytime. 14-day free trial on all plans.
       </p>
 
       {/* Toggle */}
@@ -64,7 +84,7 @@ const PricingPage = () => {
         <span
           className={`text-sm font-medium ${annual ? "text-foreground" : "text-muted-foreground"}`}
         >
-          Annual <span className="text-primary text-xs font-semibold">Save 20%</span>
+          Annual <span className="text-primary text-xs font-semibold">Save 10%</span>
         </span>
       </div>
 
@@ -80,20 +100,27 @@ const PricingPage = () => {
             }`}
           >
             {tier.popular && (
-              <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-4 py-1 text-xs font-semibold text-primary-foreground">
+              <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-4 py-1 text-xs font-semibold text-primary-foreground whitespace-nowrap">
                 Most Popular
               </span>
             )}
             <h3 className="text-xl font-bold">{tier.name}</h3>
             <p className="mt-1 text-sm text-muted-foreground">{tier.desc}</p>
-            <div className="mt-6">
+
+            <div className="mt-6 flex items-end gap-1">
               <span className="text-4xl font-bold">
-                {annual ? tier.price.annual : tier.price.monthly}
+                ${annual ? tier.annualPrice : tier.monthlyPrice}
               </span>
-              {tier.price.monthly !== "Free" && (
-                <span className="text-muted-foreground text-sm">/mo</span>
-              )}
+              <span className="text-muted-foreground text-sm mb-1">/mo</span>
             </div>
+            {annual && (
+              <p className="text-xs text-primary mt-1">
+                Billed annually (${tier.annualPrice * 12}/yr)
+              </p>
+            )}
+
+            <p className="text-xs text-muted-foreground mt-1">{tier.studentCap}</p>
+
             <ul className="mt-6 flex-1 space-y-3">
               {tier.features.map((f) => (
                 <li key={f} className="flex items-start gap-2 text-sm">
@@ -102,18 +129,30 @@ const PricingPage = () => {
                 </li>
               ))}
             </ul>
-            <Button
-              asChild
-              className="mt-8 w-full"
-              // variant={tier.popular ? "default" : "outline"}
-            >
-              <Link to="/login">{tier.cta}</Link>
+
+            <Button asChild className="mt-8 w-full">
+              <Link to="/signup">{tier.cta}</Link>
             </Button>
           </div>
         ))}
       </div>
 
-      <p className="mt-12 text-center text-muted-foreground">
+      {/* Referral callout */}
+      <div className="mt-16 max-w-2xl mx-auto rounded-xl border border-border bg-card p-6 flex gap-4 items-start">
+        <div className="mt-0.5 text-primary">
+          <Gift size={20} />
+        </div>
+        <div>
+          <p className="font-semibold text-foreground">Refer a school, get a free month</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            For every school you refer that becomes a paying customer, we'll credit one free month
+            to your account. Up to 3 referrals per year — and the school you refer gets their first
+            month free too.
+          </p>
+        </div>
+      </div>
+
+      <p className="mt-10 text-center text-muted-foreground text-sm">
         Have questions?{" "}
         <Link to="/faq" className="text-primary font-medium hover:underline">
           Check out our FAQ <ArrowRight size={14} className="inline" />
