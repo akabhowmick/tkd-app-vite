@@ -1,4 +1,4 @@
-export type PromotionType = 'manual' | 'test';
+export type PromotionType = "manual" | "test";
 
 export interface BeltRank {
   rank_id: string;
@@ -6,6 +6,7 @@ export interface BeltRank {
   rank_name: string;
   rank_order: number;
   color_code: string;
+  stripe_color?: string;
   created_at: string;
   updated_at: string;
 }
@@ -41,6 +42,7 @@ export interface UpdateBeltRankRequest {
   rank_name?: string;
   rank_order?: number;
   color_code?: string;
+  stripe_color?: string;
 }
 
 export interface CreatePromotionRequest {
@@ -53,6 +55,7 @@ export interface CreatePromotionRequest {
   test_score?: number;
   notes?: string;
   promoted_by: string;
+  stripe_color?: string;
 }
 
 export interface StudentWithRank {
