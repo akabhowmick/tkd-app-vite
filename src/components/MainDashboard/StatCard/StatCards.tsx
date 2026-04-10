@@ -75,7 +75,7 @@ const ChangeBadge = ({ change }: { change: number | null | undefined }) => {
   );
 };
 
-export const StatCards = () => {
+export const StatCards = ({ onViewChange }: { onViewChange?: (view: string) => void }) => {
   const schoolData = useSchool();
   const { grouped, recentActivity } = useStudentRenewals();
 
@@ -84,7 +84,7 @@ export const StatCards = () => {
   return (
     <div className="space-y-6">
       {/* Stat grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
         {CARDS.map((card, i) => {
           const raw =
             card.key === "expiring"
@@ -139,15 +139,19 @@ export const StatCards = () => {
         <h2 className="text-base font-semibold text-gray-900 mb-4">Quick Actions</h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: "Take Attendance", color: "bg-blue-600 hover:bg-blue-700" },
-            { label: "Add Student", color: "bg-green-600 hover:bg-green-700" },
-            { label: "New Renewal", color: "bg-purple-600 hover:bg-purple-700" },
-            { label: "View Reports", color: "bg-gray-700 hover:bg-gray-800" },
+            {
+              label: "Take Attendance",
+              color: "bg-blue-600 hover:bg-blue-700",
+              view: "attendance",
+            },
+            { label: "Add Student", color: "bg-green-600 hover:bg-green-700", view: "students" },
+            { label: "New Renewal", color: "bg-purple-600 hover:bg-purple-700", view: "renewals" },
+            { label: "View Reports", color: "bg-gray-700 hover:bg-gray-800", view: "reporting" },
           ].map((action) => (
             <button
               key={action.label}
+              onClick={() => onViewChange?.(action.view)}
               className={`${action.color} text-white text-sm font-medium py-2.5 px-4 rounded-lg transition-colors`}
-              // onClick={}
             >
               {action.label}
             </button>

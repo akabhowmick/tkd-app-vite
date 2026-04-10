@@ -57,18 +57,8 @@ export interface Parent extends BaseUser {
 export interface Student extends UserProfile {
   role: "Student";
   age?: number; // Age of the student
-  current_rank_id?: BeltLevel; // Taekwondo belt level
+  current_rank_id?: string; // Taekwondo belt level
   parentId?: string; // Parent's ID (if applicable)
-}
-
-// Enum for Belt Levels
-export enum BeltLevel {
-  White = "White",
-  Yellow = "Yellow",
-  Green = "Green",
-  Blue = "Blue",
-  Red = "Red",
-  Black = "Black",
 }
 
 // Instructor Interface

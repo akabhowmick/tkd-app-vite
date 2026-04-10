@@ -53,7 +53,7 @@ export const MainDashboard = () => {
   };
 
   const renderContent = () => {
-    if (activeView === "home") return <StatCards />;
+    if (activeView === "home") return <StatCards onViewChange={handleViewChange} />;
     const Component = VIEW_COMPONENTS[activeView as keyof typeof VIEW_COMPONENTS];
     return Component ? (
       <Component />

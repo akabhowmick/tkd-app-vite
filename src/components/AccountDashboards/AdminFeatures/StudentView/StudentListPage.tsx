@@ -87,6 +87,7 @@ export const StudentListPage = () => {
             <th className="p-3">Name</th>
             <th className="p-3">Email</th>
             <th className="p-3">Phone</th>
+            <th className="p-3">Belt</th>
             <th className="p-3">Actions</th>
           </tr>
         </thead>
@@ -103,6 +104,7 @@ export const StudentListPage = () => {
                 <td className="p-3">{student.name}</td>
                 <td className="p-3">{student.email}</td>
                 <td className="p-3">{student.phone || "N/A"}</td>
+                <td className="p-3">{student.current_rank_id ?? ""}</td>
                 <td className="p-3 space-x-2">
                   <button
                     onClick={() => handleEdit(student)}
