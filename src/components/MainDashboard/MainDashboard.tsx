@@ -9,8 +9,10 @@ import { TakeAttendance } from "../AccountDashboards/AdminFeatures/AttendanceRec
 import { ClassSchedulingPage } from "../../pages/ClassSchedulingPage";
 import { BeltTrackingPage } from "../../pages/BeltTrackingPage";
 import { InventoryPage } from "../../pages/InventoryPage";
+import { ProfilePage } from "./UserProfile/ProfilePage";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { SettingsPage } from "./UserProfile/SettingsPage";
 
 const VIEW_COMPONENTS = {
   school: SchoolManagement,
@@ -20,6 +22,8 @@ const VIEW_COMPONENTS = {
   classes: ClassSchedulingPage,
   belts: BeltTrackingPage,
   inventory: InventoryPage,
+  profile: ProfilePage,
+  settings: SettingsPage,
 } as const;
 
 const VIEW_TITLES: Record<string, string> = {
@@ -32,6 +36,7 @@ const VIEW_TITLES: Record<string, string> = {
   belts: "Belt Tracking",
   inventory: "Inventory Management",
   reporting: "Reporting",
+  profile: "My Profile",
   settings: "Settings",
 };
 
@@ -68,11 +73,9 @@ export const MainDashboard = () => {
     <div className="flex h-screen overflow-hidden bg-gray-50">
       <Sidebar setActive={handleViewChange} activeView={activeView} />
 
-      {/* Main area */}
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-        {/* Fixed top header */}
+        {/* Header */}
         <header className="flex items-center justify-between h-16 px-6 bg-white border-b border-gray-200 shrink-0 z-20">
-          {/* Search */}
           <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-2 w-72">
             <Search size={16} className="text-gray-500" />
             <input
@@ -82,15 +85,12 @@ export const MainDashboard = () => {
             />
           </div>
 
-          {/* Right side */}
           <div className="flex items-center gap-3">
-            {/* Bell */}
             <button className="relative p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors">
               <Bell size={18} />
               <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-primary" />
             </button>
 
-            {/* User dropdown */}
             <div className="relative">
               <button
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
@@ -114,8 +114,14 @@ export const MainDashboard = () => {
                       <p className="text-xs text-gray-500 truncate">{user?.email}</p>
                     </div>
                     <div className="py-1">
-                      <button className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                        <User size={14} /> My Account
+                      <button
+                        onClick={() => {
+                          handleViewChange("profile");
+                          setUserMenuOpen(false);
+                        }}
+                        className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                      >
+                        <User size={14} /> My Profile
                       </button>
                       <button
                         onClick={handleLogout}
@@ -131,7 +137,7 @@ export const MainDashboard = () => {
           </div>
         </header>
 
-        {/* Page hero title bar */}
+        {/* Breadcrumb + title */}
         <div className="bg-gray-50 border-b border-gray-200 px-6 py-4 shrink-0">
           <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
             <span>Dashboard</span>
@@ -147,9 +153,10 @@ export const MainDashboard = () => {
           </h1>
         </div>
 
-        {/* Scrollable content */}
         <main className="flex-1 overflow-y-auto p-6">{renderContent()}</main>
       </div>
     </div>
   );
 };
+
+// A few notes on the photo upload: you'll need a avatars storage bucket in Supabase set to public. If you haven't created one yet, go to Storage in your Supabase dashboard and create a bucket called avatars with public access.

@@ -35,6 +35,7 @@ export interface BaseUser {
   profilePicture?: string; // Optional profile picture URL
   createdAt?: Date; // Account creation timestamp
   schoolId?: string; // Reference to the school the user belongs to
+  avatar_url?: string;
 }
 
 // Enum for User Roles
