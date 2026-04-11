@@ -1,28 +1,14 @@
 import { supabase } from "../supabase";
 import {
   Class,
+  ClassRow,
   ClassSession,
   ClassWithSessions,
-  CreateClassRequest,
+  CreateClassPayload,
   CreateSessionRequest,
   UpdateClassRequest,
   UpdateSessionRequest,
 } from "../../types/classes";
-
-// ─────────────────────────────────────────────
-// Classes
-// ─────────────────────────────────────────────
-
-export async function getClasses(schoolId: string): Promise<Class[]> {
-  const { data, error } = await supabase
-    .from("classes")
-    .select("*")
-    .eq("school_id", schoolId)
-    .order("class_name");
-
-  if (error) throw error;
-  return data || [];
-}
 
 export async function getClassById(classId: string): Promise<Class> {
   const { data, error } = await supabase
@@ -58,21 +44,10 @@ export async function getClassesWithSessions(schoolId: string): Promise<ClassWit
         ...cls,
         sessions: sessions || [],
       };
-    })
+    }),
   );
 
   return classesWithSessions;
-}
-
-export async function createClass(classData: CreateClassRequest): Promise<Class> {
-  const { data, error } = await supabase
-    .from("classes")
-    .insert(classData)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
 }
 
 export async function updateClass(classId: string, updates: UpdateClassRequest): Promise<Class> {
@@ -86,19 +61,6 @@ export async function updateClass(classId: string, updates: UpdateClassRequest):
   if (error) throw error;
   return data;
 }
-
-export async function deleteClass(classId: string): Promise<void> {
-  const { error } = await supabase
-    .from("classes")
-    .delete()
-    .eq("class_id", classId);
-
-  if (error) throw error;
-}
-
-// ─────────────────────────────────────────────
-// Class Sessions
-// ─────────────────────────────────────────────
 
 export async function getSessions(classId: string): Promise<ClassSession[]> {
   const { data, error } = await supabase
@@ -133,7 +95,10 @@ export async function createSession(sessionData: CreateSessionRequest): Promise<
   return data;
 }
 
-export async function updateSession(sessionId: string, updates: UpdateSessionRequest): Promise<ClassSession> {
+export async function updateSession(
+  sessionId: string,
+  updates: UpdateSessionRequest,
+): Promise<ClassSession> {
   const { data, error } = await supabase
     .from("class_sessions")
     .update(updates)
@@ -146,10 +111,29 @@ export async function updateSession(sessionId: string, updates: UpdateSessionReq
 }
 
 export async function deleteSession(sessionId: string): Promise<void> {
-  const { error } = await supabase
-    .from("class_sessions")
-    .delete()
-    .eq("session_id", sessionId);
+  const { error } = await supabase.from("class_sessions").delete().eq("session_id", sessionId);
 
+  if (error) throw error;
+}
+
+export async function getClasses(schoolId: string): Promise<ClassRow[]> {
+  const { data, error } = await supabase
+    .from("classes")
+    .select("*")
+    .eq("school_id", schoolId)
+    .order("day_of_week")
+    .order("start_time");
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function createClass(payload: CreateClassPayload): Promise<ClassRow> {
+  const { data, error } = await supabase.from("classes").insert(payload).select().single();
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteClass(classId: string): Promise<void> {
+  const { error } = await supabase.from("classes").delete().eq("class_id", classId);
   if (error) throw error;
 }

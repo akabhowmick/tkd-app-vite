@@ -1,5 +1,5 @@
-export type AgeGroup = 'Kids' | 'Adults' | 'All';
-export type SessionType = 'recurring' | 'one-off';
+export type AgeGroup = "Kids" | "Adults" | "All";
+export type SessionType = "recurring" | "one-off";
 
 export interface Class {
   class_id: string;
@@ -62,3 +62,19 @@ export interface UpdateSessionRequest {
 export interface ClassWithSessions extends Class {
   sessions: ClassSession[];
 }
+
+export type ClassRow = {
+  class_id: string;
+  school_id: string;
+  class_name: string;
+  age_group: "Kids" | "Adults" | "All";
+  instructor: string;
+  created_at: string;
+};
+
+export type CreateClassPayload = {
+  school_id: string;
+  class_name: string;
+  age_group: AgeGroup;
+  instructor: string;
+};

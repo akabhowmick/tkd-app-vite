@@ -7,19 +7,21 @@ import { AppFormModal, AppModal, ModalField, InfoBox } from "../../../ui/modal";
 import { Input } from "../../../ui/input";
 import { Button } from "../../../ui/button";
 import { Trash2, Plus, BookOpen } from "lucide-react";
+import { useBelts } from "../../../../context/BeltContext";
 
 const MAX_BULK_STUDENTS = 20;
 
-type SingleForm = { name: string; email: string; phone: string };
-type BulkRow = { name: string; email: string; phone: string };
+type SingleForm = { name: string; email: string; phone: string; current_rank_id: string };
+type BulkRow = { name: string; email: string; phone: string; current_rank_id: string };
 type ModalMode = "closed" | "select" | "single" | "bulk" | "result";
 type ResultState = { success: boolean; message: string; subMessage?: string };
 
-const emptyBulkRow = (): BulkRow => ({ name: "", email: "", phone: "" });
+const emptyBulkRow = (): BulkRow => ({ name: "", email: "", phone: "", current_rank_id: "" });
 const emptySingleForm = (prefill?: Partial<Student>): SingleForm => ({
   name: prefill?.name ?? "",
   email: prefill?.email ?? "",
   phone: prefill?.phone ?? "",
+  current_rank_id: prefill?.current_rank_id ?? "",
 });
 
 export const HandleAddOrEdit: React.FC<HandleAddOrEditProps> = ({
@@ -32,6 +34,7 @@ export const HandleAddOrEdit: React.FC<HandleAddOrEditProps> = ({
   loadStudents,
 }) => {
   const { schoolId } = useSchool();
+  const { ranks } = useBelts();
   const isEdit = !!student;
 
   const [mode, setMode] = useState<ModalMode>("closed");
@@ -73,7 +76,10 @@ export const HandleAddOrEdit: React.FC<HandleAddOrEditProps> = ({
       email: singleForm.email,
       phone: singleForm.phone,
     });
-    if (validationError) { setSingleError(validationError); return; }
+    if (validationError) {
+      setSingleError(validationError);
+      return;
+    }
 
     setSingleLoading(true);
     try {
@@ -83,6 +89,7 @@ export const HandleAddOrEdit: React.FC<HandleAddOrEditProps> = ({
         phone: singleForm.phone.trim(),
         role: "Student",
         school_id: schoolId,
+        current_rank_id: singleForm.current_rank_id || undefined,
       };
 
       if (isEdit && updateStudent && student) {
@@ -114,11 +121,17 @@ export const HandleAddOrEdit: React.FC<HandleAddOrEditProps> = ({
     setBulkError(null);
 
     const toSubmit = bulkRows.filter((r) => r.name || r.email || r.phone);
-    if (toSubmit.length === 0) { setBulkError("Please fill in at least one student."); return; }
+    if (toSubmit.length === 0) {
+      setBulkError("Please fill in at least one student.");
+      return;
+    }
 
     for (let i = 0; i < toSubmit.length; i++) {
       const err = validateFormData(toSubmit[i]);
-      if (err) { setBulkError(`Row ${i + 1}: ${err}`); return; }
+      if (err) {
+        setBulkError(`Row ${i + 1}: ${err}`);
+        return;
+      }
     }
 
     setBulkLoading(true);
@@ -133,6 +146,7 @@ export const HandleAddOrEdit: React.FC<HandleAddOrEditProps> = ({
             phone: s.phone.trim(),
             role: "Student",
             school_id: schoolId,
+            current_rank_id: s.current_rank_id || undefined,
           } as Omit<Student, "id">);
         }
       } catch {
@@ -189,14 +203,23 @@ export const HandleAddOrEdit: React.FC<HandleAddOrEditProps> = ({
         title="Add Students"
         description="Would you like to add a single student or multiple at once?"
         size="compact"
-        onSubmit={(e) => { e.preventDefault(); setMode("single"); setSingleForm(emptySingleForm()); setSingleError(null); }}
+        onSubmit={(e) => {
+          e.preventDefault();
+          setMode("single");
+          setSingleForm(emptySingleForm());
+          setSingleError(null);
+        }}
         submitLabel="Single Student"
         footerLeft={
           <Button
             type="button"
             variant="secondary"
             size="sm"
-            onClick={() => { setMode("bulk"); setBulkRows([emptyBulkRow()]); setBulkError(null); }}
+            onClick={() => {
+              setMode("bulk");
+              setBulkRows([emptyBulkRow()]);
+              setBulkError(null);
+            }}
           >
             Bulk Add
           </Button>
@@ -255,6 +278,23 @@ export const HandleAddOrEdit: React.FC<HandleAddOrEditProps> = ({
             onChange={(e) => setSingleForm((f) => ({ ...f, phone: e.target.value }))}
           />
         </ModalField>
+        <ModalField label="Belt Rank" htmlFor="swal-belt" helper="Optional">
+          <select
+            id="swal-belt"
+            value={singleForm.current_rank_id}
+            onChange={(e) => setSingleForm((f) => ({ ...f, current_rank_id: e.target.value }))}
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
+            <option value="">No belt assigned</option>
+            {ranks
+              .sort((a, b) => a.rank_order - b.rank_order)
+              .map((r) => (
+                <option key={r.rank_id} value={r.rank_id}>
+                  {r.rank_name}
+                </option>
+              ))}
+          </select>
+        </ModalField>
       </AppFormModal>
 
       {/* ── Bulk add modal ── */}
@@ -288,16 +328,26 @@ export const HandleAddOrEdit: React.FC<HandleAddOrEditProps> = ({
         />
         <div className="flex flex-col gap-3 mt-1">
           {/* Column headers */}
-          <div className="grid grid-cols-[1fr_1fr_1fr_2rem] gap-2 px-1">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Name *</span>
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Email *</span>
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Phone</span>
+          <div className="grid grid-cols-[1fr_1fr_1fr_1fr_2rem] gap-2 px-1">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+              Name *
+            </span>
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+              Email *
+            </span>
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+              Phone
+            </span>
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+              Belt
+            </span>
             <span />
           </div>
           {bulkRows.map((row, idx) => (
+            // Update each row div
             <div
               key={idx}
-              className="grid grid-cols-[1fr_1fr_1fr_2rem] gap-2 items-center p-3 rounded-lg border border-border bg-muted/20"
+              className="grid grid-cols-[1fr_1fr_1fr_1fr_2rem] gap-2 items-center p-3 rounded-lg border border-border bg-muted/20"
             >
               <Input
                 type="text"
@@ -317,6 +367,20 @@ export const HandleAddOrEdit: React.FC<HandleAddOrEditProps> = ({
                 value={row.phone}
                 onChange={(e) => updateBulkRow(idx, "phone", e.target.value)}
               />
+              <select
+                value={row.current_rank_id}
+                onChange={(e) => updateBulkRow(idx, "current_rank_id", e.target.value)}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <option value="">No belt</option>
+                {ranks
+                  .sort((a, b) => a.rank_order - b.rank_order)
+                  .map((r) => (
+                    <option key={r.rank_id} value={r.rank_id}>
+                      {r.rank_name}
+                    </option>
+                  ))}
+              </select>
               <button
                 type="button"
                 onClick={() => removeBulkRow(idx)}

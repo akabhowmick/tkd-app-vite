@@ -4,21 +4,27 @@ import { AgeGroup, SessionType } from "../types/classes";
 import { FaPlus, FaTrash, FaClock, FaUsers } from "react-icons/fa";
 import { AppFormModal, AppConfirmModal, ModalField } from "../components/ui/modal";
 import { Input } from "../components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
 
 const DAYS_OF_WEEK = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
-const CLASS_COLORS = [
-  { value: "#3b82f6", label: "Blue" },
-  { value: "#10b981", label: "Green" },
-  { value: "#f59e0b", label: "Amber" },
-  { value: "#ef4444", label: "Red" },
-  { value: "#8b5cf6", label: "Purple" },
-  { value: "#ec4899", label: "Pink" },
-  { value: "#06b6d4", label: "Cyan" },
-];
+type ClassForm = {
+  class_name: string;
+  age_group: AgeGroup;
+  instructor: string;
+  session_type: SessionType;
+  day_of_week: string;
+  specific_date: string;
+  start_time: string;
+  end_time: string;
+};
 
-type ClassForm = { class_name: string; age_group: AgeGroup; instructor: string; color: string };
 type RecurringForm = { day_of_week: string; start_time: string; end_time: string };
 type OneOffForm = { specific_date: string; start_time: string; end_time: string };
 
@@ -26,7 +32,11 @@ const emptyClassForm = (): ClassForm => ({
   class_name: "",
   age_group: "Kids",
   instructor: "",
-  color: "#3b82f6",
+  session_type: "recurring",
+  day_of_week: "1",
+  specific_date: "",
+  start_time: "",
+  end_time: "",
 });
 const emptyRecurring = (): RecurringForm => ({ day_of_week: "1", start_time: "", end_time: "" });
 const emptyOneOff = (): OneOffForm => ({ specific_date: "", start_time: "", end_time: "" });
@@ -42,7 +52,9 @@ export const ClassSchedulingPage = () => {
 
   // ── Add session modals ─────────────────────────────────────────────────────
   const [sessionTypeModal, setSessionTypeModal] = useState<{
-    open: boolean; classId: string; className: string;
+    open: boolean;
+    classId: string;
+    className: string;
   }>({ open: false, classId: "", className: "" });
   const [sessionType, setSessionType] = useState<SessionType | "">("");
 
@@ -58,27 +70,61 @@ export const ClassSchedulingPage = () => {
 
   // ── Delete confirms ────────────────────────────────────────────────────────
   const [deleteClassConfirm, setDeleteClassConfirm] = useState<{
-    open: boolean; classId: string; className: string; loading: boolean;
+    open: boolean;
+    classId: string;
+    className: string;
+    loading: boolean;
   }>({ open: false, classId: "", className: "", loading: false });
 
   const [deleteSessionConfirm, setDeleteSessionConfirm] = useState<{
-    open: boolean; sessionId: string; loading: boolean;
+    open: boolean;
+    sessionId: string;
+    loading: boolean;
   }>({ open: false, sessionId: "", loading: false });
 
   // ── Handlers ───────────────────────────────────────────────────────────────
   const handleCreateClass = async (e: React.FormEvent) => {
     e.preventDefault();
     setClassError(null);
-    if (!classForm.class_name.trim()) { setClassError("Class name is required."); return; }
-    if (!classForm.instructor.trim()) { setClassError("Instructor is required."); return; }
+    if (!classForm.class_name.trim()) {
+      setClassError("Class name is required.");
+      return;
+    }
+    if (!classForm.instructor.trim()) {
+      setClassError("Instructor is required.");
+      return;
+    }
+    if (!classForm.start_time) {
+      setClassError("Start time is required.");
+      return;
+    }
+    if (!classForm.end_time) {
+      setClassError("End time is required.");
+      return;
+    }
+    if (classForm.session_type === "one-off" && !classForm.specific_date) {
+      setClassError("Date is required.");
+      return;
+    }
+
     setClassLoading(true);
     try {
-      await createClass({
+      const newClass = await createClass({
         class_name: classForm.class_name.trim(),
         age_group: classForm.age_group,
         instructor: classForm.instructor.trim(),
-        color: classForm.color,
       });
+
+      await createSession({
+        class_id: newClass.class_id,
+        session_type: classForm.session_type,
+        ...(classForm.session_type === "recurring"
+          ? { day_of_week: parseInt(classForm.day_of_week) }
+          : { specific_date: classForm.specific_date }),
+        start_time: classForm.start_time,
+        end_time: classForm.end_time,
+      });
+
       setClassModalOpen(false);
       setClassForm(emptyClassForm());
     } catch (err) {
@@ -111,8 +157,14 @@ export const ClassSchedulingPage = () => {
   const handleAddRecurring = async (e: React.FormEvent) => {
     e.preventDefault();
     setRecurringError(null);
-    if (!recurringForm.start_time) { setRecurringError("Start time is required."); return; }
-    if (!recurringForm.end_time) { setRecurringError("End time is required."); return; }
+    if (!recurringForm.start_time) {
+      setRecurringError("Start time is required.");
+      return;
+    }
+    if (!recurringForm.end_time) {
+      setRecurringError("End time is required.");
+      return;
+    }
     setRecurringLoading(true);
     try {
       await createSession({
@@ -133,9 +185,18 @@ export const ClassSchedulingPage = () => {
   const handleAddOneOff = async (e: React.FormEvent) => {
     e.preventDefault();
     setOneOffError(null);
-    if (!oneOffForm.specific_date) { setOneOffError("Date is required."); return; }
-    if (!oneOffForm.start_time) { setOneOffError("Start time is required."); return; }
-    if (!oneOffForm.end_time) { setOneOffError("End time is required."); return; }
+    if (!oneOffForm.specific_date) {
+      setOneOffError("Date is required.");
+      return;
+    }
+    if (!oneOffForm.start_time) {
+      setOneOffError("Start time is required.");
+      return;
+    }
+    if (!oneOffForm.end_time) {
+      setOneOffError("End time is required.");
+      return;
+    }
     setOneOffLoading(true);
     try {
       await createSession({
@@ -185,7 +246,11 @@ export const ClassSchedulingPage = () => {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-gray-900">Class Scheduling</h1>
           <button
-            onClick={() => { setClassForm(emptyClassForm()); setClassError(null); setClassModalOpen(true); }}
+            onClick={() => {
+              setClassForm(emptyClassForm());
+              setClassError(null);
+              setClassModalOpen(true);
+            }}
             className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
           >
             <FaPlus /> New Class
@@ -196,9 +261,14 @@ export const ClassSchedulingPage = () => {
           <div className="bg-white rounded-lg shadow p-8 text-center">
             <FaUsers className="mx-auto text-gray-300 text-5xl mb-4" />
             <h2 className="text-xl font-semibold text-gray-700 mb-2">No Classes Yet</h2>
-            <p className="text-gray-500 mb-4">Create your first class to get started with scheduling</p>
+            <p className="text-gray-500 mb-4">
+              Create your first class to get started with scheduling
+            </p>
             <button
-              onClick={() => { setClassForm(emptyClassForm()); setClassModalOpen(true); }}
+              onClick={() => {
+                setClassForm(emptyClassForm());
+                setClassModalOpen(true);
+              }}
               className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
             >
               Create First Class
@@ -309,7 +379,9 @@ export const ClassSchedulingPage = () => {
             value={classForm.age_group}
             onValueChange={(v) => setClassForm((f) => ({ ...f, age_group: v as AgeGroup }))}
           >
-            <SelectTrigger id="age-group"><SelectValue /></SelectTrigger>
+            <SelectTrigger id="age-group">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="Kids">Kids</SelectItem>
               <SelectItem value="Adults">Adults</SelectItem>
@@ -325,33 +397,70 @@ export const ClassSchedulingPage = () => {
             onChange={(e) => setClassForm((f) => ({ ...f, instructor: e.target.value }))}
           />
         </ModalField>
-        <ModalField label="Color" required htmlFor="class-color">
-          <div className="flex items-center gap-3">
-            <div
-              className="h-8 w-8 rounded-md border border-border shrink-0"
-              style={{ backgroundColor: classForm.color }}
-            />
+
+        {/* Session fields */}
+        <ModalField label="Schedule Type" required htmlFor="session-type">
+          <Select
+            value={classForm.session_type}
+            onValueChange={(v) => setClassForm((f) => ({ ...f, session_type: v as SessionType }))}
+          >
+            <SelectTrigger id="session-type">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="recurring">Recurring (Weekly)</SelectItem>
+              <SelectItem value="one-off">One-off Session</SelectItem>
+            </SelectContent>
+          </Select>
+        </ModalField>
+
+        {classForm.session_type === "recurring" ? (
+          <ModalField label="Day of Week" required htmlFor="day-of-week">
             <Select
-              value={classForm.color}
-              onValueChange={(v) => setClassForm((f) => ({ ...f, color: v }))}
+              value={classForm.day_of_week}
+              onValueChange={(v) => setClassForm((f) => ({ ...f, day_of_week: v }))}
             >
-              <SelectTrigger id="class-color" className="flex-1"><SelectValue /></SelectTrigger>
+              <SelectTrigger id="day-of-week">
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
-                {CLASS_COLORS.map((c) => (
-                  <SelectItem key={c.value} value={c.value}>
-                    <span className="flex items-center gap-2">
-                      <span
-                        className="inline-block h-3 w-3 rounded-sm"
-                        style={{ backgroundColor: c.value }}
-                      />
-                      {c.label}
-                    </span>
+                {DAYS_OF_WEEK.map((day, idx) => (
+                  <SelectItem key={idx} value={String(idx)}>
+                    {day}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-          </div>
-        </ModalField>
+          </ModalField>
+        ) : (
+          <ModalField label="Date" required htmlFor="specific-date">
+            <Input
+              id="specific-date"
+              type="date"
+              value={classForm.specific_date}
+              onChange={(e) => setClassForm((f) => ({ ...f, specific_date: e.target.value }))}
+            />
+          </ModalField>
+        )}
+
+        <div className="grid grid-cols-2 gap-4">
+          <ModalField label="Start Time" required htmlFor="start-time">
+            <Input
+              id="start-time"
+              type="time"
+              value={classForm.start_time}
+              onChange={(e) => setClassForm((f) => ({ ...f, start_time: e.target.value }))}
+            />
+          </ModalField>
+          <ModalField label="End Time" required htmlFor="end-time">
+            <Input
+              id="end-time"
+              type="time"
+              value={classForm.end_time}
+              onChange={(e) => setClassForm((f) => ({ ...f, end_time: e.target.value }))}
+            />
+          </ModalField>
+        </div>
       </AppFormModal>
 
       {/* ── Session Type Modal ── */}
@@ -392,10 +501,14 @@ export const ClassSchedulingPage = () => {
             value={recurringForm.day_of_week}
             onValueChange={(v) => setRecurringForm((f) => ({ ...f, day_of_week: v }))}
           >
-            <SelectTrigger id="day-of-week"><SelectValue /></SelectTrigger>
+            <SelectTrigger id="day-of-week">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               {DAYS_OF_WEEK.map((day, idx) => (
-                <SelectItem key={idx} value={String(idx)}>{day}</SelectItem>
+                <SelectItem key={idx} value={String(idx)}>
+                  {day}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>

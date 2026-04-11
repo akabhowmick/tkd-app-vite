@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useCallback, ReactNode, useEffect 
 import { track } from "../analytics/posthog";
 import { captureException } from "../analytics/sentry";
 import {
-  Class,
+  ClassRow,
   ClassSession,
   ClassWithSessions,
   CreateClassRequest,
@@ -26,7 +26,7 @@ interface ClassContextType {
   loading: boolean;
   error: string | null;
   loadClasses: () => Promise<void>;
-  createClass: (data: Omit<CreateClassRequest, "school_id">) => Promise<Class>;
+  createClass: (data: Omit<CreateClassRequest, "school_id">) => Promise<ClassRow>;
   updateClass: (classId: string, updates: UpdateClassRequest) => Promise<void>;
   deleteClass: (classId: string) => Promise<void>;
   createSession: (data: Omit<CreateSessionRequest, "school_id">) => Promise<ClassSession>;
@@ -60,7 +60,7 @@ export const ClassProvider = ({ children }: { children: ReactNode }) => {
   }, [schoolId]);
 
   const createClass = useCallback(
-    async (data: Omit<CreateClassRequest, "school_id">): Promise<Class> => {
+    async (data: Omit<CreateClassRequest, "school_id">): Promise<ClassRow> => {
       if (!schoolId) throw new Error("School ID required");
 
       try {
@@ -207,6 +207,7 @@ export const ClassProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useClasses = (): ClassContextType => {
   const context = useContext(ClassContext);
   if (!context) {

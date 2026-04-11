@@ -105,7 +105,7 @@ export const StudentListPage = () => {
                 <td className="p-3">{student.email}</td>
                 <td className="p-3">{student.phone || "N/A"}</td>
                 <td className="p-3">{student.current_rank_id ?? ""}</td>
-                <td className="p-3 space-x-2">
+                <td className="p-3">
                   <button
                     onClick={() => handleEdit(student)}
                     className="text-blue-600 hover:underline focus:outline-none"
