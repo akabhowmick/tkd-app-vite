@@ -30,8 +30,6 @@ export interface CreateClassRequest {
   school_id: string;
   class_name: string;
   age_group: AgeGroup;
-  instructor: string;
-  color?: string;
 }
 
 export interface UpdateClassRequest {
@@ -68,7 +66,6 @@ export type ClassRow = {
   school_id: string;
   class_name: string;
   age_group: "Kids" | "Adults" | "All";
-  instructor: string;
   created_at: string;
 };
 
@@ -76,5 +73,4 @@ export type CreateClassPayload = {
   school_id: string;
   class_name: string;
   age_group: AgeGroup;
-  instructor: string;
 };

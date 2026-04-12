@@ -1,3 +1,5 @@
+// TODO refactor
+
 import { useState } from "react";
 import { useBelts } from "../context/BeltContext";
 import { useSchool } from "../context/SchoolContext";
@@ -5,8 +7,28 @@ import { PromotionType } from "../types/belts";
 import { FaPlus, FaTrophy, FaTrash, FaMedal } from "react-icons/fa";
 import { AppFormModal, AppConfirmModal, ModalField, InfoBox } from "../components/ui/modal";
 import { Input } from "../components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
 import { Textarea } from "../components/ui/textarea";
+
+const BeltPreview = ({ color, stripe }: { color: string; stripe?: string | null }) => (
+  <div className="h-8 w-8 rounded-md border border-border shrink-0 overflow-hidden flex flex-col">
+    {stripe ? (
+      <>
+        <div className="flex-1" style={{ backgroundColor: color }} />
+        <div className="flex-1" style={{ backgroundColor: stripe }} />
+        <div className="flex-1" style={{ backgroundColor: color }} />
+      </>
+    ) : (
+      <div className="h-full w-full" style={{ backgroundColor: color }} />
+    )}
+  </div>
+);
 
 const BELT_COLORS = [
   { value: "#FFFFFF", label: "White" },
@@ -20,7 +42,20 @@ const BELT_COLORS = [
   { value: "#000000", label: "Black" },
 ];
 
-type RankForm = { rank_name: string; rank_order: string; color_code: string };
+type RankForm = {
+  rank_name: string;
+  rank_order: string;
+  color_code: string;
+  stripe_color: string | null;
+};
+
+const emptyRankForm = (): RankForm => ({
+  rank_name: "",
+  rank_order: "1",
+  color_code: "#FFFFFF",
+  stripe_color: "",
+});
+
 type PromoForm = {
   student_id: string;
   to_rank_id: string;
@@ -31,7 +66,6 @@ type PromoForm = {
   notes: string;
 };
 
-const emptyRankForm = (): RankForm => ({ rank_name: "", rank_order: "1", color_code: "#FFFFFF" });
 const emptyPromoForm = (): PromoForm => ({
   student_id: "",
   to_rank_id: "",
@@ -43,8 +77,15 @@ const emptyPromoForm = (): PromoForm => ({
 });
 
 export const BeltTrackingPage = () => {
-  const { ranks, promotions, loading, createRank, deleteRank, promoteStudent, deletePromotionRecord } =
-    useBelts();
+  const {
+    ranks,
+    promotions,
+    loading,
+    createRank,
+    deleteRank,
+    promoteStudent,
+    deletePromotionRecord,
+  } = useBelts();
   const { students } = useSchool();
   const [activeTab, setActiveTab] = useState<"ranks" | "promotions">("ranks");
 
@@ -88,6 +129,7 @@ export const BeltTrackingPage = () => {
         rank_name: rankForm.rank_name.trim(),
         rank_order: parseInt(rankForm.rank_order) || 1,
         color_code: rankForm.color_code,
+        stripe_color: rankForm.stripe_color || undefined,
       });
       setRankModalOpen(false);
       setRankForm(emptyRankForm());
@@ -101,9 +143,18 @@ export const BeltTrackingPage = () => {
   const handlePromoteStudent = async (e: React.FormEvent) => {
     e.preventDefault();
     setPromoError(null);
-    if (!promoForm.student_id) { setPromoError("Please select a student."); return; }
-    if (!promoForm.to_rank_id) { setPromoError("Please select a target rank."); return; }
-    if (!promoForm.promoted_by.trim()) { setPromoError("Promoted By is required."); return; }
+    if (!promoForm.student_id) {
+      setPromoError("Please select a student.");
+      return;
+    }
+    if (!promoForm.to_rank_id) {
+      setPromoError("Please select a target rank.");
+      return;
+    }
+    if (!promoForm.promoted_by.trim()) {
+      setPromoError("Promoted By is required.");
+      return;
+    }
 
     const student = students.find((s) => s.id === promoForm.student_id);
     const currentRank = student ? ranks.find((r) => r.rank_id === student.current_rank_id) : null;
@@ -167,13 +218,21 @@ export const BeltTrackingPage = () => {
           <h1 className="text-3xl font-bold text-gray-900">Belt Tracking</h1>
           <div className="flex gap-2">
             <button
-              onClick={() => { setPromoForm(emptyPromoForm()); setPromoError(null); setPromoModalOpen(true); }}
+              onClick={() => {
+                setPromoForm(emptyPromoForm());
+                setPromoError(null);
+                setPromoModalOpen(true);
+              }}
               className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
             >
               <FaTrophy /> Promote Student
             </button>
             <button
-              onClick={() => { setRankForm(emptyRankForm()); setRankError(null); setRankModalOpen(true); }}
+              onClick={() => {
+                setRankForm(emptyRankForm());
+                setRankError(null);
+                setRankModalOpen(true);
+              }}
               className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
             >
               <FaPlus /> New Rank
@@ -213,7 +272,10 @@ export const BeltTrackingPage = () => {
                   <h2 className="text-xl font-semibold text-gray-700 mb-2">No Belt Ranks Yet</h2>
                   <p className="text-gray-500 mb-4">Create your first belt rank to get started</p>
                   <button
-                    onClick={() => { setRankForm(emptyRankForm()); setRankModalOpen(true); }}
+                    onClick={() => {
+                      setRankForm(emptyRankForm());
+                      setRankModalOpen(true);
+                    }}
                     className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
                   >
                     Create First Rank
@@ -338,10 +400,7 @@ export const BeltTrackingPage = () => {
         </ModalField>
         <ModalField label="Color" required htmlFor="color-code">
           <div className="flex items-center gap-3">
-            <div
-              className="h-8 w-8 rounded-md border border-border shrink-0"
-              style={{ backgroundColor: rankForm.color_code }}
-            />
+            <BeltPreview color={rankForm.color_code} stripe={rankForm.stripe_color} />
             <Select
               value={rankForm.color_code}
               onValueChange={(v) => setRankForm((f) => ({ ...f, color_code: v }))}
@@ -350,6 +409,39 @@ export const BeltTrackingPage = () => {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
+                {BELT_COLORS.map((c) => (
+                  <SelectItem key={c.value} value={c.value}>
+                    <span className="flex items-center gap-2">
+                      <span
+                        className="inline-block h-3 w-3 rounded-sm border border-border"
+                        style={{ backgroundColor: c.value }}
+                      />
+                      {c.label}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </ModalField>
+
+        <ModalField
+          label="Stripe Color"
+          htmlFor="stripe-color"
+          helper="Optional — for in-between ranks (e.g. red-white-red)"
+        >
+          <div className="flex items-center gap-3">
+            <Select
+              value={rankForm.stripe_color || "none"}
+              onValueChange={(v) =>
+                setRankForm((f) => ({ ...f, stripe_color: v === "none" ? "" : v }))
+              }
+            >
+              <SelectTrigger id="stripe-color" className="flex-1">
+                <SelectValue placeholder="No stripe" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No stripe</SelectItem>
                 {BELT_COLORS.map((c) => (
                   <SelectItem key={c.value} value={c.value}>
                     <span className="flex items-center gap-2">
@@ -397,10 +489,7 @@ export const BeltTrackingPage = () => {
         </ModalField>
 
         {selectedStudent && (
-          <InfoBox
-            title="Current Rank"
-            subtitle={currentRank?.rank_name ?? "None"}
-          />
+          <InfoBox title="Current Rank" subtitle={currentRank?.rank_name ?? "None"} />
         )}
 
         <ModalField label="Promote To" required htmlFor="promo-to-rank">
@@ -433,7 +522,9 @@ export const BeltTrackingPage = () => {
           <ModalField label="Promotion Type" required htmlFor="promo-type">
             <Select
               value={promoForm.promotion_type}
-              onValueChange={(v) => setPromoForm((f) => ({ ...f, promotion_type: v as PromotionType }))}
+              onValueChange={(v) =>
+                setPromoForm((f) => ({ ...f, promotion_type: v as PromotionType }))
+              }
             >
               <SelectTrigger id="promo-type">
                 <SelectValue />

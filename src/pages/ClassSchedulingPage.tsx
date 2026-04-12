@@ -1,3 +1,5 @@
+// TODO refactor
+
 import { useState } from "react";
 import { useClasses } from "../context/ClassContext";
 import { AgeGroup, SessionType } from "../types/classes";
@@ -17,7 +19,6 @@ const DAYS_OF_WEEK = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "F
 type ClassForm = {
   class_name: string;
   age_group: AgeGroup;
-  instructor: string;
   session_type: SessionType;
   day_of_week: string;
   specific_date: string;
@@ -31,7 +32,6 @@ type OneOffForm = { specific_date: string; start_time: string; end_time: string 
 const emptyClassForm = (): ClassForm => ({
   class_name: "",
   age_group: "Kids",
-  instructor: "",
   session_type: "recurring",
   day_of_week: "1",
   specific_date: "",
@@ -90,10 +90,7 @@ export const ClassSchedulingPage = () => {
       setClassError("Class name is required.");
       return;
     }
-    if (!classForm.instructor.trim()) {
-      setClassError("Instructor is required.");
-      return;
-    }
+
     if (!classForm.start_time) {
       setClassError("Start time is required.");
       return;
@@ -112,7 +109,6 @@ export const ClassSchedulingPage = () => {
       const newClass = await createClass({
         class_name: classForm.class_name.trim(),
         age_group: classForm.age_group,
-        instructor: classForm.instructor.trim(),
       });
 
       await createSession({
@@ -388,14 +384,6 @@ export const ClassSchedulingPage = () => {
               <SelectItem value="All">All</SelectItem>
             </SelectContent>
           </Select>
-        </ModalField>
-        <ModalField label="Instructor" required htmlFor="instructor">
-          <Input
-            id="instructor"
-            placeholder="e.g., Master Lee"
-            value={classForm.instructor}
-            onChange={(e) => setClassForm((f) => ({ ...f, instructor: e.target.value }))}
-          />
         </ModalField>
 
         {/* Session fields */}

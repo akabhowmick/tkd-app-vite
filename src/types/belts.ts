@@ -36,6 +36,7 @@ export interface CreateBeltRankRequest {
   rank_name: string;
   rank_order: number;
   color_code?: string;
+  stripe_color?: string;
 }
 
 export interface UpdateBeltRankRequest {
@@ -55,7 +56,6 @@ export interface CreatePromotionRequest {
   test_score?: number;
   notes?: string;
   promoted_by: string;
-  stripe_color?: string;
 }
 
 export interface StudentWithRank {
