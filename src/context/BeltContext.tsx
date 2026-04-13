@@ -98,7 +98,7 @@ export const BeltProvider = ({ children }: { children: ReactNode }) => {
         setLoading(false);
       }
     },
-    [schoolId, loadRanks]
+    [schoolId, loadRanks],
   );
 
   const updateRank = useCallback(
@@ -116,7 +116,7 @@ export const BeltProvider = ({ children }: { children: ReactNode }) => {
         setLoading(false);
       }
     },
-    [loadRanks]
+    [loadRanks],
   );
 
   const deleteRank = useCallback(
@@ -136,7 +136,7 @@ export const BeltProvider = ({ children }: { children: ReactNode }) => {
         setLoading(false);
       }
     },
-    [loadRanks]
+    [loadRanks],
   );
 
   const promoteStudent = useCallback(
@@ -158,7 +158,7 @@ export const BeltProvider = ({ children }: { children: ReactNode }) => {
         setLoading(false);
       }
     },
-    [schoolId, loadPromotions]
+    [schoolId, loadPromotions],
   );
 
   const deletePromotionRecord = useCallback(
@@ -178,23 +178,26 @@ export const BeltProvider = ({ children }: { children: ReactNode }) => {
         setLoading(false);
       }
     },
-    [loadPromotions]
+    [loadPromotions],
   );
 
-  const getStudentHistory = useCallback(async (studentId: string): Promise<PromotionWithRanks[]> => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await getStudentPromotions(studentId);
-      return data;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to load student history";
-      setError(message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const getStudentHistory = useCallback(
+    async (studentId: string): Promise<PromotionWithRanks[]> => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await getStudentPromotions(studentId);
+        return data;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Failed to load student history";
+        setError(message);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     if (schoolId) {
@@ -225,6 +228,7 @@ export const BeltProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useBelts = (): BeltContextType => {
   const context = useContext(BeltContext);
   if (!context) {

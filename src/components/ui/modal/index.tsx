@@ -106,7 +106,14 @@ export function AppModal({
       <DialogPrimitive.Portal>
         <ModalOverlay />
         <DialogPrimitive.Content
-          className={cn(modalContentBase, SIZE_CLASSES[size], "max-h-[90dvh] flex flex-col", className)}
+          className={cn(
+            modalContentBase,
+            SIZE_CLASSES[size],
+            "max-h-[90dvh] flex flex-col",
+            className,
+          )}
+          onInteractOutside={(e) => e.preventDefault()}
+          onFocusOutside={(e) => e.preventDefault()}
         >
           {/* Header */}
           <div className="flex items-start justify-between gap-4 px-6 pt-6 pb-4 border-b border-border shrink-0">
@@ -166,8 +173,14 @@ export function AppFormModal({
       <DialogPrimitive.Portal>
         <ModalOverlay />
         <DialogPrimitive.Content
-          className={cn(modalContentBase, SIZE_CLASSES[size], "max-h-[90dvh] flex flex-col", className)}
+          className={cn(
+            modalContentBase,
+            SIZE_CLASSES[size],
+            "max-h-[90dvh] flex flex-col",
+            className,
+          )}
           onInteractOutside={loading ? (e) => e.preventDefault() : undefined}
+          onFocusOutside={(e) => e.preventDefault()}
           onEscapeKeyDown={loading ? (e) => e.preventDefault() : undefined}
         >
           {/* Header */}
@@ -264,11 +277,7 @@ export function AppConfirmModal({
           )}
         />
         <AlertDialogPrimitive.Content
-          className={cn(
-            modalContentBase,
-            SIZE_CLASSES.compact,
-            "flex flex-col gap-0",
-          )}
+          className={cn(modalContentBase, SIZE_CLASSES.compact, "flex flex-col gap-0")}
         >
           {variant === "destructive" && (
             <div className="flex justify-center pt-6 pb-2">
