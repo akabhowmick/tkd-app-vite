@@ -3,19 +3,21 @@ import { createContext, useContext, useReducer, useCallback, useMemo, ReactNode 
 import { track } from "../analytics/posthog";
 import {
   RenewalPeriod,
+  RenewalPayment,
   RenewalPeriodWithUiStatus,
   UiRenewalStatus,
   GroupedRenewals,
   CreateRenewalRequest,
-  UpdateRenewalPeriodRequest,
   CreateRenewalPaymentRequest,
+  UpdateRenewalPeriodRequest,
 } from "../types/student_renewal";
+import { SchoolProgram } from "../types/programs";
 import {
   getRenewalPeriods,
   createRenewalPeriod,
   createRenewalPayment,
   updateRenewalPeriod,
-  updateRenewalPayment,
+  markInstallmentPaid,
   deleteRenewalPeriod,
   deleteRenewalPayment,
   resolveAsQuit,
@@ -23,6 +25,7 @@ import {
   getRenewalPeriodById,
 } from "../api/StudentRenewalsRequests/studentRenewalsRequests";
 import { useSchool } from "./SchoolContext";
+import { usePrograms } from "./ProgramContext";
 
 // ─────────────────────────────────────────────
 // Constants
@@ -31,8 +34,9 @@ const GRACE_PERIOD_DAYS = 7;
 const WARNING_PERIOD_DAYS = 15;
 
 // ─────────────────────────────────────────────
-// Categorization — single source of truth
+// Date helpers
 // ─────────────────────────────────────────────
+
 function getDaysUntilExpiration(expirationDate: string): number {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -41,16 +45,71 @@ function getDaysUntilExpiration(expirationDate: string): number {
   return Math.floor((expiry.getTime() - today.getTime()) / 86_400_000);
 }
 
-function getStatusMessage(uiStatus: UiRenewalStatus, days: number): string {
+function isInstallmentOverdue(payment: RenewalPayment): boolean {
+  if (payment.payment_date !== null) return false;
+  if (!payment.due_date) return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const due = new Date(payment.due_date);
+  due.setHours(0, 0, 0, 0);
+  return due < today;
+}
+
+function getNextUnpaidInstallment(payments: RenewalPayment[]): RenewalPayment | null {
+  return payments.find((p) => p.payment_date === null && p.amount_paid < p.amount_due) ?? null;
+}
+
+// ─────────────────────────────────────────────
+// Status derivation
+// milestone_based: payment_overdue → paid → active (never time-based statuses)
+// time_based: payment_overdue → expired → grace_period → expiring_soon → paid → active
+// ─────────────────────────────────────────────
+
+export function deriveUiStatus(period: RenewalPeriod, program?: SchoolProgram): UiRenewalStatus {
+  const isMilestone = program?.program_type === "milestone_based";
+
+  // Resolved states always come from DB
+  if (period.status === "renewed") return "renewed";
+  if (period.status === "quit") return "quit";
+  if (period.status === "expired") return "expired";
+
+  // Overdue installment — applies to both program types
+  const hasOverdueInstallment = period.payments.some(isInstallmentOverdue);
+  if (hasOverdueInstallment) return "payment_overdue";
+
+  // Fully paid
+  if (period.balance <= 0 && period.total_due > 0) return "paid";
+
+  // Milestone-based: no expiration logic — just active
+  if (isMilestone) return "active";
+
+  // Time-based: expiration-driven
+  if (!period.expiration_date) return "active";
+  const days = getDaysUntilExpiration(period.expiration_date);
+  if (days < -GRACE_PERIOD_DAYS) return "expired";
+  if (days < 0) return "grace_period";
+  if (days <= WARNING_PERIOD_DAYS) return "expiring_soon";
+
+  return "active";
+}
+
+function getStatusMessage(
+  uiStatus: UiRenewalStatus,
+  days: number | null,
+  isMilestone: boolean,
+): string {
+  if (isMilestone && uiStatus === "active") return "Active — milestone program";
   switch (uiStatus) {
     case "paid":
       return "Fully paid";
+    case "payment_overdue":
+      return "Installment overdue — payment required";
     case "expiring_soon":
       return `Expires in ${days} day${days === 1 ? "" : "s"}`;
     case "grace_period":
-      return `${Math.abs(days)} day${Math.abs(days) === 1 ? "" : "s"} overdue — grace period`;
+      return `${Math.abs(days ?? 0)} day${Math.abs(days ?? 0) === 1 ? "" : "s"} overdue — grace period`;
     case "expired":
-      return `Expired ${Math.abs(days)} day${Math.abs(days) === 1 ? "" : "s"} ago`;
+      return `Expired ${Math.abs(days ?? 0)} day${Math.abs(days ?? 0) === 1 ? "" : "s"} ago`;
     case "active":
       return "Active";
     case "renewed":
@@ -62,37 +121,28 @@ function getStatusMessage(uiStatus: UiRenewalStatus, days: number): string {
   }
 }
 
-export function deriveUiStatus(period: RenewalPeriod): UiRenewalStatus {
-  // Paid overrides everything — check balance first
-  if (period.balance <= 0 && period.total_due > 0) return "paid";
+function enrichPeriod(period: RenewalPeriod, program?: SchoolProgram): RenewalPeriodWithUiStatus {
+  const isMilestone = program?.program_type === "milestone_based";
+  const days = period.expiration_date ? getDaysUntilExpiration(period.expiration_date) : null;
+  const ui_status = deriveUiStatus(period, program);
+  const next_unpaid_installment = getNextUnpaidInstallment(period.payments);
 
-  // Resolved states come straight from DB
-  if (period.status === "renewed") return "renewed";
-  if (period.status === "quit") return "quit";
-  if (period.status === "expired") return "expired";
-
-  // For active periods, compute from expiration date
-  const days = getDaysUntilExpiration(period.expiration_date);
-
-  if (days < -GRACE_PERIOD_DAYS) return "expired";
-  if (days < 0) return "grace_period";
-  if (days <= WARNING_PERIOD_DAYS) return "expiring_soon";
-  return "active";
-}
-
-function enrichPeriod(period: RenewalPeriod): RenewalPeriodWithUiStatus {
-  const days = getDaysUntilExpiration(period.expiration_date);
-  const ui_status = deriveUiStatus(period);
   return {
     ...period,
     ui_status,
     days_until_expiration: days,
-    status_message: getStatusMessage(ui_status, days),
+    status_message: getStatusMessage(ui_status, days, isMilestone),
+    next_unpaid_installment,
+    is_milestone: isMilestone,
   };
 }
 
-export function groupPeriods(periods: RenewalPeriod[]): GroupedRenewals {
+export function groupPeriods(
+  periods: RenewalPeriod[],
+  programMap: Map<string, SchoolProgram>,
+): GroupedRenewals {
   const result: GroupedRenewals = {
+    payment_overdue: [],
     expiring_soon: [],
     grace_period: [],
     expired: [],
@@ -101,14 +151,15 @@ export function groupPeriods(periods: RenewalPeriod[]): GroupedRenewals {
   };
 
   for (const period of periods) {
-    // Resolved periods don't appear in the dashboard
     if (period.status === "renewed" || period.status === "quit") continue;
 
-    const enriched = enrichPeriod(period);
+    const program = period.program_id ? programMap.get(period.program_id) : undefined;
+    const enriched = enrichPeriod(period, program);
 
-    // Route to bucket based on the single derived ui_status —
-    // no duplicate balance checks here, deriveUiStatus handles it
     switch (enriched.ui_status) {
+      case "payment_overdue":
+        result.payment_overdue.push(enriched);
+        break;
       case "paid":
         result.paid.push(enriched);
         break;
@@ -127,10 +178,13 @@ export function groupPeriods(periods: RenewalPeriod[]): GroupedRenewals {
     }
   }
 
-  // Sort each bucket by expiration date ascending
-  const byExpiry = (a: RenewalPeriodWithUiStatus, b: RenewalPeriodWithUiStatus) =>
-    new Date(a.expiration_date).getTime() - new Date(b.expiration_date).getTime();
+  const byExpiry = (a: RenewalPeriodWithUiStatus, b: RenewalPeriodWithUiStatus) => {
+    if (!a.expiration_date) return 1;
+    if (!b.expiration_date) return -1;
+    return new Date(a.expiration_date).getTime() - new Date(b.expiration_date).getTime();
+  };
 
+  result.payment_overdue.sort(byExpiry);
   result.expiring_soon.sort(byExpiry);
   result.grace_period.sort(byExpiry);
   result.expired.sort(byExpiry);
@@ -143,21 +197,21 @@ export function groupPeriods(periods: RenewalPeriod[]): GroupedRenewals {
 // ─────────────────────────────────────────────
 // New expiration date when renewing
 // ─────────────────────────────────────────────
+
 function calculateNewExpirationDate(oldExpirationDate: string, durationMonths: number): string {
   const expiry = new Date(oldExpirationDate);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-
   const startDate = expiry < today ? today : new Date(expiry);
   startDate.setDate(startDate.getDate() + 1);
   startDate.setMonth(startDate.getMonth() + durationMonths);
-
   return startDate.toISOString().split("T")[0];
 }
 
 // ─────────────────────────────────────────────
 // State & reducer
 // ─────────────────────────────────────────────
+
 interface State {
   periods: RenewalPeriod[];
   loading: boolean;
@@ -203,6 +257,7 @@ function reducer(state: State, action: Action): State {
 // ─────────────────────────────────────────────
 // Context
 // ─────────────────────────────────────────────
+
 interface StudentRenewalsContextType {
   periods: RenewalPeriod[];
   grouped: GroupedRenewals;
@@ -215,7 +270,13 @@ interface StudentRenewalsContextType {
     periodId: string,
     req: Omit<CreateRenewalPaymentRequest, "period_id" | "student_id">,
   ) => Promise<void>;
-  markPaymentPaid: (periodId: string, paymentId: string) => Promise<void>;
+  markInstallmentPaid: (
+    periodId: string,
+    paymentId: string,
+    actualPaymentDate: string,
+    amountPaid: number,
+    paidTo: string,
+  ) => Promise<void>;
   updatePeriod: (periodId: string, updates: UpdateRenewalPeriodRequest) => Promise<void>;
   deletePeriod: (periodId: string) => Promise<void>;
   deletePayment: (periodId: string, paymentId: string) => Promise<void>;
@@ -228,8 +289,11 @@ const StudentRenewalsContext = createContext<StudentRenewalsContextType | undefi
 export const StudentRenewalsProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(reducer, initialState);
   const { schoolId, students } = useSchool();
+  const { programs } = usePrograms();
 
-  // ── Async wrapper
+  // Build a fast lookup map from program_id → SchoolProgram
+  const programMap = useMemo(() => new Map(programs.map((p) => [p.program_id, p])), [programs]);
+
   const withAsync = useCallback(async <T,>(fn: () => Promise<T>): Promise<T> => {
     dispatch({ type: "SET_LOADING", payload: true });
     dispatch({ type: "SET_ERROR", payload: null });
@@ -244,7 +308,6 @@ export const StudentRenewalsProvider = ({ children }: { children: ReactNode }) =
     }
   }, []);
 
-  // ── Load
   const loadPeriods = useCallback(
     (): Promise<void> =>
       withAsync(async () => {
@@ -255,11 +318,9 @@ export const StudentRenewalsProvider = ({ children }: { children: ReactNode }) =
     [withAsync, schoolId],
   );
 
-  // ── Create period + first payment in one flow
   const createRenewal = useCallback(
     (req: CreateRenewalRequest): Promise<void> =>
       withAsync(async () => {
-        // Guard: check no active period already exists for this student
         const existingActive = state.periods.find(
           (p) => p.student_id === req.period.student_id && p.status === "active",
         );
@@ -270,21 +331,22 @@ export const StudentRenewalsProvider = ({ children }: { children: ReactNode }) =
         }
 
         const newPeriod = await createRenewalPeriod(req.period);
-        await createRenewalPayment({
-          ...req.payment,
-          period_id: newPeriod.period_id,
-          student_id: newPeriod.student_id,
-          installment_number: 1,
-        });
+
+        for (const installment of req.installments) {
+          await createRenewalPayment({
+            ...installment,
+            period_id: newPeriod.period_id,
+            student_id: newPeriod.student_id,
+          });
+        }
 
         const fresh = await getRenewalPeriodById(newPeriod.period_id);
         dispatch({ type: "UPSERT_PERIOD", payload: fresh });
-        track("renewal_created", { durationMonths: req.period.duration_months });
+        track("renewal_created", { durationMonths: req.period.duration_months ?? 0 });
       }),
     [withAsync, state.periods],
   );
 
-  // ── Add a payment installment to an existing period
   const addPayment = useCallback(
     (
       periodId: string,
@@ -307,24 +369,28 @@ export const StudentRenewalsProvider = ({ children }: { children: ReactNode }) =
     [withAsync, state.periods],
   );
 
-  // ── Mark a single payment installment as fully paid
-  const markPaymentPaid = useCallback(
-    (periodId: string, paymentId: string): Promise<void> =>
+  const markInstallmentPaidFn = useCallback(
+    (
+      periodId: string,
+      paymentId: string,
+      actualPaymentDate: string,
+      amountPaid: number,
+      paidTo: string,
+    ): Promise<void> =>
       withAsync(async () => {
-        const period = state.periods.find((p) => p.period_id === periodId);
-        const payment = period?.payments.find((p) => p.payment_id === paymentId);
-        if (!payment) throw new Error("Payment not found");
-
-        await updateRenewalPayment(paymentId, { amount_paid: payment.amount_due });
+        await markInstallmentPaid(paymentId, {
+          payment_date: actualPaymentDate,
+          amount_paid: amountPaid,
+          paid_to: paidTo,
+        });
 
         const fresh = await getRenewalPeriodById(periodId);
         dispatch({ type: "UPSERT_PERIOD", payload: fresh });
         track("renewal_payment_marked_paid");
       }),
-    [withAsync, state.periods],
+    [withAsync],
   );
 
-  // ── Generic period update
   const updatePeriod = useCallback(
     (periodId: string, updates: UpdateRenewalPeriodRequest): Promise<void> =>
       withAsync(async () => {
@@ -335,7 +401,6 @@ export const StudentRenewalsProvider = ({ children }: { children: ReactNode }) =
     [withAsync],
   );
 
-  // ── Delete entire period (cascade removes payments)
   const deletePeriod = useCallback(
     (periodId: string): Promise<void> =>
       withAsync(async () => {
@@ -346,7 +411,6 @@ export const StudentRenewalsProvider = ({ children }: { children: ReactNode }) =
     [withAsync],
   );
 
-  // ── Delete a single payment installment
   const deletePayment = useCallback(
     (periodId: string, paymentId: string): Promise<void> =>
       withAsync(async () => {
@@ -357,7 +421,6 @@ export const StudentRenewalsProvider = ({ children }: { children: ReactNode }) =
     [withAsync],
   );
 
-  // ── Resolve as quit
   const quitRenewal = useCallback(
     (periodId: string, notes?: string): Promise<void> =>
       withAsync(async () => {
@@ -369,11 +432,12 @@ export const StudentRenewalsProvider = ({ children }: { children: ReactNode }) =
     [withAsync],
   );
 
-  // ── Renew — marks old period done, creates new period + first payment
   const renewPeriod = useCallback(
     (period: RenewalPeriod, durationMonths: number): Promise<void> =>
       withAsync(async () => {
-        const newExpiration = calculateNewExpirationDate(period.expiration_date, durationMonths);
+        const newExpiration = period.expiration_date
+          ? calculateNewExpirationDate(period.expiration_date, durationMonths)
+          : null;
 
         await resolveWithRenewal(
           period,
@@ -383,9 +447,11 @@ export const StudentRenewalsProvider = ({ children }: { children: ReactNode }) =
             duration_months: durationMonths,
             expiration_date: newExpiration,
             number_of_classes: period.number_of_classes,
+            program_id: period.program_id,
           },
           {
-            payment_date: new Date().toISOString().split("T")[0],
+            due_date: new Date().toISOString().split("T")[0],
+            payment_date: null,
             amount_due: period.total_due,
             amount_paid: 0,
             installment_number: 1,
@@ -400,8 +466,11 @@ export const StudentRenewalsProvider = ({ children }: { children: ReactNode }) =
     [withAsync, schoolId],
   );
 
-  // ── Derived grouped data — memoized
-  const grouped = useMemo(() => groupPeriods(state.periods), [state.periods]);
+  // Exclude milestone-based from expiring count (used by StatCards)
+  const grouped = useMemo(
+    () => groupPeriods(state.periods, programMap),
+    [state.periods, programMap],
+  );
 
   const recentActivity = useMemo(() => {
     return [...state.periods]
@@ -412,17 +481,20 @@ export const StudentRenewalsProvider = ({ children }: { children: ReactNode }) =
       )
       .slice(0, 5)
       .map((p) => {
-        const uiStatus = deriveUiStatus(p);
+        const program = p.program_id ? programMap.get(p.program_id) : undefined;
+        const uiStatus = deriveUiStatus(p, program);
         const student = students.find((s) => s.id === p.student_id);
         const displayName = student?.name ?? p.student_id;
         const dot =
           uiStatus === "paid"
             ? "bg-green-500"
-            : uiStatus === "expiring_soon"
-              ? "bg-yellow-500"
-              : uiStatus === "grace_period" || uiStatus === "expired"
-                ? "bg-red-500"
-                : "bg-blue-500";
+            : uiStatus === "payment_overdue"
+              ? "bg-orange-500"
+              : uiStatus === "expiring_soon"
+                ? "bg-yellow-500"
+                : uiStatus === "grace_period" || uiStatus === "expired"
+                  ? "bg-red-500"
+                  : "bg-blue-500";
 
         return {
           text: `Renewal ${uiStatus.replace("_", " ")}: ${displayName}`,
@@ -430,7 +502,7 @@ export const StudentRenewalsProvider = ({ children }: { children: ReactNode }) =
           dot,
         };
       });
-  }, [state.periods, students]);
+  }, [state.periods, students, programMap]);
 
   const value: StudentRenewalsContextType = {
     periods: state.periods,
@@ -440,7 +512,7 @@ export const StudentRenewalsProvider = ({ children }: { children: ReactNode }) =
     loadPeriods,
     createRenewal,
     addPayment,
-    markPaymentPaid,
+    markInstallmentPaid: markInstallmentPaidFn,
     updatePeriod,
     deletePeriod,
     deletePayment,

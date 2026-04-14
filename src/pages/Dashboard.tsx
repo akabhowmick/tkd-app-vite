@@ -6,6 +6,7 @@ import { AttendanceProvider } from "../context/AttendanceContext";
 import { ClassProvider } from "../context/ClassContext";
 import { BeltProvider } from "../context/BeltContext";
 import { InventoryProvider } from "../context/InventoryContext";
+import { ProgramProvider } from "../context/ProgramContext";
 import { UserRole } from "../types/user";
 import { Profile } from "../components/AccountDashboards/AdminFeatures/Profile/Profile";
 
@@ -16,17 +17,21 @@ const Dashboard = () => {
     case UserRole.Admin:
       return (
         <SchoolProvider>
-          <StudentRenewalsProvider>
-            <AttendanceProvider>
-              <ClassProvider>
-                <BeltProvider>
-                  <InventoryProvider>
-                    <MainDashboard />
-                  </InventoryProvider>
-                </BeltProvider>
-              </ClassProvider>
-            </AttendanceProvider>
-          </StudentRenewalsProvider>
+          {/* ProgramProvider must be inside SchoolProvider (needs schoolId)
+              but outside StudentRenewalsProvider (which consumes programs) */}
+          <ProgramProvider>
+            <StudentRenewalsProvider>
+              <AttendanceProvider>
+                <ClassProvider>
+                  <BeltProvider>
+                    <InventoryProvider>
+                      <MainDashboard />
+                    </InventoryProvider>
+                  </BeltProvider>
+                </ClassProvider>
+              </AttendanceProvider>
+            </StudentRenewalsProvider>
+          </ProgramProvider>
         </SchoolProvider>
       );
     default:

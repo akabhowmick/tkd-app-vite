@@ -1,53 +1,151 @@
-import React, { useState } from "react";
-import { CreateRenewalFormProps } from "../../../../types/student_renewal";
+import React, { useState, useEffect, useCallback } from "react";
+import { CreateRenewalFormProps, InstallmentInput } from "../../../../types/student_renewal";
 import { useSchool } from "../../../../context/SchoolContext";
+import { usePrograms } from "../../../../context/ProgramContext";
+
+// ─────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────
+
+function addMonths(dateStr: string, months: number): string {
+  const d = new Date(dateStr);
+  d.setMonth(d.getMonth() + months);
+  return d.toISOString().split("T")[0];
+}
+
+function splitEvenly(total: number, count: number): number[] {
+  if (count <= 0) return [];
+  const base = Math.floor((total * 100) / count) / 100;
+  const remainder = Math.round((total - base * count) * 100) / 100;
+  return Array.from({ length: count }, (_, i) =>
+    i === count - 1 ? Math.round((base + remainder) * 100) / 100 : base,
+  );
+}
+
+function generateInstallments(
+  startDate: string,
+  numberOfPayments: number,
+  totalAmount: number,
+): InstallmentInput[] {
+  const amounts = splitEvenly(totalAmount, numberOfPayments);
+  return Array.from({ length: numberOfPayments }, (_, i) => ({
+    installment_number: i + 1,
+    due_date: addMonths(startDate, i),
+    amount_due: amounts[i] ?? 0,
+    amount_paid: 0,
+    paid_to: "",
+  }));
+}
+
+// ─────────────────────────────────────────────
+// Component
+// ─────────────────────────────────────────────
 
 export const CreateRenewalForm: React.FC<CreateRenewalFormProps> = ({ onSubmit, onCancel }) => {
   const { students, schoolId } = useSchool();
+  const { programs } = usePrograms();
 
-  const [form, setForm] = useState({
-    student_id: "",
-    duration_months: "",
-    expiration_date: "",
-    number_of_classes: "",
-    payment_date: new Date().toISOString().split("T")[0],
-    amount_due: "",
-    amount_paid: "",
-    paid_to: "",
-  });
+  // ── Period-level fields
+  const [studentId, setStudentId] = useState("");
+  const [programId, setProgramId] = useState("");
+  const [durationMonths, setDurationMonths] = useState("");
+  const [startDate, setStartDate] = useState(new Date().toISOString().split("T")[0]);
+  const [expirationDate, setExpirationDate] = useState("");
+  const [numberOfPayments, setNumberOfPayments] = useState("1");
+  const [totalAmount, setTotalAmount] = useState("");
+  const [numberOfClasses, setNumberOfClasses] = useState("");
 
+  // ── Installment rows
+  const [installments, setInstallments] = useState<InstallmentInput[]>([]);
+
+  // ── UI state
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const set = (field: string, value: string) => setForm((prev) => ({ ...prev, [field]: value }));
+  // Derive whether the selected program is milestone-based
+  const selectedProgram = programs.find((p) => p.program_id === programId);
+  const isMilestone = selectedProgram?.program_type === "milestone_based";
+
+  // Auto-select first program on load
+  useEffect(() => {
+    if (programs.length > 0 && !programId) {
+      const regular = programs.find((p) => p.name === "Regular") ?? programs[0];
+      setProgramId(regular.program_id);
+    }
+  }, [programs, programId]);
+
+  // Auto-compute expiration when duration/start changes (time_based only)
+  useEffect(() => {
+    if (!isMilestone && durationMonths && startDate) {
+      setExpirationDate(addMonths(startDate, parseInt(durationMonths)));
+    }
+    if (isMilestone) {
+      setExpirationDate("");
+      setDurationMonths("");
+    }
+  }, [durationMonths, startDate, isMilestone]);
+
+  // Regenerate installments when key fields change
+  const regenerateInstallments = useCallback(() => {
+    const count = parseInt(numberOfPayments) || 1;
+    const total = parseFloat(totalAmount) || 0;
+    if (!startDate) return;
+    setInstallments(generateInstallments(startDate, count, total));
+  }, [startDate, numberOfPayments, totalAmount]);
+
+  useEffect(() => {
+    regenerateInstallments();
+  }, [regenerateInstallments]);
+
+  const updateInstallment = (
+    index: number,
+    field: keyof InstallmentInput,
+    value: string | number,
+  ) => {
+    setInstallments((prev) =>
+      prev.map((inst, i) => (i === index ? { ...inst, [field]: value } : inst)),
+    );
+  };
+
+  const installmentTotal = installments.reduce((sum, i) => sum + (i.amount_due || 0), 0);
+  const totalMismatch = totalAmount && Math.abs(installmentTotal - parseFloat(totalAmount)) > 0.01;
 
   const handleSubmit = async () => {
     setError("");
 
-    if (!form.student_id) return setError("Please select a student.");
-    if (!form.duration_months) return setError("Duration is required.");
-    if (!form.expiration_date) return setError("Expiration date is required.");
-    if (!form.number_of_classes) return setError("Number of classes is required.");
-    if (!form.amount_due) return setError("Amount due is required.");
-    if (!form.paid_to) return setError("Paid to is required.");
+    if (!studentId) return setError("Please select a student.");
+    if (!programId) return setError("Please select a program.");
+    if (!isMilestone && !durationMonths) return setError("Duration is required.");
+    if (!isMilestone && !expirationDate) return setError("Expiration date is required.");
+    if (!numberOfClasses) return setError("Number of classes is required.");
+    if (!totalAmount || parseFloat(totalAmount) <= 0) return setError("Total amount is required.");
+    if (installments.length === 0) return setError("At least one installment is required.");
+
+    for (let i = 0; i < installments.length; i++) {
+      const inst = installments[i];
+      if (!inst.due_date) return setError(`Installment ${i + 1}: due date is required.`);
+      if (inst.amount_due <= 0) return setError(`Installment ${i + 1}: amount must be positive.`);
+    }
 
     setLoading(true);
     try {
       await onSubmit({
         period: {
-          student_id: form.student_id,
+          student_id: studentId,
           school_id: schoolId,
-          duration_months: parseInt(form.duration_months),
-          expiration_date: form.expiration_date,
-          number_of_classes: parseInt(form.number_of_classes),
+          duration_months: isMilestone ? null : parseInt(durationMonths),
+          expiration_date: isMilestone ? null : expirationDate,
+          number_of_classes: parseInt(numberOfClasses),
+          program_id: programId,
         },
-        payment: {
-          payment_date: form.payment_date,
-          amount_due: parseFloat(form.amount_due),
-          amount_paid: parseFloat(form.amount_paid) || 0,
-          installment_number: 1,
-          paid_to: form.paid_to,
-        },
+        installments: installments.map((inst) => ({
+          installment_number: inst.installment_number,
+          due_date: inst.due_date,
+          payment_date: inst.amount_paid > 0 ? new Date().toISOString().split("T")[0] : null,
+          amount_due: inst.amount_due,
+          amount_paid: inst.amount_paid,
+          paid_to: inst.paid_to,
+        })),
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
@@ -62,16 +160,16 @@ export const CreateRenewalForm: React.FC<CreateRenewalFormProps> = ({ onSubmit, 
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white text-black rounded-xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div className="bg-white text-black rounded-xl p-6 w-full max-w-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
         <h2 className="text-2xl font-bold mb-6">Register Renewal</h2>
 
-        <div className="space-y-4">
+        <div className="space-y-5">
           {/* Student */}
           <div>
             <label className={labelClass}>Student</label>
             <select
-              value={form.student_id}
-              onChange={(e) => set("student_id", e.target.value)}
+              value={studentId}
+              onChange={(e) => setStudentId(e.target.value)}
               className={fieldClass}
             >
               <option value="">Select a student...</option>
@@ -83,92 +181,214 @@ export const CreateRenewalForm: React.FC<CreateRenewalFormProps> = ({ onSubmit, 
             </select>
           </div>
 
-          {/* Period fields */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className={labelClass}>Duration (months)</label>
-              <input
-                type="number"
-                value={form.duration_months}
-                onChange={(e) => set("duration_months", e.target.value)}
-                className={fieldClass}
-                placeholder="3"
-              />
+          {/* Program */}
+          <div>
+            <label className={labelClass}>Program</label>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {programs.map((prog) => (
+                <button
+                  key={prog.program_id}
+                  type="button"
+                  onClick={() => setProgramId(prog.program_id)}
+                  className={`flex flex-col gap-0.5 px-3 py-2.5 rounded-lg border-2 text-left transition-colors text-sm ${
+                    programId === prog.program_id
+                      ? "border-primary bg-primary/5 text-primary font-semibold"
+                      : "border-gray-200 hover:border-gray-300 text-gray-700"
+                  }`}
+                >
+                  <span>{prog.name}</span>
+                  <span className="text-[10px] text-gray-400 font-normal">
+                    {prog.program_type === "milestone_based" ? "Milestone" : "Time-based"}
+                  </span>
+                </button>
+              ))}
             </div>
+            {isMilestone && (
+              <p className="text-xs text-purple-600 bg-purple-50 border border-purple-200 rounded-md px-3 py-2 mt-2">
+                🏆 Milestone program — no expiration date. This renewal stays active until manually
+                resolved when the student reaches their goal.
+              </p>
+            )}
+          </div>
+
+          {/* Duration + Classes — duration hidden for milestone */}
+          <div className={`grid gap-4 ${isMilestone ? "grid-cols-1" : "grid-cols-2"}`}>
+            {!isMilestone && (
+              <div>
+                <label className={labelClass}>Duration (months)</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={durationMonths}
+                  onChange={(e) => setDurationMonths(e.target.value)}
+                  className={fieldClass}
+                  placeholder="3"
+                />
+              </div>
+            )}
             <div>
               <label className={labelClass}>Classes / week</label>
               <input
                 type="number"
-                value={form.number_of_classes}
-                onChange={(e) => set("number_of_classes", e.target.value)}
+                min="1"
+                value={numberOfClasses}
+                onChange={(e) => setNumberOfClasses(e.target.value)}
                 className={fieldClass}
                 placeholder="2"
               />
             </div>
           </div>
 
-          <div>
-            <label className={labelClass}>Expiration Date</label>
-            <input
-              type="date"
-              value={form.expiration_date}
-              onChange={(e) => set("expiration_date", e.target.value)}
-              className={fieldClass}
-            />
-          </div>
-
-          {/* Payment fields */}
-          <div className="border-t border-gray-100 pt-4">
-            <p className="text-sm font-semibold text-gray-500 mb-3">First Payment Installment</p>
-
-            <div className="space-y-4">
+          {/* Start Date + Expiration — expiration hidden for milestone */}
+          <div className={`grid gap-4 ${isMilestone ? "grid-cols-1" : "grid-cols-2"}`}>
+            <div>
+              <label className={labelClass}>Start Date</label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className={fieldClass}
+              />
+            </div>
+            {!isMilestone && (
               <div>
-                <label className={labelClass}>Payment Date</label>
+                <label className={labelClass}>Expiration Date</label>
                 <input
                   type="date"
-                  value={form.payment_date}
-                  onChange={(e) => set("payment_date", e.target.value)}
+                  value={expirationDate}
+                  onChange={(e) => setExpirationDate(e.target.value)}
                   className={fieldClass}
                 />
+                <p className="text-xs text-gray-400 mt-1">
+                  Auto-filled from duration, override if needed
+                </p>
               </div>
+            )}
+          </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className={labelClass}>Amount Due</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={form.amount_due}
-                    onChange={(e) => set("amount_due", e.target.value)}
-                    className={fieldClass}
-                    placeholder="0.00"
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>Amount Paid</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={form.amount_paid}
-                    onChange={(e) => set("amount_paid", e.target.value)}
-                    className={fieldClass}
-                    placeholder="0.00"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className={labelClass}>Paid To</label>
+          {/* Total Amount + Number of Payments */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={labelClass}>Total Amount Due</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">
+                  $
+                </span>
                 <input
-                  type="text"
-                  value={form.paid_to}
-                  onChange={(e) => set("paid_to", e.target.value)}
-                  className={fieldClass}
-                  placeholder="e.g. MR, Amy"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={totalAmount}
+                  onChange={(e) => setTotalAmount(e.target.value)}
+                  className={`${fieldClass} pl-7`}
+                  placeholder="0.00"
                 />
               </div>
             </div>
+            <div>
+              <label className={labelClass}>Number of Payments</label>
+              <select
+                value={numberOfPayments}
+                onChange={(e) => setNumberOfPayments(e.target.value)}
+                className={fieldClass}
+              >
+                {[1, 2, 3, 4, 6, 12].map((n) => (
+                  <option key={n} value={n}>
+                    {n} {n === 1 ? "payment" : "payments"}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
+
+          {/* Installment Rows */}
+          {installments.length > 0 && (
+            <div className="border border-gray-100 rounded-xl overflow-hidden">
+              <div className="bg-gray-50 px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-gray-700">Payment Schedule</h3>
+                {totalMismatch && (
+                  <span className="text-xs text-amber-600 bg-amber-50 border border-amber-200 px-2 py-1 rounded-md">
+                    ⚠ Sum ${installmentTotal.toFixed(2)} ≠ total $
+                    {parseFloat(totalAmount).toFixed(2)}
+                  </span>
+                )}
+              </div>
+
+              <div className="grid grid-cols-[2rem_1fr_1fr_1fr_1fr] gap-2 px-4 py-2 bg-gray-50 border-b border-gray-100">
+                <span className="text-xs font-semibold text-gray-400">#</span>
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  Due Date
+                </span>
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  Amount Due
+                </span>
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  Amount Paid
+                </span>
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  Paid To
+                </span>
+              </div>
+
+              {installments.map((inst, idx) => (
+                <div
+                  key={idx}
+                  className="grid grid-cols-[2rem_1fr_1fr_1fr_1fr] gap-2 px-4 py-3 border-b border-gray-50 last:border-0 items-center"
+                >
+                  <span className="text-sm font-semibold text-gray-400">
+                    {inst.installment_number}
+                  </span>
+
+                  <input
+                    type="date"
+                    value={inst.due_date}
+                    onChange={(e) => updateInstallment(idx, "due_date", e.target.value)}
+                    className="px-2 py-1.5 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+                  />
+
+                  <div className="relative">
+                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs">
+                      $
+                    </span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={inst.amount_due}
+                      onChange={(e) =>
+                        updateInstallment(idx, "amount_due", parseFloat(e.target.value) || 0)
+                      }
+                      className="w-full pl-5 pr-2 py-1.5 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+                    />
+                  </div>
+
+                  <div className="relative">
+                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs">
+                      $
+                    </span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={inst.amount_paid}
+                      onChange={(e) =>
+                        updateInstallment(idx, "amount_paid", parseFloat(e.target.value) || 0)
+                      }
+                      className="w-full pl-5 pr-2 py-1.5 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+                    />
+                  </div>
+
+                  <input
+                    type="text"
+                    value={inst.paid_to}
+                    onChange={(e) => updateInstallment(idx, "paid_to", e.target.value)}
+                    placeholder="MR, Amy..."
+                    className="px-2 py-1.5 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+                  />
+                </div>
+              ))}
+            </div>
+          )}
 
           {error && (
             <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">

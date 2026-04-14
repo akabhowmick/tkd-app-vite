@@ -152,3 +152,19 @@ export async function resolveWithRenewal(
   // Return fresh copy with payments attached
   return getRenewalPeriodById(newPeriod.period_id);
 }
+
+export async function markInstallmentPaid(
+  paymentId: string,
+  updates: {
+    payment_date: string | null;
+    amount_paid: number;
+    paid_to: string;
+  },
+): Promise<void> {
+  const { error } = await supabase
+    .from("renewal_payments")
+    .update(updates)
+    .eq("payment_id", paymentId);
+
+  if (error) throw error;
+}

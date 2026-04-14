@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "../../../api/supabase";
 import { useAuth } from "../../../context/AuthContext";
 import { Input } from "../../ui/input";
+import { ProgramsSettings } from "../../AccountDashboards/AdminFeatures/Programs/ProgramsSettings";
 
 export const SettingsPage = () => {
   const { logout } = useAuth();
@@ -49,7 +50,12 @@ export const SettingsPage = () => {
 
   return (
     <div className="max-w-xl mx-auto flex flex-col gap-6">
-      {/* Password section */}
+      {/* ── Programs section */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+        <ProgramsSettings />
+      </div>
+
+      {/* ── Password section */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
         <h2 className="text-sm font-semibold text-gray-700 mb-5">Change Password</h2>
         <form onSubmit={handlePasswordUpdate} className="flex flex-col gap-4">
@@ -120,7 +126,7 @@ export const SettingsPage = () => {
         </form>
       </div>
 
-      {/* Danger zone */}
+      {/* ── Danger zone */}
       <div className="bg-white rounded-xl border border-red-100 shadow-sm p-6">
         <h2 className="text-sm font-semibold text-gray-700 mb-1">Account</h2>
         <p className="text-xs text-gray-400 mb-4">Sign out from this session.</p>
