@@ -1,0 +1,4 @@
+# Fires every day at 9:00 AM UTC.
+# Adjust the time to match your school's timezone — e.g. "0 14 * * *" for 9 AM EST.
+[functions.send-renewal-reminders]
+schedule = "0 9 * * *"

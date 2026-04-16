@@ -13,6 +13,7 @@ import { ProfilePage } from "./UserProfile/ProfilePage";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { SettingsPage } from "./UserProfile/SettingsPage";
+import { NotificationSettings } from "./NotificationSettings/NotificationSettings";
 
 const VIEW_COMPONENTS = {
   school: SchoolManagement,
@@ -24,6 +25,7 @@ const VIEW_COMPONENTS = {
   inventory: InventoryPage,
   profile: ProfilePage,
   settings: SettingsPage,
+  notifications: NotificationSettings,
 } as const;
 
 const VIEW_TITLES: Record<string, string> = {
@@ -38,6 +40,7 @@ const VIEW_TITLES: Record<string, string> = {
   reporting: "Reporting",
   profile: "My Profile",
   settings: "Settings",
+  notifications: "Notification Settings",
 };
 
 export const MainDashboard = () => {

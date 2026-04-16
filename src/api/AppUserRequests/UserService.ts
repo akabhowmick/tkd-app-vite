@@ -1,6 +1,3 @@
-// Consolidated user API — replaces both AppUserRequests.ts and the old UserService.ts.
-// AppUserRequests.ts can be safely deleted; nothing in the app imports from it.
-
 import { supabase } from "../supabase";
 import { UserProfile } from "../../types/user";
 
