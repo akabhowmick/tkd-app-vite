@@ -67,6 +67,7 @@ setTimeout(() => setSaved(false), 2500);
 };
 
 return (
+
 <div className="p-6 max-w-2xl">
 <div className="mb-6">
 <h2 className="text-xl font-semibold text-white flex items-center gap-2">
@@ -414,3 +415,17 @@ Double check your student_renewals table has a renewal_date column as a date typ
 
 Want to test it locally before deploying?
 $$
+
+To activate (one-time setup)
+
+1. Run the SQL in your Supabase dashboard:
+
+src/sql/notification_settings.sql 2. Sign up for Resend at resend.com (free up to 3k emails/month), verify a sender domain, and grab your API key.
+
+3. Set secrets and deploy:
+
+supabase link --project-ref YOUR_PROJECT_REF
+supabase secrets set RESEND_API_KEY=re_xxxx
+supabase secrets set RESEND_FROM_EMAIL=reminders@yourdomain.com
+supabase functions deploy send-renewal-reminders
+The edge function targets renewals where status = 'active' and expiration_date falls exactly N days from today, so a student with a 7-day window gets exactly one email on the day they hit that window.

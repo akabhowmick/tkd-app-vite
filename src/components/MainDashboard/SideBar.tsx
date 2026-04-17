@@ -14,6 +14,7 @@ import {
   Calendar,
   Award,
   Package,
+  Bell,
 } from "lucide-react";
 
 interface NavItem {
@@ -79,7 +80,10 @@ const NAV_SECTIONS: { heading: string | null; items: NavItem[] }[] = [
   },
   {
     heading: "SETTINGS",
-    items: [{ icon: Settings, label: "Settings", view: "settings" }],
+    items: [
+      { icon: Settings, label: "Settings", view: "settings" },
+      { icon: Bell, label: "Notifications", view: "notifications" },
+    ],
   },
 ];
 
