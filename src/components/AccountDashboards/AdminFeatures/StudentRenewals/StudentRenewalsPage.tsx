@@ -14,7 +14,7 @@ export const StudentRenewalsPage: React.FC = () => {
     deletePeriod,
     quitRenewal,
     renewPeriod,
-    markPaymentPaid,
+    markInstallmentPaid,
     addPayment,
   } = useStudentRenewals();
 
@@ -45,10 +45,10 @@ export const StudentRenewalsPage: React.FC = () => {
         <RenewalCard
           key={period.period_id}
           period={period}
-          onMarkPaid={markPaymentPaid}
+          onMarkInstallmentPaid={markInstallmentPaid}
           onDelete={deletePeriod}
           onResolveAsQuit={quitRenewal}
-          onRenew={(p) => renewPeriod(p, p.duration_months)}
+          onRenew={(p) => renewPeriod(p, p.duration_months ?? 0)}
           onAddPayment={addPayment}
         />
       ))}

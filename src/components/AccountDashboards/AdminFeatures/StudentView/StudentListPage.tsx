@@ -3,10 +3,12 @@ import { Student } from "../../../../types/user";
 import { HandleAddOrEdit } from "./HandleAddOrEdit";
 import { updateStudent, createStudent } from "../../../../api/StudentRequests/studentRequests";
 import { useSchool } from "../../../../context/SchoolContext";
+import { useBelts } from "../../../../context/BeltContext";
 import { AppConfirmModal } from "../../../ui/modal";
 
 export const StudentListPage = () => {
   const { loadStudents, handleDelete, students } = useSchool();
+  const { ranks } = useBelts();
   const [editingUser, setEditingUser] = useState<Student | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{
     open: boolean;
@@ -41,6 +43,11 @@ export const StudentListPage = () => {
     loadStudents();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const getRankName = (rankId?: string | null) => {
+    if (!rankId) return "";
+    return ranks.find((rank) => rank.rank_id === rankId)?.rank_name ?? rankId;
+  };
 
   return (
     <div className="max-w-4xl mx-auto p-4">
@@ -104,7 +111,7 @@ export const StudentListPage = () => {
                 <td className="p-3">{student.name}</td>
                 <td className="p-3">{student.email}</td>
                 <td className="p-3">{student.phone || "N/A"}</td>
-                <td className="p-3">{student.current_rank_id ?? ""}</td>
+                <td className="p-3">{getRankName(student.current_rank_id)}</td>
                 <td className="p-3">
                   <button
                     onClick={() => handleEdit(student)}

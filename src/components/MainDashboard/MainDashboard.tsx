@@ -14,6 +14,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { SettingsPage } from "./UserProfile/SettingsPage";
 import { NotificationSettings } from "./NotificationSettings/NotificationSettings";
+import SalesTrackingPage from "./Sales/SalesTrackingPage";
 
 const VIEW_COMPONENTS = {
   school: SchoolManagement,
@@ -23,6 +24,7 @@ const VIEW_COMPONENTS = {
   classes: ClassSchedulingPage,
   belts: BeltTrackingPage,
   inventory: InventoryPage,
+  sales: SalesTrackingPage,
   profile: ProfilePage,
   settings: SettingsPage,
   notifications: NotificationSettings,
@@ -37,6 +39,7 @@ const VIEW_TITLES: Record<string, string> = {
   classes: "Class Scheduling",
   belts: "Belt Tracking",
   inventory: "Inventory Management",
+  sales: "Sales Tracking",
   reporting: "Reporting",
   profile: "My Profile",
   settings: "Settings",

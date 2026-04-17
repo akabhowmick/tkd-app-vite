@@ -40,16 +40,24 @@ const STATUS_STYLES: Record<string, { card: string; badge: string; icon: string;
     },
   };
 
-type PaymentForm = {
+type AddPaymentForm = {
   payment_date: string;
   amount_due: string;
   amount_paid: string;
   paid_to: string;
 };
 
+type MarkPaidForm = {
+  payment_date: string;
+  amount_paid: string;
+  paid_to: string;
+};
+
+const today = () => new Date().toISOString().split("T")[0];
+
 export const RenewalCard: React.FC<RenewalCardProps> = ({
   period,
-  onMarkPaid,
+  onMarkInstallmentPaid,
   onDelete,
   onResolveAsQuit,
   onRenew,
@@ -58,61 +66,126 @@ export const RenewalCard: React.FC<RenewalCardProps> = ({
   const { students } = useSchool();
   const [paymentsOpen, setPaymentsOpen] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
-  const [addPaymentOpen, setAddPaymentOpen] = useState(false);
-  const [paymentLoading, setPaymentLoading] = useState(false);
-  const [paymentError, setPaymentError] = useState<string | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+
+  // Add-installment modal
+  const [addPaymentOpen, setAddPaymentOpen] = useState(false);
+  const [addForm, setAddForm] = useState<AddPaymentForm>({
+    payment_date: today(),
+    amount_due: period.balance.toFixed(2),
+    amount_paid: "0",
+    paid_to: "",
+  });
+  const [addLoading, setAddLoading] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
+
+  // Mark-paid modal
+  const [markPaidOpen, setMarkPaidOpen] = useState(false);
+  const [markPaidTarget, setMarkPaidTarget] = useState<{
+    paymentId: string;
+    amountDue: number;
+    installmentNumber: number;
+  } | null>(null);
+  const [markPaidForm, setMarkPaidForm] = useState<MarkPaidForm>({
+    payment_date: today(),
+    amount_paid: "0",
+    paid_to: "",
+  });
+  const [markPaidLoading, setMarkPaidLoading] = useState(false);
+  const [markPaidError, setMarkPaidError] = useState<string | null>(null);
 
   const student = students.find((s) => s.id === period.student_id);
   const style = STATUS_STYLES[period.ui_status] ?? STATUS_STYLES.active;
   const isPaid = period.balance <= 0 && period.total_due > 0;
-
   const nextInstallment = period.payments.length + 1;
-  const [paymentForm, setPaymentForm] = useState<PaymentForm>({
-    payment_date: new Date().toISOString().split("T")[0],
-    amount_due: String(period.balance.toFixed(2)),
-    amount_paid: "0",
-    paid_to: "",
-  });
+
+  // ── Handlers ────────────────────────────────────────────────
+
+  const openMarkPaid = () => {
+    const firstUnpaid = period.payments.find((p) => p.amount_paid < p.amount_due);
+    if (!firstUnpaid) return;
+    setMarkPaidTarget({
+      paymentId: firstUnpaid.payment_id,
+      amountDue: firstUnpaid.amount_due,
+      installmentNumber: firstUnpaid.installment_number,
+    });
+    setMarkPaidForm({
+      payment_date: today(),
+      amount_paid: firstUnpaid.amount_due.toFixed(2),
+      paid_to: "",
+    });
+    setMarkPaidError(null);
+    setManageOpen(false);
+    setMarkPaidOpen(true);
+  };
+
+  const handleMarkPaidSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!markPaidTarget) return;
+    setMarkPaidError(null);
+    if (!markPaidForm.payment_date) { setMarkPaidError("Payment date is required."); return; }
+    if (!markPaidForm.paid_to.trim()) { setMarkPaidError("Paid To is required."); return; }
+    const amountPaid = parseFloat(markPaidForm.amount_paid);
+    if (isNaN(amountPaid) || amountPaid < 0) { setMarkPaidError("Invalid amount paid."); return; }
+
+    setMarkPaidLoading(true);
+    try {
+      await onMarkInstallmentPaid(
+        period.period_id,
+        markPaidTarget.paymentId,
+        markPaidForm.payment_date,
+        amountPaid,
+        markPaidForm.paid_to.trim(),
+      );
+      setMarkPaidOpen(false);
+    } catch {
+      setMarkPaidError("Failed to record payment. Please try again.");
+    } finally {
+      setMarkPaidLoading(false);
+    }
+  };
 
   const openAddPayment = () => {
-    setPaymentForm({
-      payment_date: new Date().toISOString().split("T")[0],
-      amount_due: String(period.balance.toFixed(2)),
+    setAddForm({
+      payment_date: today(),
+      amount_due: period.balance.toFixed(2),
       amount_paid: "0",
       paid_to: "",
     });
-    setPaymentError(null);
+    setAddError(null);
     setManageOpen(false);
     setAddPaymentOpen(true);
   };
 
   const handleAddPaymentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setPaymentError(null);
-    if (!paymentForm.payment_date) { setPaymentError("Payment date is required."); return; }
-    if (!paymentForm.paid_to.trim()) { setPaymentError("Paid To is required."); return; }
-    const amountDue = parseFloat(paymentForm.amount_due);
-    const amountPaid = parseFloat(paymentForm.amount_paid);
-    if (isNaN(amountDue) || amountDue < 0) { setPaymentError("Invalid amount due."); return; }
-    if (isNaN(amountPaid) || amountPaid < 0) { setPaymentError("Invalid amount paid."); return; }
+    setAddError(null);
+    if (!addForm.payment_date) { setAddError("Payment date is required."); return; }
+    if (!addForm.paid_to.trim()) { setAddError("Paid To is required."); return; }
+    const amountDue = parseFloat(addForm.amount_due);
+    const amountPaid = parseFloat(addForm.amount_paid);
+    if (isNaN(amountDue) || amountDue < 0) { setAddError("Invalid amount due."); return; }
+    if (isNaN(amountPaid) || amountPaid < 0) { setAddError("Invalid amount paid."); return; }
 
-    setPaymentLoading(true);
+    setAddLoading(true);
     try {
       if (onAddPayment) {
         onAddPayment(period.period_id, {
-          payment_date: paymentForm.payment_date,
+          due_date: addForm.payment_date,
+          payment_date: addForm.payment_date,
           amount_due: amountDue,
           amount_paid: amountPaid,
-          paid_to: paymentForm.paid_to.trim(),
+          paid_to: addForm.paid_to.trim(),
           installment_number: nextInstallment,
         });
       }
       setAddPaymentOpen(false);
     } finally {
-      setPaymentLoading(false);
+      setAddLoading(false);
     }
   };
+
+  // ── Render ───────────────────────────────────────────────────
 
   return (
     <div className={`${style.card} border rounded-lg p-4 flex flex-col gap-3`}>
@@ -141,7 +214,12 @@ export const RenewalCard: React.FC<RenewalCardProps> = ({
       {/* Key details */}
       <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
         <span>
-          Expires: <strong>{new Date(period.expiration_date).toLocaleDateString()}</strong>
+          Expires:{" "}
+          <strong>
+            {period.expiration_date
+              ? new Date(period.expiration_date).toLocaleDateString()
+              : "—"}
+          </strong>
         </span>
         <span>
           Classes/wk: <strong>{period.number_of_classes}</strong>
@@ -186,7 +264,11 @@ export const RenewalCard: React.FC<RenewalCardProps> = ({
                   <span className="font-medium text-gray-700">
                     Installment {payment.installment_number}
                   </span>
-                  <span className={settled ? "text-green-600 font-semibold" : "text-red-500 font-semibold"}>
+                  <span
+                    className={
+                      settled ? "text-green-600 font-semibold" : "text-red-500 font-semibold"
+                    }
+                  >
                     {settled
                       ? "Paid"
                       : `Bal: $${(payment.amount_due - payment.amount_paid).toFixed(2)}`}
@@ -194,7 +276,10 @@ export const RenewalCard: React.FC<RenewalCardProps> = ({
                 </div>
                 <div className="flex justify-between text-gray-500 mt-1">
                   <span>
-                    {new Date(payment.payment_date).toLocaleDateString()} · {payment.paid_to}
+                    {payment.payment_date
+                      ? new Date(payment.payment_date).toLocaleDateString()
+                      : "—"}{" "}
+                    · {payment.paid_to}
                   </span>
                   <span>
                     ${payment.amount_paid.toFixed(2)} / ${payment.amount_due.toFixed(2)}
@@ -207,22 +292,13 @@ export const RenewalCard: React.FC<RenewalCardProps> = ({
       )}
 
       {/* ── Manage Modal ── */}
-      <AppModal
-        open={manageOpen}
-        onOpenChange={setManageOpen}
-        title="Manage Renewal"
-        size="compact"
-      >
+      <AppModal open={manageOpen} onOpenChange={setManageOpen} title="Manage Renewal" size="compact">
         <div className="flex flex-col gap-2">
           {!isPaid && (
             <Button
               variant="default"
               className="w-full bg-green-600 hover:bg-green-700"
-              onClick={() => {
-                const firstUnpaid = period.payments.find((p) => p.amount_paid < p.amount_due);
-                if (firstUnpaid) onMarkPaid(period.period_id, firstUnpaid.payment_id);
-                setManageOpen(false);
-              }}
+              onClick={openMarkPaid}
             >
               ✓ Mark Next Payment Paid
             </Button>
@@ -236,7 +312,10 @@ export const RenewalCard: React.FC<RenewalCardProps> = ({
             <Button
               variant="secondary"
               className="w-full"
-              onClick={() => { onRenew(period); setManageOpen(false); }}
+              onClick={() => {
+                onRenew(period);
+                setManageOpen(false);
+              }}
             >
               🔄 Renew
             </Button>
@@ -245,7 +324,10 @@ export const RenewalCard: React.FC<RenewalCardProps> = ({
             <Button
               variant="outline"
               className="w-full border-yellow-400 text-yellow-700 hover:bg-yellow-50"
-              onClick={() => { onResolveAsQuit(period.period_id); setManageOpen(false); }}
+              onClick={() => {
+                onResolveAsQuit(period.period_id);
+                setManageOpen(false);
+              }}
             >
               🚪 Mark as Quit
             </Button>
@@ -253,14 +335,57 @@ export const RenewalCard: React.FC<RenewalCardProps> = ({
           <Button
             variant="destructive"
             className="w-full"
-            onClick={() => { setManageOpen(false); setDeleteConfirmOpen(true); }}
+            onClick={() => {
+              setManageOpen(false);
+              setDeleteConfirmOpen(true);
+            }}
           >
             🗑 Delete
           </Button>
         </div>
       </AppModal>
 
-      {/* ── Add Payment Modal ── */}
+      {/* ── Mark Payment Paid Modal ── */}
+      <AppFormModal
+        open={markPaidOpen}
+        onOpenChange={setMarkPaidOpen}
+        title={`Mark Installment #${markPaidTarget?.installmentNumber ?? ""} Paid`}
+        description={`Amount due: $${markPaidTarget?.amountDue.toFixed(2) ?? "0.00"}`}
+        size="compact"
+        onSubmit={handleMarkPaidSubmit}
+        submitLabel="Record Payment"
+        loading={markPaidLoading}
+        error={markPaidError}
+      >
+        <ModalField label="Payment Date" required htmlFor="mp-date">
+          <Input
+            id="mp-date"
+            type="date"
+            value={markPaidForm.payment_date}
+            onChange={(e) => setMarkPaidForm((f) => ({ ...f, payment_date: e.target.value }))}
+          />
+        </ModalField>
+        <ModalField label="Amount Paid" required htmlFor="mp-amount">
+          <Input
+            id="mp-amount"
+            type="number"
+            step="0.01"
+            value={markPaidForm.amount_paid}
+            onChange={(e) => setMarkPaidForm((f) => ({ ...f, amount_paid: e.target.value }))}
+          />
+        </ModalField>
+        <ModalField label="Paid To" required htmlFor="mp-to">
+          <Input
+            id="mp-to"
+            type="text"
+            placeholder="e.g., MR, Amy"
+            value={markPaidForm.paid_to}
+            onChange={(e) => setMarkPaidForm((f) => ({ ...f, paid_to: e.target.value }))}
+          />
+        </ModalField>
+      </AppFormModal>
+
+      {/* ── Add Installment Modal ── */}
       <AppFormModal
         open={addPaymentOpen}
         onOpenChange={setAddPaymentOpen}
@@ -269,15 +394,15 @@ export const RenewalCard: React.FC<RenewalCardProps> = ({
         size="compact"
         onSubmit={handleAddPaymentSubmit}
         submitLabel="Add Payment"
-        loading={paymentLoading}
-        error={paymentError}
+        loading={addLoading}
+        error={addError}
       >
         <ModalField label="Payment Date" required htmlFor="pay-date">
           <Input
             id="pay-date"
             type="date"
-            value={paymentForm.payment_date}
-            onChange={(e) => setPaymentForm((f) => ({ ...f, payment_date: e.target.value }))}
+            value={addForm.payment_date}
+            onChange={(e) => setAddForm((f) => ({ ...f, payment_date: e.target.value }))}
           />
         </ModalField>
         <div className="grid grid-cols-2 gap-4">
@@ -286,8 +411,8 @@ export const RenewalCard: React.FC<RenewalCardProps> = ({
               id="pay-due"
               type="number"
               step="0.01"
-              value={paymentForm.amount_due}
-              onChange={(e) => setPaymentForm((f) => ({ ...f, amount_due: e.target.value }))}
+              value={addForm.amount_due}
+              onChange={(e) => setAddForm((f) => ({ ...f, amount_due: e.target.value }))}
             />
           </ModalField>
           <ModalField label="Amount Paid" required htmlFor="pay-paid">
@@ -295,8 +420,8 @@ export const RenewalCard: React.FC<RenewalCardProps> = ({
               id="pay-paid"
               type="number"
               step="0.01"
-              value={paymentForm.amount_paid}
-              onChange={(e) => setPaymentForm((f) => ({ ...f, amount_paid: e.target.value }))}
+              value={addForm.amount_paid}
+              onChange={(e) => setAddForm((f) => ({ ...f, amount_paid: e.target.value }))}
             />
           </ModalField>
         </div>
@@ -305,8 +430,8 @@ export const RenewalCard: React.FC<RenewalCardProps> = ({
             id="pay-to"
             type="text"
             placeholder="e.g., MR, Amy"
-            value={paymentForm.paid_to}
-            onChange={(e) => setPaymentForm((f) => ({ ...f, paid_to: e.target.value }))}
+            value={addForm.paid_to}
+            onChange={(e) => setAddForm((f) => ({ ...f, paid_to: e.target.value }))}
           />
         </ModalField>
       </AppFormModal>
@@ -317,7 +442,10 @@ export const RenewalCard: React.FC<RenewalCardProps> = ({
         onOpenChange={setDeleteConfirmOpen}
         title="Delete Renewal?"
         description="Are you sure you want to delete this renewal period? This cannot be undone."
-        onConfirm={() => { onDelete(period.period_id); setDeleteConfirmOpen(false); }}
+        onConfirm={() => {
+          onDelete(period.period_id);
+          setDeleteConfirmOpen(false);
+        }}
         confirmLabel="Delete"
       />
     </div>

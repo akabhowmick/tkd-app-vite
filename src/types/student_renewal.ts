@@ -146,7 +146,7 @@ export interface RenewalCardProps {
     actualPaymentDate: string,
     amountPaid: number,
     paidTo: string,
-  ) => void;
+  ) => Promise<void>;
   onDelete: (periodId: string) => void;
   onResolveAsQuit?: (periodId: string) => void;
   onRenew?: (period: RenewalPeriod) => void;

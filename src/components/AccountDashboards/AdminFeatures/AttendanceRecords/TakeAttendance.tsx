@@ -51,8 +51,6 @@ export const TakeAttendance = () => {
   const [calYear, setCalYear] = useState(() => new Date().getFullYear());
   const [calMonth, setCalMonth] = useState(() => new Date().getMonth());
   const [markAllOpen, setMarkAllOpen] = useState(false);
-  const [noteOpen, setNoteOpen] = useState<string | null>(null);
-  const [notes, setNotes] = useState<Record<string, string>>({});
 
   // Dates that have at least one attendance record in the DB
   const [markedDates, setMarkedDates] = useState<Set<string>>(new Set());
@@ -318,7 +316,6 @@ export const TakeAttendance = () => {
             students.map((student: UserProfile) => {
               const id = student.id!;
               const currentStatus = getStatus(id);
-              const hasNote = !!notes[id];
 
               return (
                 <div
@@ -334,8 +331,6 @@ export const TakeAttendance = () => {
                   </div>
 
                   <span className="flex-1 text-sm font-medium text-gray-800">{student.name}</span>
-
-                  {hasNote && <span className="text-sm text-primary mr-1">📝</span>}
 
                   <div className="flex flex-col gap-1">
                     <div className="flex gap-1">
@@ -364,25 +359,7 @@ export const TakeAttendance = () => {
                       >
                         Tardy
                       </button>
-                      <button
-                        onClick={() => setNoteOpen(noteOpen === id ? null : id)}
-                        className="px-3 py-1 text-sm font-semibold rounded border border-gray-300 text-gray-600 hover:border-gray-400 bg-white transition-all"
-                      >
-                        Note
-                      </button>
                     </div>
-
-                    {noteOpen === id && (
-                      <input
-                        autoFocus
-                        type="text"
-                        value={notes[id] || ""}
-                        onChange={(e) => setNotes((prev) => ({ ...prev, [id]: e.target.value }))}
-                        onBlur={() => setNoteOpen(null)}
-                        placeholder="Add a note..."
-                        className="mt-1 px-2 py-1 text-sm border border-gray-300 rounded outline-none focus:border-primary w-full"
-                      />
-                    )}
                   </div>
                 </div>
               );
