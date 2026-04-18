@@ -10,6 +10,9 @@ vi.mock("../api/supabase", () => ({
       signUp: vi.fn(),
       signOut: vi.fn(),
       onAuthStateChange: vi.fn().mockReturnValue({ data: { subscription: { unsubscribe: vi.fn() } } }),
+      updateUser: vi.fn().mockResolvedValue({ data: { user: null }, error: null }),
+      resetPasswordForEmail: vi.fn().mockResolvedValue({ data: {}, error: null }),
+      signInWithOAuth: vi.fn().mockResolvedValue({ data: {}, error: null }),
     },
     from: vi.fn().mockReturnValue({
       select: vi.fn().mockReturnThis(),
