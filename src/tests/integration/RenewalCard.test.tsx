@@ -22,6 +22,7 @@ const makePeriod = (
   expiration_date: "2025-12-01",
   number_of_classes: 2,
   status: "active",
+  program_id: null,
   created_at: "2025-01-01T00:00:00Z",
   updated_at: "2025-01-01T00:00:00Z",
   payments: [],
@@ -31,6 +32,8 @@ const makePeriod = (
   ui_status: "active",
   days_until_expiration: 103,
   status_message: "Active",
+  next_unpaid_installment: null,
+  is_milestone: false,
   ...overrides,
 });
 
@@ -52,7 +55,7 @@ describe("RenewalCard — badge states", () => {
     render(
       <RenewalCard
         period={makePeriod({ ui_status: "active", status_message: "Active" })}
-        onMarkPaid={noop}
+        onMarkInstallmentPaid={noop}
         onDelete={noop}
       />,
     );
@@ -68,7 +71,7 @@ describe("RenewalCard — badge states", () => {
           balance: 0,
           total_paid: 100,
         })}
-        onMarkPaid={noop}
+        onMarkInstallmentPaid={noop}
         onDelete={noop}
       />,
     );
@@ -79,7 +82,7 @@ describe("RenewalCard — badge states", () => {
     render(
       <RenewalCard
         period={makePeriod({ ui_status: "expiring_soon", status_message: "Expires in 5 days" })}
-        onMarkPaid={noop}
+        onMarkInstallmentPaid={noop}
         onDelete={noop}
       />,
     );
@@ -93,7 +96,7 @@ describe("RenewalCard — badge states", () => {
           ui_status: "grace_period",
           status_message: "3 days overdue — grace period",
         })}
-        onMarkPaid={noop}
+        onMarkInstallmentPaid={noop}
         onDelete={noop}
       />,
     );
@@ -104,7 +107,7 @@ describe("RenewalCard — badge states", () => {
     render(
       <RenewalCard
         period={makePeriod({ ui_status: "expired", status_message: "Expired 10 days ago" })}
-        onMarkPaid={noop}
+        onMarkInstallmentPaid={noop}
         onDelete={noop}
       />,
     );
@@ -114,7 +117,7 @@ describe("RenewalCard — badge states", () => {
 
 describe("RenewalCard — balance display", () => {
   it("shows balance owed when balance > 0", () => {
-    render(<RenewalCard period={makePeriod({ balance: 50 })} onMarkPaid={noop} onDelete={noop} />);
+    render(<RenewalCard period={makePeriod({ balance: 50 })} onMarkInstallmentPaid={noop} onDelete={noop} />);
     expect(screen.getByText(/Balance Owed/)).toBeInTheDocument();
   });
 
@@ -122,7 +125,7 @@ describe("RenewalCard — balance display", () => {
     render(
       <RenewalCard
         period={makePeriod({ balance: 0, total_paid: 100, ui_status: "paid" })}
-        onMarkPaid={noop}
+        onMarkInstallmentPaid={noop}
         onDelete={noop}
       />,
     );
@@ -132,7 +135,7 @@ describe("RenewalCard — balance display", () => {
 
 describe("RenewalCard — student name", () => {
   it("shows student name when student is found", () => {
-    render(<RenewalCard period={makePeriod()} onMarkPaid={noop} onDelete={noop} />);
+    render(<RenewalCard period={makePeriod()} onMarkInstallmentPaid={noop} onDelete={noop} />);
     expect(screen.getByText(/Alice Kim/)).toBeInTheDocument();
   });
 
@@ -140,7 +143,7 @@ describe("RenewalCard — student name", () => {
     render(
       <RenewalCard
         period={makePeriod({ student_id: "unknown-id" })}
-        onMarkPaid={noop}
+        onMarkInstallmentPaid={noop}
         onDelete={noop}
       />,
     );
@@ -156,6 +159,7 @@ describe("RenewalCard — payment history toggle", () => {
           payment_id: "pay1",
           period_id: "p1",
           student_id: "s1",
+          due_date: null,
           payment_date: "2025-08-01",
           amount_due: 100,
           amount_paid: 50,
@@ -165,7 +169,7 @@ describe("RenewalCard — payment history toggle", () => {
         },
       ],
     });
-    render(<RenewalCard period={period} onMarkPaid={noop} onDelete={noop} />);
+    render(<RenewalCard period={period} onMarkInstallmentPaid={noop} onDelete={noop} />);
 
     const toggleBtn = screen.getByText(/1 payment/);
     expect(screen.queryByText(/Installment 1/)).not.toBeInTheDocument();
@@ -179,7 +183,7 @@ describe("RenewalCard — status message", () => {
     render(
       <RenewalCard
         period={makePeriod({ status_message: "Expires in 5 days" })}
-        onMarkPaid={noop}
+        onMarkInstallmentPaid={noop}
         onDelete={noop}
       />,
     );

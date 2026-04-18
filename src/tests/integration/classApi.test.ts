@@ -131,7 +131,7 @@ describe("createClass", () => {
       select: vi.fn().mockReturnThis(),
       single: vi.fn().mockResolvedValue({ data: fakeClass, error: null }),
     });
-    const result = await createClass({ school_id: "sc1", class_name: "Beginner" });
+    const result = await createClass({ school_id: "sc1", class_name: "Beginner", age_group: "Kids" });
     expect(result).toEqual(fakeClass);
   });
 
@@ -141,7 +141,7 @@ describe("createClass", () => {
       select: vi.fn().mockReturnThis(),
       single: vi.fn().mockResolvedValue({ data: null, error: new Error("Insert failed") }),
     });
-    await expect(createClass({ school_id: "sc1", class_name: "X" })).rejects.toThrow("Insert failed");
+    await expect(createClass({ school_id: "sc1", class_name: "X", age_group: "Adults" })).rejects.toThrow("Insert failed");
   });
 });
 
@@ -190,7 +190,7 @@ describe("createSession", () => {
       select: vi.fn().mockReturnThis(),
       single: vi.fn().mockResolvedValue({ data: fakeSession, error: null }),
     });
-    const result = await createSession({ class_id: "c1", day_of_week: 1, start_time: "09:00", end_time: "10:00" });
+    const result = await createSession({ class_id: "c1", school_id: "sc1", session_type: "recurring" as const, day_of_week: 1, start_time: "09:00", end_time: "10:00" });
     expect(result).toEqual(fakeSession);
   });
 
@@ -201,7 +201,7 @@ describe("createSession", () => {
       single: vi.fn().mockResolvedValue({ data: null, error: new Error("Insert failed") }),
     });
     await expect(
-      createSession({ class_id: "c1", day_of_week: 1, start_time: "09:00", end_time: "10:00" }),
+      createSession({ class_id: "c1", school_id: "sc1", session_type: "recurring" as const, day_of_week: 1, start_time: "09:00", end_time: "10:00" }),
     ).rejects.toThrow("Insert failed");
   });
 });

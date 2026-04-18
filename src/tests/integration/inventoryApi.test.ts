@@ -20,8 +20,9 @@ const fakeItem = {
   stock_quantity: 10,
   low_stock_threshold: 5,
   price: 50,
-  category: "gear",
+  category: "Gear" as const,
   created_at: "2025-01-01T00:00:00Z",
+  updated_at: "2025-01-01T00:00:00Z",
 };
 
 const fakeLowStockItem = { ...fakeItem, item_id: "i2", item_name: "Belt", stock_quantity: 2, low_stock_threshold: 5 };
@@ -30,9 +31,10 @@ const fakeTransaction = {
   transaction_id: "t1",
   school_id: "sc1",
   item_id: "i1",
-  quantity_change: -1,
-  transaction_type: "sale",
+  quantity: 1,
+  transaction_type: "sale" as const,
   transaction_date: "2025-01-01",
+  created_at: "2025-01-01T00:00:00Z",
 };
 
 describe("getInventoryItems", () => {
@@ -116,7 +118,7 @@ describe("createInventoryItem", () => {
       select: vi.fn().mockReturnThis(),
       single: vi.fn().mockResolvedValue({ data: fakeItem, error: null }),
     });
-    const result = await createInventoryItem({ school_id: "sc1", item_name: "Uniform", stock_quantity: 10, low_stock_threshold: 5, price: 50, category: "gear" });
+    const result = await createInventoryItem({ school_id: "sc1", item_name: "Uniform", price: 50, category: "Gear" });
     expect(result).toEqual(fakeItem);
   });
 
@@ -127,7 +129,7 @@ describe("createInventoryItem", () => {
       single: vi.fn().mockResolvedValue({ data: null, error: new Error("Insert failed") }),
     });
     await expect(
-      createInventoryItem({ school_id: "sc1", item_name: "X", stock_quantity: 1, low_stock_threshold: 1, price: 0, category: "other" }),
+      createInventoryItem({ school_id: "sc1", item_name: "X", price: 0, category: "Merchandise" }),
     ).rejects.toThrow("Insert failed");
   });
 });
@@ -190,7 +192,7 @@ describe("createTransaction", () => {
     const result = await createTransaction({
       school_id: "sc1",
       item_id: "i1",
-      quantity_change: -1,
+      quantity: 1,
       transaction_type: "sale",
       transaction_date: "2025-01-01",
     });
@@ -204,7 +206,7 @@ describe("createTransaction", () => {
       single: vi.fn().mockResolvedValue({ data: null, error: new Error("Insert failed") }),
     });
     await expect(
-      createTransaction({ school_id: "sc1", item_id: "i1", quantity_change: -1, transaction_type: "sale", transaction_date: "2025-01-01" }),
+      createTransaction({ school_id: "sc1", item_id: "i1", quantity: 1, transaction_type: "sale", transaction_date: "2025-01-01" }),
     ).rejects.toThrow("Insert failed");
   });
 });

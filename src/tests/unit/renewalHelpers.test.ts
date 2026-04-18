@@ -25,6 +25,7 @@ const makePeriod = (overrides: Partial<RenewalPeriod> = {}): RenewalPeriod => ({
   expiration_date: "2025-09-20T12:00:00", // 31 days from pinned "today"
   number_of_classes: 2,
   status: "active",
+  program_id: null,
   created_at: "2025-01-01T00:00:00Z",
   updated_at: "2025-01-01T00:00:00Z",
   payments: [],

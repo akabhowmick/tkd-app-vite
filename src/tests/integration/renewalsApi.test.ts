@@ -52,6 +52,7 @@ describe("createRenewalPeriod", () => {
       duration_months: 3,
       expiration_date: "2025-12-01",
       number_of_classes: 2,
+      program_id: null,
     });
     expect(result.period_id).toBe("per1");
     expect(result.payments).toEqual([]);
@@ -67,7 +68,7 @@ describe("createRenewalPeriod", () => {
       single: vi.fn().mockResolvedValue({ data: null, error: new Error("Insert failed") }),
     });
     await expect(
-      createRenewalPeriod({ student_id: "s1", school_id: "sc1", duration_months: 3, expiration_date: "2025-12-01", number_of_classes: 2 }),
+      createRenewalPeriod({ student_id: "s1", school_id: "sc1", duration_months: 3, expiration_date: "2025-12-01", number_of_classes: 2, program_id: null }),
     ).rejects.toThrow("Insert failed");
   });
 });
@@ -87,6 +88,9 @@ describe("createRenewalPayment", () => {
       installment_number: 1,
       amount_due: 100,
       amount_paid: 0,
+      due_date: null,
+      payment_date: null,
+      paid_to: "",
     });
     expect(result).toEqual(fakePayment);
   });
@@ -98,7 +102,7 @@ describe("createRenewalPayment", () => {
       single: vi.fn().mockResolvedValue({ data: null, error: new Error("Insert failed") }),
     });
     await expect(
-      createRenewalPayment({ period_id: "per1", student_id: "s1", installment_number: 1, amount_due: 100, amount_paid: 0 }),
+      createRenewalPayment({ period_id: "per1", student_id: "s1", installment_number: 1, amount_due: 100, amount_paid: 0, due_date: null, payment_date: null, paid_to: "" }),
     ).rejects.toThrow("Insert failed");
   });
 });

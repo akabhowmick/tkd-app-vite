@@ -156,6 +156,8 @@ describe("createPromotion", () => {
       from_rank_id: "r1",
       to_rank_id: "r2",
       promotion_date: "2025-01-01",
+      promotion_type: "manual",
+      promoted_by: "Instructor",
     });
     expect(result).toEqual(fakePromotion);
   });
@@ -167,7 +169,15 @@ describe("createPromotion", () => {
       single: vi.fn().mockResolvedValue({ data: null, error: new Error("Insert failed") }),
     });
     await expect(
-      createPromotion({ student_id: "s1", school_id: "sc1", from_rank_id: "r1", to_rank_id: "r2", promotion_date: "2025-01-01" }),
+      createPromotion({
+        student_id: "s1",
+        school_id: "sc1",
+        from_rank_id: "r1",
+        to_rank_id: "r2",
+        promotion_date: "2025-01-01",
+        promotion_type: "manual",
+        promoted_by: "Instructor",
+      }),
     ).rejects.toThrow("Insert failed");
   });
 });
