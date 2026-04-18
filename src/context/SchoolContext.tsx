@@ -68,8 +68,6 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     }
   };
 
-  const getLastName = (name: string = "") => name.trim().split(" ").pop() ?? "";
-
   const loadStudents = useCallback(
     async (currentSchoolId?: string, forceRefresh = false) => {
       const targetSchoolId = currentSchoolId || schoolId;
@@ -87,14 +85,12 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
       try {
         setLoading(true);
-        const filtered = await getStudents(targetSchoolId);
-        const sorted = filtered.sort((a, b) =>
-          getLastName(a.name).localeCompare(getLastName(b.name)),
-        );
+        // getStudents already sorts by last name — no re-sort needed here
+        const students = await getStudents(targetSchoolId);
 
-        setStudentsCache((prev) => new Map(prev).set(targetSchoolId, sorted));
+        setStudentsCache((prev) => new Map(prev).set(targetSchoolId, students));
         setLastStudentsFetch((prev) => new Map(prev).set(targetSchoolId, now));
-        setStudents(sorted);
+        setStudents(students);
       } catch (error) {
         console.error("Error loading students:", error);
       } finally {

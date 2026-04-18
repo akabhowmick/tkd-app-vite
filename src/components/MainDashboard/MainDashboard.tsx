@@ -15,6 +15,7 @@ import { useNavigate } from "react-router-dom";
 import { SettingsPage } from "./UserProfile/SettingsPage";
 import { NotificationSettings } from "./NotificationSettings/NotificationSettings";
 import SalesTrackingPage from "./Sales/SalesTrackingPage";
+import { ViewErrorBoundary } from "../ui/ViewErrorBoundary";
 
 const VIEW_COMPONENTS = {
   school: SchoolManagement,
@@ -66,12 +67,17 @@ export const MainDashboard = () => {
   const renderContent = () => {
     if (activeView === "home") return <StatCards onViewChange={handleViewChange} />;
     const Component = VIEW_COMPONENTS[activeView as keyof typeof VIEW_COMPONENTS];
-    return Component ? (
+    const content = Component ? (
       <Component />
     ) : (
       <div className="flex items-center justify-center h-64 text-muted-foreground">
         This section is coming soon.
       </div>
+    );
+    return (
+      <ViewErrorBoundary viewName={VIEW_TITLES[activeView] ?? activeView}>
+        {content}
+      </ViewErrorBoundary>
     );
   };
 

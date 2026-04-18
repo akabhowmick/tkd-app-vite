@@ -192,7 +192,19 @@ const SignUp: React.FC = () => {
           </button>
         </form>
 
-        <p className="text-sm text-center text-gray-500 mt-6">
+        <p className="text-xs text-center text-gray-400 mt-4 leading-relaxed">
+          By creating an account you agree to our{" "}
+          <Link to="/terms" className="underline hover:text-gray-600">
+            Terms of Service
+          </Link>{" "}
+          and{" "}
+          <Link to="/privacy" className="underline hover:text-gray-600">
+            Privacy Policy
+          </Link>
+          .
+        </p>
+
+        <p className="text-sm text-center text-gray-500 mt-3">
           Already have an account?{" "}
           <Link to="/login" className="text-blue-500 hover:underline font-medium">
             Log In

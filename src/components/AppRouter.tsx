@@ -17,6 +17,8 @@ import AboutPage from "../pages/About";
 import AuthCallback from "../pages/AuthCallback";
 import ResetPassword from "../pages/ResetPassword";
 import Home from "../pages/Home";
+import PrivacyPolicy from "../pages/PrivacyPolicy";
+import TermsOfService from "../pages/TermsOfService";
 
 const NotFound = () => (
   <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
@@ -55,6 +57,8 @@ const AppContent: React.FC = () => {
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="/faq" element={<FaqPage />} />
         <Route path="/about" element={<AboutPage />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/terms" element={<TermsOfService />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/reset-password" element={<ResetPassword />} />
 
