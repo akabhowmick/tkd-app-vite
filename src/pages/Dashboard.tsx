@@ -7,6 +7,7 @@ import { ClassProvider } from "../context/ClassContext";
 import { BeltProvider } from "../context/BeltContext";
 import { InventoryProvider } from "../context/InventoryContext";
 import { ProgramProvider } from "../context/ProgramContext";
+import { AnnouncementProvider } from "../context/AnnouncementContext";
 import { UserRole } from "../types/user";
 import { Profile } from "../components/AccountDashboards/AdminFeatures/Profile/Profile";
 
@@ -25,7 +26,9 @@ const Dashboard = () => {
                 <ClassProvider>
                   <BeltProvider>
                     <InventoryProvider>
-                      <MainDashboard />
+                      <AnnouncementProvider>
+                        <MainDashboard />
+                      </AnnouncementProvider>
                     </InventoryProvider>
                   </BeltProvider>
                 </ClassProvider>

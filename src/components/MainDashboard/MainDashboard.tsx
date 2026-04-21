@@ -16,6 +16,7 @@ import { SettingsPage } from "./UserProfile/SettingsPage";
 import { NotificationSettings } from "./NotificationSettings/NotificationSettings";
 import SalesTrackingPage from "./Sales/SalesTrackingPage";
 import { ViewErrorBoundary } from "../ui/ViewErrorBoundary";
+import { AnnouncementsPage } from "../../pages/AnnouncementsPage";
 
 const VIEW_COMPONENTS = {
   school: SchoolManagement,
@@ -29,6 +30,7 @@ const VIEW_COMPONENTS = {
   profile: ProfilePage,
   settings: SettingsPage,
   notifications: NotificationSettings,
+  announcements: AnnouncementsPage,
 } as const;
 
 const VIEW_TITLES: Record<string, string> = {
@@ -45,6 +47,7 @@ const VIEW_TITLES: Record<string, string> = {
   profile: "My Profile",
   settings: "Settings",
   notifications: "Notification Settings",
+  announcements: "Announcements",
 };
 
 export const MainDashboard = () => {

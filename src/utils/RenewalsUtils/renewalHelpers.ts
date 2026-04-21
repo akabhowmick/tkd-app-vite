@@ -10,7 +10,7 @@ export function calculateNewExpirationDate(
   currentRenewal: RenewalPeriod,
   durationMonths: number,
 ): string {
-  const currentExpiration = new Date(currentRenewal.expiration_date);
+  const currentExpiration = new Date(currentRenewal.expiration_date ?? "");
 
   // Start the new renewal from the day after the current expiration
   const newStartDate = new Date(currentExpiration);
@@ -159,7 +159,7 @@ export function determineRenewalStatus(
   period: RenewalPeriod,
 ): "active" | "expiring_soon" | "grace_period" | "expired" | "paid" {
   const isPaid = period.balance <= 0 && period.total_due > 0;
-  const daysUntilExpiration = calculateDaysUntilExpiration(period.expiration_date);
+  const daysUntilExpiration = calculateDaysUntilExpiration(period.expiration_date ?? "");
 
   if (isPaid) return "paid";
   if (daysUntilExpiration < -7) return "expired";

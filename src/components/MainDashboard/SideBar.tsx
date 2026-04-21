@@ -15,6 +15,7 @@ import {
   Award,
   Package,
   Bell,
+  Megaphone,
 } from "lucide-react";
 
 interface NavItem {
@@ -51,6 +52,11 @@ const NAV_SECTIONS: { heading: string | null; items: NavItem[] }[] = [
         icon: School,
         label: "School Profile",
         view: "school",
+      },
+      {
+        icon: Megaphone,
+        label: "Announcements",
+        view: "announcements",
       },
     ],
   },
