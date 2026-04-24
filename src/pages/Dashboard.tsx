@@ -10,6 +10,36 @@ import { ProgramProvider } from "../context/ProgramContext";
 import { AnnouncementProvider } from "../context/AnnouncementContext";
 import { UserRole } from "../types/user";
 import { Profile } from "../components/AccountDashboards/AdminFeatures/Profile/Profile";
+import { InstructorDashboard } from "../components/MainDashboard/InstructorDashboard/InstructorDashboard";
+import { PortalShell, PortalView } from "../components/Portal/PortalShell";
+import { StudentPortal } from "../components/Portal/StudentPortal";
+import { ParentPortal } from "../components/Portal/ParentPortal";
+import { AttendanceHistory } from "../components/Portal/AttendanceHistory";
+import { RenewalStatus } from "../components/Portal/RenewalStatus";
+import { BeltHistory } from "../components/Portal/BeltHistory";
+import { AnnouncementsPage } from "./AnnouncementsPage";
+
+// Shared provider stack for all roles that need school + announcements data
+const SchoolAnnouncementWrapper = ({ children }: { children: React.ReactNode }) => (
+  <SchoolProvider>
+    <AnnouncementProvider>{children}</AnnouncementProvider>
+  </SchoolProvider>
+);
+
+// Full provider stack for instructors (needs renewals, attendance, belts)
+const InstructorWrapper = ({ children }: { children: React.ReactNode }) => (
+  <SchoolProvider>
+    <ProgramProvider>
+      <StudentRenewalsProvider>
+        <AttendanceProvider>
+          <BeltProvider>
+            <AnnouncementProvider>{children}</AnnouncementProvider>
+          </BeltProvider>
+        </AttendanceProvider>
+      </StudentRenewalsProvider>
+    </ProgramProvider>
+  </SchoolProvider>
+);
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -18,8 +48,6 @@ const Dashboard = () => {
     case UserRole.Admin:
       return (
         <SchoolProvider>
-          {/* ProgramProvider must be inside SchoolProvider (needs schoolId)
-              but outside StudentRenewalsProvider (which consumes programs) */}
           <ProgramProvider>
             <StudentRenewalsProvider>
               <AttendanceProvider>
@@ -37,6 +65,46 @@ const Dashboard = () => {
           </ProgramProvider>
         </SchoolProvider>
       );
+
+    case UserRole.Instructor:
+      return (
+        <InstructorWrapper>
+          <InstructorDashboard />
+        </InstructorWrapper>
+      );
+
+    case UserRole.Student:
+      return (
+        <SchoolAnnouncementWrapper>
+          <PortalShell portalLabel="Student Portal">
+            {(activeView: PortalView, setActiveView) => {
+              if (activeView === "home" || activeView === "attendance") {
+                return <StudentPortal />;
+              }
+              if (activeView === "announcements") return <AnnouncementsPage />;
+              if (activeView === "attendance") return <AttendanceHistory studentId={user.id ?? ""} />;
+              if (activeView === "renewal") return <RenewalStatus studentId={user.id ?? ""} />;
+              if (activeView === "belts") return <BeltHistory studentId={user.id ?? ""} />;
+              return null;
+            }}
+          </PortalShell>
+        </SchoolAnnouncementWrapper>
+      );
+
+    case UserRole.Parent:
+      return (
+        <SchoolAnnouncementWrapper>
+          <PortalShell portalLabel="Parent Portal">
+            {(activeView: PortalView) => {
+              if (activeView === "home" || activeView === "announcements") {
+                return <ParentPortal />;
+              }
+              return <ParentPortal />;
+            }}
+          </PortalShell>
+        </SchoolAnnouncementWrapper>
+      );
+
     default:
       return <Profile />;
   }
