@@ -5,6 +5,7 @@ import { updateStudent, createStudent } from "../../../../api/StudentRequests/st
 import { useSchool } from "../../../../context/SchoolContext";
 import { useBelts } from "../../../../context/BeltContext";
 import { AppConfirmModal } from "../../../ui/modal";
+import { ManageParentLinks } from "./ManageParentLinks";
 
 export const StudentListPage = () => {
   const { loadStudents, handleDelete, students } = useSchool();
@@ -16,6 +17,7 @@ export const StudentListPage = () => {
     studentName: string;
   }>({ open: false, studentId: "", studentName: "" });
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [parentTarget, setParentTarget] = useState<Student | null>(null);
 
   const handleEdit = (user: Student) => {
     setEditingUser(user);
@@ -88,6 +90,18 @@ export const StudentListPage = () => {
         </div>
       )}
 
+      {parentTarget && (
+        <div className="mb-6 border p-4 rounded bg-white shadow-md">
+          <ManageParentLinks student={parentTarget} />
+          <button
+            className="mt-4 px-4 py-2 text-sm text-gray-600 bg-gray-200 rounded-md hover:bg-gray-300"
+            onClick={() => setParentTarget(null)}
+          >
+            Close
+          </button>
+        </div>
+      )}
+
       <table className="w-full bg-white shadow rounded overflow-hidden">
         <thead className="bg-gray-100 text-left text-black">
           <tr>
@@ -119,6 +133,12 @@ export const StudentListPage = () => {
                     disabled={editingUser?.id === student.id}
                   >
                     {editingUser?.id === student.id ? "Editing..." : "Edit"}
+                  </button>
+                  <button
+                    onClick={() => setParentTarget(student)}
+                    className="text-purple-600 hover:underline focus:outline-none mr-2"
+                  >
+                    Parents
                   </button>
                   <button
                     onClick={() => requestDelete(student)}
