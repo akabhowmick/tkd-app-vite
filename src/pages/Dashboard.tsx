@@ -14,7 +14,6 @@ import { InstructorDashboard } from "../components/MainDashboard/InstructorDashb
 import { PortalShell, PortalView } from "../components/Portal/PortalShell";
 import { StudentPortal } from "../components/Portal/StudentPortal";
 import { ParentPortal } from "../components/Portal/ParentPortal";
-import { AttendanceHistory } from "../components/Portal/AttendanceHistory";
 import { RenewalStatus } from "../components/Portal/RenewalStatus";
 import { BeltHistory } from "../components/Portal/BeltHistory";
 import { AnnouncementsPage } from "./AnnouncementsPage";
@@ -77,12 +76,11 @@ const Dashboard = () => {
       return (
         <SchoolAnnouncementWrapper>
           <PortalShell portalLabel="Student Portal">
-            {(activeView: PortalView, setActiveView) => {
+            {(activeView: PortalView, _setActiveView) => {
               if (activeView === "home" || activeView === "attendance") {
                 return <StudentPortal />;
               }
               if (activeView === "announcements") return <AnnouncementsPage />;
-              if (activeView === "attendance") return <AttendanceHistory studentId={user.id ?? ""} />;
               if (activeView === "renewal") return <RenewalStatus studentId={user.id ?? ""} />;
               if (activeView === "belts") return <BeltHistory studentId={user.id ?? ""} />;
               return null;

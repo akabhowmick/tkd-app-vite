@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Bell, ChevronDown, LogOut, User } from "lucide-react";
+import { Search, Bell, ChevronDown, LogOut } from "lucide-react";
 import { InstructorSidebar, InstructorView } from "./InstructorSidebar";
 import { InstructorHome } from "./InstructorHome";
 import { TakeAttendance } from "../../AccountDashboards/AdminFeatures/AttendanceRecords/TakeAttendance";
