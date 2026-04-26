@@ -61,3 +61,14 @@ Extend the existing Reporting section in the sidebar (currently shows "coming so
 Pull trend data from Supabase for attendance over time, revenue over time, renewal status breakdown
 
 Want me to start with Phase 1 and generate the full test setup + first batch of tests, or do you want to tackle analytics first? And do you have a PostHog or Sentry account already, or do I need to include the signup/setup steps?
+
+Zero TypeScript errors. All code steps are complete:
+
+supabase/functions/send-renewal-reminders/index.ts — replaced with the exact implementation from the spec (per-student emails via Resend, respects reminder_days windows, sends to school admin)
+notification_schedule.sql — pg_cron schedule SQL ready to run in the Supabase SQL Editor
+You need to do these four things manually:
+
+supabase secrets set RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxxxxxx
+Update reminders@yourdomain.com in the Edge Function to your Resend-verified domain
+supabase functions deploy send-renewal-reminders
+Run notification_schedule.sql in the Supabase SQL Editor
