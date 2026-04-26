@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Bell, ChevronDown, LogOut, User } from "lucide-react";
+import { Search, Bell, ChevronDown, LogOut, User, UserPlus } from "lucide-react";
 import { Sidebar } from "./SideBar";
 import { StatCards } from "./StatCard/StatCards";
 import { SchoolManagement } from "../AccountDashboards/AdminFeatures/SchoolManagement/SchoolManagement";
@@ -17,6 +17,8 @@ import { NotificationSettings } from "./NotificationSettings/NotificationSetting
 import SalesTrackingPage from "./Sales/SalesTrackingPage";
 import { ViewErrorBoundary } from "../ui/ViewErrorBoundary";
 import { AnnouncementsPage } from "../../pages/AnnouncementsPage";
+import { ReportingPage } from "../../pages/ReportingPage";
+import { CreateUserModal } from "../AccountDashboards/AdminFeatures/UserManagement/CreateUserModal";
 
 const VIEW_COMPONENTS = {
   school: SchoolManagement,
@@ -31,6 +33,7 @@ const VIEW_COMPONENTS = {
   settings: SettingsPage,
   notifications: NotificationSettings,
   announcements: AnnouncementsPage,
+  reporting: ReportingPage,
 } as const;
 
 const VIEW_TITLES: Record<string, string> = {
@@ -59,6 +62,7 @@ export const MainDashboard = () => {
     sessionStorage.setItem("activeView", view);
   };
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [createUserOpen, setCreateUserOpen] = useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -101,6 +105,12 @@ export const MainDashboard = () => {
           </div>
 
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => setCreateUserOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+            >
+              <UserPlus size={14} /> Add User
+            </button>
             <button className="relative p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors">
               <Bell size={18} />
               <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-primary" />
@@ -170,6 +180,11 @@ export const MainDashboard = () => {
 
         <main className="flex-1 overflow-y-auto p-6">{renderContent()}</main>
       </div>
+
+      <CreateUserModal
+        open={createUserOpen}
+        onOpenChange={setCreateUserOpen}
+      />
     </div>
   );
 };
