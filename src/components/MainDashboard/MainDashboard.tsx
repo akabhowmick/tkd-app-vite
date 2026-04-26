@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, Bell, ChevronDown, LogOut, User, UserPlus } from "lucide-react";
 import { Sidebar } from "./SideBar";
 import { StatCards } from "./StatCard/StatCards";
@@ -19,6 +19,7 @@ import { ViewErrorBoundary } from "../ui/ViewErrorBoundary";
 import { AnnouncementsPage } from "../../pages/AnnouncementsPage";
 import { ReportingPage } from "../../pages/ReportingPage";
 import { CreateUserModal } from "../AccountDashboards/AdminFeatures/UserManagement/CreateUserModal";
+import { SearchModal } from "./Search/SearchModal";
 
 const VIEW_COMPONENTS = {
   school: SchoolManagement,
@@ -63,6 +64,7 @@ export const MainDashboard = () => {
   };
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [createUserOpen, setCreateUserOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -70,6 +72,17 @@ export const MainDashboard = () => {
     logout();
     navigate("/");
   };
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   const renderContent = () => {
     if (activeView === "home") return <StatCards onViewChange={handleViewChange} />;
@@ -95,14 +108,16 @@ export const MainDashboard = () => {
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         {/* Header */}
         <header className="flex items-center justify-between h-16 px-6 bg-white border-b border-gray-200 shrink-0 z-20">
-          <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-2 w-72">
-            <Search size={16} className="text-gray-500" />
-            <input
-              type="text"
-              placeholder="Search..."
-              className="bg-transparent text-sm outline-none text-gray-700 placeholder-gray-500 w-full"
-            />
-          </div>
+          <button
+            onClick={() => setSearchOpen(true)}
+            className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-2 w-72 hover:bg-gray-200 transition-colors text-left"
+          >
+            <Search size={16} className="text-gray-500 shrink-0" />
+            <span className="text-sm text-gray-400 flex-1">Search...</span>
+            <kbd className="hidden sm:inline-flex items-center gap-1 px-1.5 py-0.5 text-xs text-gray-400 border border-gray-300 rounded bg-white">
+              ⌘K
+            </kbd>
+          </button>
 
           <div className="flex items-center gap-3">
             <button
@@ -184,6 +199,12 @@ export const MainDashboard = () => {
       <CreateUserModal
         open={createUserOpen}
         onOpenChange={setCreateUserOpen}
+      />
+
+      <SearchModal
+        open={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        onNavigate={handleViewChange}
       />
     </div>
   );
