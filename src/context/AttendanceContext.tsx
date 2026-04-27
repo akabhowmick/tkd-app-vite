@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useSchool } from "../context/SchoolContext";
-import { createAttendance, getAttendanceByDate } from "../api/Attendance/attendanceRequests";
+import { createAttendance, deleteAttendanceByDate, getAttendanceByDate } from "../api/Attendance/attendanceRequests";
 import { getTodayDate } from "../utils/AttendanceUtils/DateUtils";
 import { AttendanceRecord } from "../types/attendance";
 import { track } from "../analytics/posthog";
@@ -22,6 +22,7 @@ interface AttendanceContextType {
   setCalYear: React.Dispatch<React.SetStateAction<number>>;
   setCalMonth: React.Dispatch<React.SetStateAction<number>>;
   handleAttendanceChange: (studentId: string, status: AttendanceStatus) => void;
+  handleAttendanceClear: (studentId: string) => void;
   handleSubmit: () => Promise<{ success: boolean; error?: string }>;
 }
 
@@ -115,6 +116,14 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setAttendance((prev) => ({ ...prev, [studentId]: status }));
   };
 
+  const handleAttendanceClear = (studentId: string) => {
+    setAttendance((prev) => {
+      const next = { ...prev };
+      delete next[studentId];
+      return next;
+    });
+  };
+
   const handleSubmit = async (): Promise<{ success: boolean; error?: string }> => {
     if (!schoolId || !user) return { success: false, error: "Not authenticated." };
     setIsSubmitting(true);
@@ -126,6 +135,19 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         school_id: schoolId,
         date: selectedDate,
       }));
+
+      // Delete existing records for this date first so cleared students are removed
+      const { error: deleteError } = await deleteAttendanceByDate(schoolId, selectedDate);
+      if (deleteError) {
+        console.error("Delete error:", deleteError);
+        captureException(deleteError, { feature: "attendance", action: "deleteAttendance" });
+        return { success: false, error: "Failed to save attendance." };
+      }
+
+      if (records.length === 0) {
+        track("attendance_saved", { studentCount: 0, date: selectedDate });
+        return { success: true };
+      }
 
       const { error } = await createAttendance(records);
 
@@ -147,7 +169,7 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   };
 
   const markedCount = Object.keys(attendance).length;
-  const canSubmit = markedCount > 0 && !isSubmitting;
+  const canSubmit = !isSubmitting;
 
   return (
     <AttendanceContext.Provider
@@ -164,6 +186,7 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         canSubmit,
         handleDateChange,
         handleAttendanceChange,
+        handleAttendanceClear,
         handleSubmit,
       }}
     >

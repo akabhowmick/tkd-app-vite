@@ -30,3 +30,12 @@ export async function deleteAttendance(id: string) {
   const { error } = await supabase.from("attendance_records").delete().eq("id", id);
   return { error };
 }
+
+export async function deleteAttendanceByDate(schoolId: string, date: string) {
+  const { error } = await supabase
+    .from("attendance_records")
+    .delete()
+    .eq("school_id", schoolId)
+    .eq("date", date);
+  return { error };
+}

@@ -43,6 +43,7 @@ export const TakeAttendance = () => {
     setCalMonth,
     handleDateChange,
     handleAttendanceChange,
+    handleAttendanceClear,
     handleSubmit,
     isSubmitting,
     isLoading,
@@ -114,6 +115,7 @@ export const TakeAttendance = () => {
         return next;
       });
       setClearedIds((prev) => new Set(prev).add(id));
+      handleAttendanceClear(id);
       return;
     }
 
@@ -374,7 +376,7 @@ export const TakeAttendance = () => {
             </span>
             <button
               onClick={handleSave}
-              disabled={isSubmitting || markedCount === 0}
+              disabled={isSubmitting}
               className="px-5 py-2 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {isSubmitting ? "Saving..." : "Save Attendance"}
