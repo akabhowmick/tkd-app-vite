@@ -55,6 +55,7 @@ export const TakeAttendance = () => {
 
   const [markAllOpen, setMarkAllOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showPresentOnly, setShowPresentOnly] = useState(false);
 
   // Map of date → present student count for dates with attendance records
   const [markedDates, setMarkedDates] = useState<Map<string, number>>(new Map());
@@ -176,9 +177,9 @@ export const TakeAttendance = () => {
     }
   };
 
-  const filteredStudents = searchQuery.trim()
-    ? students.filter((s) => s.name?.toLowerCase().includes(searchQuery.toLowerCase()))
-    : students;
+  const filteredStudents = students
+    .filter((s) => !searchQuery.trim() || s.name?.toLowerCase().includes(searchQuery.toLowerCase()))
+    .filter((s) => !showPresentOnly || (s.id && getStatus(s.id) === "present"));
 
   const markedCount = students.filter((s) => s.id && getStatus(s.id) !== undefined).length;
 
@@ -275,6 +276,16 @@ export const TakeAttendance = () => {
             placeholder="Search students..."
             className="flex-1 min-w-[140px] px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
           />
+          <button
+            onClick={() => setShowPresentOnly((v) => !v)}
+            className={`shrink-0 px-3 py-1.5 text-sm font-medium rounded-full border transition-colors ${
+              showPresentOnly
+                ? "bg-green-500 text-white border-green-500"
+                : "bg-white text-gray-600 border-gray-300 hover:border-green-400 hover:text-green-600"
+            }`}
+          >
+            Present
+          </button>
           <div className="flex items-center gap-2 flex-wrap">
             <div className="relative">
               <button
