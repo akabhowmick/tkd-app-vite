@@ -33,9 +33,17 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const { user } = useAuth();
   const { students, schoolId } = useSchool();
   const [attendance, setAttendance] = useState<Record<string, AttendanceStatus>>({});
-  const [selectedDate, setSelectedDate] = useState<string>(getTodayDate());
-  const [calYear, setCalYear] = useState<number>(() => new Date().getFullYear());
-  const [calMonth, setCalMonth] = useState<number>(() => new Date().getMonth());
+  const [selectedDate, setSelectedDate] = useState<string>(
+    () => sessionStorage.getItem("attendance_selectedDate") ?? getTodayDate(),
+  );
+  const [calYear, setCalYear] = useState<number>(() => {
+    const stored = sessionStorage.getItem("attendance_calYear");
+    return stored ? parseInt(stored) : new Date().getFullYear();
+  });
+  const [calMonth, setCalMonth] = useState<number>(() => {
+    const stored = sessionStorage.getItem("attendance_calMonth");
+    return stored ? parseInt(stored) : new Date().getMonth();
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -84,6 +92,23 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const handleDateChange = (date: string) => {
     setAttendance({});
     setSelectedDate(date);
+    sessionStorage.setItem("attendance_selectedDate", date);
+  };
+
+  const persistCalYear: React.Dispatch<React.SetStateAction<number>> = (value) => {
+    setCalYear((prev) => {
+      const next = typeof value === "function" ? value(prev) : value;
+      sessionStorage.setItem("attendance_calYear", String(next));
+      return next;
+    });
+  };
+
+  const persistCalMonth: React.Dispatch<React.SetStateAction<number>> = (value) => {
+    setCalMonth((prev) => {
+      const next = typeof value === "function" ? value(prev) : value;
+      sessionStorage.setItem("attendance_calMonth", String(next));
+      return next;
+    });
   };
 
   const handleAttendanceChange = (studentId: string, status: AttendanceStatus) => {
@@ -131,8 +156,8 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         selectedDate,
         calYear,
         calMonth,
-        setCalYear,
-        setCalMonth,
+        setCalYear: persistCalYear,
+        setCalMonth: persistCalMonth,
         isLoading,
         isSubmitting,
         markedCount,
