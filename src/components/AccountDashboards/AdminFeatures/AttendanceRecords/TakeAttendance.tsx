@@ -5,7 +5,6 @@ import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 import { UserProfile } from "../../../../types/user";
 import { supabase } from "../../../../api/supabase";
 
-// "tardy" is UI-only — stored as "absent" in the DB.
 type AttendanceStatus = "present" | "absent" | "tardy";
 
 const STATUS_STYLES: Record<AttendanceStatus, string> = {
@@ -15,7 +14,7 @@ const STATUS_STYLES: Record<AttendanceStatus, string> = {
 };
 
 const WEEKDAYS = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
-const MARK_ALL_OPTIONS: AttendanceStatus[] = ["present", "absent", "tardy"];
+const MARK_ALL_OPTIONS: AttendanceStatus[] = ["present"];
 
 function getTodayStr() {
   const d = new Date();
@@ -38,6 +37,10 @@ export const TakeAttendance = () => {
   const {
     attendance: contextAttendance,
     selectedDate,
+    calYear,
+    calMonth,
+    setCalYear,
+    setCalMonth,
     handleDateChange,
     handleAttendanceChange,
     handleSubmit,
@@ -48,12 +51,12 @@ export const TakeAttendance = () => {
   // ── Local UI state ────────────────────────────────────────────────────────
   const [localOverrides, setLocalOverrides] = useState<Record<string, AttendanceStatus>>({});
   const [clearedIds, setClearedIds] = useState<Set<string>>(new Set());
-  const [calYear, setCalYear] = useState(() => new Date().getFullYear());
-  const [calMonth, setCalMonth] = useState(() => new Date().getMonth());
-  const [markAllOpen, setMarkAllOpen] = useState(false);
 
-  // Dates that have at least one attendance record in the DB
-  const [markedDates, setMarkedDates] = useState<Set<string>>(new Set());
+  const [markAllOpen, setMarkAllOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Map of date → present student count for dates with attendance records
+  const [markedDates, setMarkedDates] = useState<Map<string, number>>(new Map());
   const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle");
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -71,12 +74,16 @@ export const TakeAttendance = () => {
     const fetchMarkedDates = async () => {
       const { data } = await supabase
         .from("attendance_records")
-        .select("date")
+        .select("date, status")
         .eq("school_id", schoolId);
 
       if (data) {
-        const dates = new Set(data.map((r: { date: string }) => r.date));
-        setMarkedDates(dates);
+        const counts = new Map<string, number>();
+        data.forEach((r: { date: string; status: string }) => {
+          if (!counts.has(r.date)) counts.set(r.date, 0);
+          if (r.status === "present") counts.set(r.date, (counts.get(r.date) ?? 0) + 1);
+        });
+        setMarkedDates(counts);
       }
     };
 
@@ -154,7 +161,11 @@ export const TakeAttendance = () => {
     setSubmitError(null);
     const result = await handleSubmit();
     if (result.success) {
-      setMarkedDates((prev) => new Set(prev).add(selectedDate));
+      setMarkedDates((prev) => {
+        const next = new Map(prev);
+        next.set(selectedDate, students.filter((s) => s.id && getStatus(s.id) === "present").length);
+        return next;
+      });
       setSubmitStatus("success");
       setTimeout(() => setSubmitStatus("idle"), 3000);
     } else {
@@ -162,6 +173,10 @@ export const TakeAttendance = () => {
       setSubmitError(result.error ?? "Failed to save attendance.");
     }
   };
+
+  const filteredStudents = searchQuery.trim()
+    ? students.filter((s) => s.name?.toLowerCase().includes(searchQuery.toLowerCase()))
+    : students;
 
   const markedCount = students.filter((s) => s.id && getStatus(s.id) !== undefined).length;
 
@@ -212,7 +227,8 @@ export const TakeAttendance = () => {
               if (!date) return <div key={i} />;
               const isSelected = date === selectedDate;
               const isToday = date === today;
-              const isMarked = markedDates.has(date);
+              const presentCount = markedDates.get(date);
+              const isMarked = presentCount !== undefined;
               const dayNum = parseInt(date.split("-")[2]);
               return (
                 <button
@@ -229,10 +245,12 @@ export const TakeAttendance = () => {
                   <span>{dayNum}</span>
                   {isMarked && (
                     <span
-                      className={`mt-1 w-1.5 h-1.5 rounded-full ${
-                        isSelected ? "bg-green-400" : "bg-green-500"
+                      className={`mt-0.5 text-[10px] font-semibold leading-none ${
+                        isSelected ? "text-green-300" : "text-green-600"
                       }`}
-                    />
+                    >
+                      {presentCount}
+                    </span>
                   )}
                 </button>
               );
@@ -248,7 +266,14 @@ export const TakeAttendance = () => {
           <h3 className="text-sm font-semibold text-gray-800 shrink-0">
             Attendance for {selectedDate}
           </h3>
-          <div className="flex items-center gap-2 ml-auto flex-wrap">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search students..."
+            className="flex-1 min-w-[140px] px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+          />
+          <div className="flex items-center gap-2 flex-wrap">
             <div className="relative">
               <button
                 onClick={() => setMarkAllOpen(!markAllOpen)}
@@ -277,7 +302,7 @@ export const TakeAttendance = () => {
         </div>
 
         {/* Stats row */}
-        <div className="grid grid-cols-3 gap-px bg-gray-100 border-b border-gray-100">
+        <div className="grid grid-cols-2 gap-px bg-gray-100 border-b border-gray-100">
           {[
             {
               label: "Present",
@@ -285,14 +310,9 @@ export const TakeAttendance = () => {
               color: "text-green-600",
             },
             {
-              label: "Absent",
-              count: students.filter((s) => s.id && getStatus(s.id) === "absent").length,
-              color: "text-red-600",
-            },
-            {
-              label: "Tardy",
-              count: students.filter((s) => s.id && getStatus(s.id) === "tardy").length,
-              color: "text-yellow-600",
+              label: "Unmarked",
+              count: students.filter((s) => s.id && getStatus(s.id) === undefined).length,
+              color: "text-gray-500",
             },
           ].map((stat) => (
             <div key={stat.label} className="bg-white px-4 py-3 text-center">
@@ -313,7 +333,7 @@ export const TakeAttendance = () => {
               No students found. Add students to your school first.
             </p>
           ) : (
-            students.map((student: UserProfile) => {
+            filteredStudents.map((student: UserProfile) => {
               const id = student.id!;
               const currentStatus = getStatus(id);
 
@@ -322,45 +342,18 @@ export const TakeAttendance = () => {
                   key={id}
                   className="flex items-center gap-3 px-6 py-3 border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
                 >
-                  <div
-                    className={`h-8 w-8 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
-                      currentStatus ? "border-primary bg-primary/10" : "border-gray-300"
-                    }`}
-                  >
-                    {currentStatus && <div className="h-3 w-3 rounded-sm bg-primary" />}
-                  </div>
-
                   <span className="flex-1 text-sm font-medium text-gray-800">{student.name}</span>
 
-                  <div className="flex flex-col gap-1">
-                    <div className="flex gap-1">
-                      {(["present", "absent"] as AttendanceStatus[]).map((s) => (
-                        <button
-                          key={s}
-                          onClick={() => setStatus(id, s)}
-                          className={`px-3 py-1 text-sm font-semibold rounded border transition-all ${
-                            currentStatus === s
-                              ? STATUS_STYLES[s]
-                              : "bg-white border-gray-300 text-gray-600 hover:border-gray-400"
-                          }`}
-                        >
-                          {s.charAt(0).toUpperCase() + s.slice(1)}
-                        </button>
-                      ))}
-                    </div>
-                    <div className="flex gap-1">
-                      <button
-                        onClick={() => setStatus(id, "tardy")}
-                        className={`px-3 py-1 text-sm font-semibold rounded border transition-all ${
-                          currentStatus === "tardy"
-                            ? STATUS_STYLES.tardy
-                            : "bg-white border-gray-300 text-gray-600 hover:border-gray-400"
-                        }`}
-                      >
-                        Tardy
-                      </button>
-                    </div>
-                  </div>
+                  <button
+                    onClick={() => setStatus(id, "present")}
+                    className={`px-3 py-1 text-sm font-semibold rounded border transition-all ${
+                      currentStatus === "present"
+                        ? STATUS_STYLES.present
+                        : "bg-white border-gray-300 text-gray-600 hover:border-gray-400"
+                    }`}
+                  >
+                    Present
+                  </button>
                 </div>
               );
             })

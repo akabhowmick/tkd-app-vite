@@ -12,11 +12,15 @@ type AttendanceStatus = "present" | "absent";
 interface AttendanceContextType {
   attendance: Record<string, AttendanceStatus>;
   selectedDate: string;
+  calYear: number;
+  calMonth: number;
   isLoading: boolean;
   isSubmitting: boolean;
   markedCount: number;
   canSubmit: boolean;
   handleDateChange: (date: string) => void;
+  setCalYear: React.Dispatch<React.SetStateAction<number>>;
+  setCalMonth: React.Dispatch<React.SetStateAction<number>>;
   handleAttendanceChange: (studentId: string, status: AttendanceStatus) => void;
   handleSubmit: () => Promise<{ success: boolean; error?: string }>;
 }
@@ -30,6 +34,8 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const { students, schoolId } = useSchool();
   const [attendance, setAttendance] = useState<Record<string, AttendanceStatus>>({});
   const [selectedDate, setSelectedDate] = useState<string>(getTodayDate());
+  const [calYear, setCalYear] = useState<number>(() => new Date().getFullYear());
+  const [calMonth, setCalMonth] = useState<number>(() => new Date().getMonth());
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -123,6 +129,10 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       value={{
         attendance,
         selectedDate,
+        calYear,
+        calMonth,
+        setCalYear,
+        setCalMonth,
         isLoading,
         isSubmitting,
         markedCount,
