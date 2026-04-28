@@ -4,6 +4,49 @@ import { RenewalCategory } from "./RenewalCategory";
 import { RenewalCard } from "./RenewalCard";
 import { CreateRenewalForm } from "./CreateRenewalForm";
 import { RenewalPeriodWithUiStatus } from "../../../../types/student_renewal";
+import { Skeleton } from "../../../ui/skeleton";
+
+const RenewalsSkeleton = () => (
+  <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
+    <div className="max-w-7xl mx-auto">
+      <div className="mb-8">
+        <Skeleton className="h-10 w-64 mb-2" />
+        <Skeleton className="h-4 w-72" />
+      </div>
+      <div className="flex flex-wrap gap-4 mb-8">
+        <Skeleton className="h-12 w-28 rounded-xl" />
+        <Skeleton className="h-12 w-44 rounded-xl" />
+      </div>
+      {[3, 2].map((count, i) => (
+        <div
+          key={i}
+          className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-gray-200 mb-6"
+        >
+          <div className="flex items-center gap-2 mb-4">
+            <Skeleton className="h-7 w-7 rounded-full" />
+            <Skeleton className="h-6 w-40" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({ length: count }).map((_, j) => (
+              <div key={j} className="rounded-xl border p-4 space-y-3">
+                <div className="flex justify-between items-start">
+                  <Skeleton className="h-5 w-32" />
+                  <Skeleton className="h-5 w-20 rounded-full" />
+                </div>
+                <Skeleton className="h-3 w-full" />
+                <Skeleton className="h-3 w-3/4" />
+                <div className="flex gap-2 pt-1">
+                  <Skeleton className="h-8 flex-1 rounded-lg" />
+                  <Skeleton className="h-8 flex-1 rounded-lg" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
 
 export const StudentRenewalsPage: React.FC = () => {
   const {
@@ -24,6 +67,9 @@ export const StudentRenewalsPage: React.FC = () => {
   useEffect(() => {
     loadPeriods();
   }, [loadPeriods]);
+
+  const isEmpty = Object.values(grouped).every((g) => g.length === 0);
+  if (loading && isEmpty) return <RenewalsSkeleton />;
 
   const totalActive =
     grouped.active.length + grouped.expiring_soon.length + grouped.grace_period.length;

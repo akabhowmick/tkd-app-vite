@@ -3,9 +3,42 @@ import { useBelts } from "../context/BeltContext";
 import { useSchool } from "../context/SchoolContext";
 import { FaPlus, FaTrophy, FaTrash, FaMedal } from "react-icons/fa";
 import { AppConfirmModal } from "../components/ui/modal";
+import { Skeleton } from "../components/ui/skeleton";
 import { CreateRankModal } from "../components/AccountDashboards/AdminFeatures/BeltTracking/CreateRankModal";
 import { PromoteStudentModal } from "../components/AccountDashboards/AdminFeatures/BeltTracking/PromoteStudentModal";
 import { BELT_COLORS } from "../components/AccountDashboards/AdminFeatures/BeltTracking/beltUtils";
+
+const BeltTrackingSkeleton = () => (
+  <div className="min-h-screen bg-gray-50 p-6">
+    <div className="max-w-7xl mx-auto">
+      <div className="flex justify-between items-center mb-6">
+        <Skeleton className="h-9 w-48" />
+        <div className="flex gap-2">
+          <Skeleton className="h-9 w-40" />
+          <Skeleton className="h-9 w-28" />
+        </div>
+      </div>
+      <div className="bg-white rounded-lg shadow mb-6">
+        <div className="flex border-b">
+          <Skeleton className="flex-1 h-11 rounded-none rounded-tl-lg" />
+          <Skeleton className="flex-1 h-11 rounded-none rounded-tr-lg" />
+        </div>
+        <div className="p-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="border rounded-lg overflow-hidden">
+              <Skeleton className="h-14 w-full rounded-none" />
+              <div className="p-4 space-y-2">
+                <Skeleton className="h-5 w-32" />
+                <Skeleton className="h-3 w-16" />
+                <Skeleton className="h-3 w-24" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
+);
 
 export const BeltTrackingPage = () => {
   const { ranks, promotions, loading, deleteRank, deletePromotionRecord } = useBelts();
@@ -45,13 +78,7 @@ export const BeltTrackingPage = () => {
     }
   };
 
-  if (loading && ranks.length === 0) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-gray-500">Loading belt tracking...</div>
-      </div>
-    );
-  }
+  if (loading && ranks.length === 0) return <BeltTrackingSkeleton />;
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
