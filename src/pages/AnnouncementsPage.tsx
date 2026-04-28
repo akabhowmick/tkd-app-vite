@@ -2,85 +2,23 @@ import { useState } from "react";
 import { useAnnouncements } from "../context/AnnouncementContext";
 import { useAuth } from "../context/AuthContext";
 import { UserRole } from "../types/user";
-import { AppFormModal, AppConfirmModal, ModalField } from "../components/ui/modal";
-import { Input } from "../components/ui/input";
-import { Textarea } from "../components/ui/textarea";
+import { AppConfirmModal } from "../components/ui/modal";
 import { Button } from "../components/ui/button";
 import { Pin, Pencil, Trash2, Plus, Megaphone } from "lucide-react";
 import { Announcement } from "../types/announcements";
+import {
+  AnnouncementFormModal,
+  AnnouncementFormTarget,
+} from "../components/AccountDashboards/AdminFeatures/Announcements/AnnouncementFormModal";
 
-type AnnouncementForm = { title: string; content: string; pinned: boolean };
-const emptyForm = (): AnnouncementForm => ({ title: "", content: "", pinned: false });
-
-const canManage = (role?: string) =>
-  role === UserRole.Admin || role === UserRole.Instructor;
+const canManage = (role?: string) => role === UserRole.Admin || role === UserRole.Instructor;
 
 export const AnnouncementsPage = () => {
-  const { announcements, loading, error, createAnnouncement, updateAnnouncement, deleteAnnouncement } =
-    useAnnouncements();
+  const { announcements, loading, error, deleteAnnouncement } = useAnnouncements();
   const { user } = useAuth();
-
-  const [createOpen, setCreateOpen] = useState(false);
-  const [createForm, setCreateForm] = useState<AnnouncementForm>(emptyForm());
-  const [createLoading, setCreateLoading] = useState(false);
-  const [createError, setCreateError] = useState<string | null>(null);
-
-  const [editTarget, setEditTarget] = useState<Announcement | null>(null);
-  const [editForm, setEditForm] = useState<AnnouncementForm>(emptyForm());
-  const [editLoading, setEditLoading] = useState(false);
-  const [editError, setEditError] = useState<string | null>(null);
-
+  const [formTarget, setFormTarget] = useState<AnnouncementFormTarget>(null);
   const [deleteTarget, setDeleteTarget] = useState<Announcement | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
-
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!createForm.title.trim()) { setCreateError("Title is required."); return; }
-    if (!createForm.content.trim()) { setCreateError("Content is required."); return; }
-    setCreateLoading(true);
-    try {
-      await createAnnouncement({
-        title: createForm.title.trim(),
-        content: createForm.content.trim(),
-        pinned: createForm.pinned,
-        created_by: user?.id ?? "",
-        created_by_name: user?.name ?? "Unknown",
-      });
-      setCreateOpen(false);
-      setCreateForm(emptyForm());
-      setCreateError(null);
-    } catch (err) {
-      setCreateError(err instanceof Error ? err.message : "Failed to create.");
-    } finally {
-      setCreateLoading(false);
-    }
-  };
-
-  const openEdit = (a: Announcement) => {
-    setEditTarget(a);
-    setEditForm({ title: a.title, content: a.content, pinned: a.pinned });
-    setEditError(null);
-  };
-
-  const handleEdit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editTarget) return;
-    if (!editForm.title.trim()) { setEditError("Title is required."); return; }
-    if (!editForm.content.trim()) { setEditError("Content is required."); return; }
-    setEditLoading(true);
-    try {
-      await updateAnnouncement(editTarget.announcement_id, {
-        title: editForm.title.trim(),
-        content: editForm.content.trim(),
-        pinned: editForm.pinned,
-      });
-      setEditTarget(null);
-    } catch (err) {
-      setEditError(err instanceof Error ? err.message : "Failed to update.");
-    } finally {
-      setEditLoading(false);
-    }
-  };
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
@@ -107,7 +45,7 @@ export const AnnouncementsPage = () => {
         {manage && (
           <Button
             size="sm"
-            onClick={() => { setCreateForm(emptyForm()); setCreateError(null); setCreateOpen(true); }}
+            onClick={() => setFormTarget("new")}
             className="flex items-center gap-1.5"
           >
             <Plus size={14} /> New Announcement
@@ -146,13 +84,9 @@ export const AnnouncementsPage = () => {
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-2 min-w-0">
-                  {a.pinned && (
-                    <Pin size={14} className="text-primary shrink-0 mt-0.5" />
-                  )}
+                  {a.pinned && <Pin size={14} className="text-primary shrink-0 mt-0.5" />}
                   <div className="min-w-0">
-                    <h3 className="text-sm font-semibold text-gray-900 leading-snug">
-                      {a.title}
-                    </h3>
+                    <h3 className="text-sm font-semibold text-gray-900 leading-snug">{a.title}</h3>
                     <p className="text-xs text-gray-400 mt-0.5">
                       {a.created_by_name} ·{" "}
                       {new Date(a.created_at).toLocaleDateString("en-US", {
@@ -166,7 +100,7 @@ export const AnnouncementsPage = () => {
                 {manage && (
                   <div className="flex items-center gap-1 shrink-0">
                     <button
-                      onClick={() => openEdit(a)}
+                      onClick={() => setFormTarget(a)}
                       className="p-1.5 text-gray-400 hover:text-gray-700 rounded-md hover:bg-gray-100 transition-colors"
                     >
                       <Pencil size={13} />
@@ -188,81 +122,7 @@ export const AnnouncementsPage = () => {
         </div>
       )}
 
-      <AppFormModal
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-        title="New Announcement"
-        size="default"
-        onSubmit={handleCreate}
-        submitLabel="Post Announcement"
-        loading={createLoading}
-        error={createError}
-      >
-        <ModalField label="Title" required htmlFor="ann-title">
-          <Input
-            id="ann-title"
-            placeholder="e.g., Belt test this Saturday"
-            value={createForm.title}
-            onChange={(e) => setCreateForm((f) => ({ ...f, title: e.target.value }))}
-          />
-        </ModalField>
-        <ModalField label="Content" required htmlFor="ann-content">
-          <Textarea
-            id="ann-content"
-            rows={5}
-            placeholder="Write your announcement here..."
-            value={createForm.content}
-            onChange={(e) => setCreateForm((f) => ({ ...f, content: e.target.value }))}
-          />
-        </ModalField>
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={createForm.pinned}
-            onChange={(e) => setCreateForm((f) => ({ ...f, pinned: e.target.checked }))}
-            className="h-4 w-4 accent-primary rounded"
-          />
-          <span className="text-sm font-medium text-gray-700">Pin this announcement</span>
-        </label>
-      </AppFormModal>
-
-      <AppFormModal
-        open={!!editTarget}
-        onOpenChange={(open) => { if (!open) setEditTarget(null); }}
-        title="Edit Announcement"
-        size="default"
-        onSubmit={handleEdit}
-        submitLabel="Save Changes"
-        loading={editLoading}
-        error={editError}
-      >
-        <ModalField label="Title" required htmlFor="edit-ann-title">
-          <Input
-            id="edit-ann-title"
-            placeholder="e.g., Belt test this Saturday"
-            value={editForm.title}
-            onChange={(e) => setEditForm((f) => ({ ...f, title: e.target.value }))}
-          />
-        </ModalField>
-        <ModalField label="Content" required htmlFor="edit-ann-content">
-          <Textarea
-            id="edit-ann-content"
-            rows={5}
-            placeholder="Write your announcement here..."
-            value={editForm.content}
-            onChange={(e) => setEditForm((f) => ({ ...f, content: e.target.value }))}
-          />
-        </ModalField>
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={editForm.pinned}
-            onChange={(e) => setEditForm((f) => ({ ...f, pinned: e.target.checked }))}
-            className="h-4 w-4 accent-primary rounded"
-          />
-          <span className="text-sm font-medium text-gray-700">Pin this announcement</span>
-        </label>
-      </AppFormModal>
+      <AnnouncementFormModal target={formTarget} onClose={() => setFormTarget(null)} />
 
       <AppConfirmModal
         open={!!deleteTarget}

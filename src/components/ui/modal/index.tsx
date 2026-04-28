@@ -148,6 +148,7 @@ interface AppFormModalProps extends AppModalProps {
   submitLabel?: string;
   cancelLabel?: string;
   loading?: boolean;
+  submitDisabled?: boolean;
   error?: string | null;
   /** Render additional footer content to the left of action buttons */
   footerLeft?: React.ReactNode;
@@ -164,6 +165,7 @@ export function AppFormModal({
   submitLabel = "Save",
   cancelLabel = "Cancel",
   loading = false,
+  submitDisabled = false,
   error,
   footerLeft,
   children,
@@ -228,7 +230,7 @@ export function AppFormModal({
                 >
                   {cancelLabel}
                 </Button>
-                <Button type="submit" size="sm" disabled={loading}>
+                <Button type="submit" size="sm" disabled={loading || submitDisabled}>
                   {loading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                   {loading ? "Saving…" : submitLabel}
                 </Button>
