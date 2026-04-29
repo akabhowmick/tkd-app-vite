@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSchool } from "../../../../context/SchoolContext";
 import { useAttendance } from "../../../../context/AttendanceContext";
-import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { UserProfile } from "../../../../types/user";
 import { supabase } from "../../../../api/supabase";
 
@@ -14,7 +14,6 @@ const STATUS_STYLES: Record<AttendanceStatus, string> = {
 };
 
 const WEEKDAYS = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
-const MARK_ALL_OPTIONS: AttendanceStatus[] = ["present"];
 
 function getTodayStr() {
   const d = new Date();
@@ -53,7 +52,6 @@ export const TakeAttendance = () => {
   const [localOverrides, setLocalOverrides] = useState<Record<string, AttendanceStatus>>({});
   const [clearedIds, setClearedIds] = useState<Set<string>>(new Set());
 
-  const [markAllOpen, setMarkAllOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showPresentOnly, setShowPresentOnly] = useState(false);
 
@@ -131,17 +129,16 @@ export const TakeAttendance = () => {
     handleAttendanceChange(id, status === "tardy" ? "absent" : status);
   };
 
-  const markAll = (status: AttendanceStatus) => {
+  const markAllPresent = () => {
     const nextOverrides: Record<string, AttendanceStatus> = {};
     students.forEach((s) => {
       if (s.id) {
-        nextOverrides[s.id] = status;
-        handleAttendanceChange(s.id, status === "tardy" ? "absent" : status);
+        nextOverrides[s.id] = "present";
+        handleAttendanceChange(s.id, "present");
       }
     });
     setLocalOverrides(nextOverrides);
     setClearedIds(new Set());
-    setMarkAllOpen(false);
   };
 
   const navMonth = (dir: "prev" | "next") => {
@@ -188,9 +185,9 @@ export const TakeAttendance = () => {
       {/* ── Left: Calendar ── */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">{monthLabel}</h2>
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between mb-6 gap-2">
+            <h2 className="text-lg sm:text-2xl font-bold text-gray-900 truncate">{monthLabel}</h2>
+            <div className="flex items-center gap-2 shrink-0">
               <button
                 onClick={() => {
                   const d = new Date();
@@ -263,54 +260,36 @@ export const TakeAttendance = () => {
       </div>
 
       {/* ── Right: Student list ── */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100 flex-wrap">
-          <h3 className="text-sm font-semibold text-gray-800 shrink-0">
+        <div className="px-4 sm:px-6 py-4 border-b border-gray-100 flex flex-col gap-2">
+          <h3 className="text-sm font-semibold text-gray-800">
             Attendance for {selectedDate}
           </h3>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search students..."
-            className="flex-1 min-w-[140px] px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
-          />
-          <button
-            onClick={() => setShowPresentOnly((v) => !v)}
-            className={`shrink-0 px-3 py-1.5 text-sm font-medium rounded-full border transition-colors ${
-              showPresentOnly
-                ? "bg-green-500 text-white border-green-500"
-                : "bg-white text-gray-600 border-gray-300 hover:border-green-400 hover:text-green-600"
-            }`}
-          >
-            Present
-          </button>
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="relative">
-              <button
-                onClick={() => setMarkAllOpen(!markAllOpen)}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-primary text-primary rounded-md hover:bg-primary/5 transition-colors"
-              >
-                Mark All <ChevronDown size={14} />
-              </button>
-              {markAllOpen && (
-                <>
-                  <div className="fixed inset-0 z-10" onClick={() => setMarkAllOpen(false)} />
-                  <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 overflow-hidden min-w-[120px]">
-                    {MARK_ALL_OPTIONS.map((s) => (
-                      <button
-                        key={s}
-                        onClick={() => markAll(s)}
-                        className="block w-full text-left px-4 py-2 text-sm capitalize text-gray-700 hover:bg-gray-50"
-                      >
-                        {s.charAt(0).toUpperCase() + s.slice(1)}
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search students..."
+              className="flex-1 min-w-[120px] px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+            />
+            <button
+              onClick={() => setShowPresentOnly((v) => !v)}
+              className={`shrink-0 px-3 py-1.5 text-sm font-medium rounded-full border transition-colors ${
+                showPresentOnly
+                  ? "bg-green-500 text-white border-green-500"
+                  : "bg-white text-gray-600 border-gray-300 hover:border-green-400 hover:text-green-600"
+              }`}
+            >
+              Present only
+            </button>
+            <button
+              onClick={markAllPresent}
+              className="shrink-0 px-3 py-1.5 text-sm border border-primary text-primary rounded-md hover:bg-primary/5 transition-colors"
+            >
+              Mark all present
+            </button>
           </div>
         </div>
 
@@ -336,7 +315,7 @@ export const TakeAttendance = () => {
         </div>
 
         {/* Student list */}
-        <div className="overflow-y-auto" style={{ maxHeight: "calc(100vh - 340px)" }}>
+        <div className="overflow-y-auto max-h-[45vh] lg:flex-1">
           {isLoading ? (
             <div className="flex items-center justify-center py-16">
               <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
@@ -353,7 +332,7 @@ export const TakeAttendance = () => {
               return (
                 <div
                   key={id}
-                  className="flex items-center gap-3 px-6 py-3 border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
+                  className="flex items-center gap-3 px-4 sm:px-6 py-3 border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
                 >
                   <span className="flex-1 text-sm font-medium text-gray-800">{student.name}</span>
 
@@ -374,7 +353,7 @@ export const TakeAttendance = () => {
         </div>
 
         {/* Footer save bar */}
-        <div className="flex flex-col gap-1 px-6 py-4 border-t border-gray-100 bg-gray-50">
+        <div className="flex flex-col gap-1 px-4 sm:px-6 py-4 border-t border-gray-100 bg-gray-50">
           {submitStatus === "success" && (
             <p className="text-xs font-medium text-green-700 text-right">Attendance saved.</p>
           )}
