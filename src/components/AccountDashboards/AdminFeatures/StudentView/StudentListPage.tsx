@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { Student } from "../../../../types/user";
 import { HandleAddOrEdit } from "./HandleAddOrEdit";
 import { updateStudent, createStudent } from "../../../../api/StudentRequests/studentRequests";
@@ -6,11 +6,18 @@ import { useSchool } from "../../../../context/SchoolContext";
 import { useBelts } from "../../../../context/BeltContext";
 import { AppConfirmModal } from "../../../ui/modal";
 import { ManageParentLinks } from "./ManageParentLinks";
+import { Input } from "../../../ui/input";
+import { validateFormData } from "../../../../utils/formValidation";
+
+type EditForm = { name: string; email: string; phone: string; current_rank_id: string };
 
 export const StudentListPage = () => {
-  const { loadStudents, handleDelete, students } = useSchool();
+  const { loadStudents, handleDelete, students, schoolId } = useSchool();
   const { ranks } = useBelts();
   const [editingUser, setEditingUser] = useState<Student | null>(null);
+  const [editForm, setEditForm] = useState<EditForm>({ name: "", email: "", phone: "", current_rank_id: "" });
+  const [editError, setEditError] = useState<string | null>(null);
+  const [editSaving, setEditSaving] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{
     open: boolean;
     studentId: string;
@@ -21,10 +28,39 @@ export const StudentListPage = () => {
 
   const handleEdit = (user: Student) => {
     setEditingUser(user);
+    setEditForm({
+      name: user.name,
+      email: user.email,
+      phone: user.phone ?? "",
+      current_rank_id: user.current_rank_id ?? "",
+    });
+    setEditError(null);
   };
 
-  const handleEditSuccess = () => {
-    setEditingUser(null);
+  const handleEditSave = async () => {
+    setEditError(null);
+    const validationError = validateFormData({ name: editForm.name, email: editForm.email, phone: editForm.phone });
+    if (validationError) {
+      setEditError(validationError);
+      return;
+    }
+    setEditSaving(true);
+    try {
+      await updateStudent(editingUser!.id!, {
+        name: editForm.name.trim(),
+        email: editForm.email.trim(),
+        phone: editForm.phone.trim(),
+        role: "Student",
+        school_id: schoolId,
+        current_rank_id: editForm.current_rank_id || undefined,
+      });
+      await loadStudents();
+      setEditingUser(null);
+    } catch {
+      setEditError("Failed to update student. Please try again.");
+    } finally {
+      setEditSaving(false);
+    }
   };
 
   const requestDelete = (student: Student) => {
@@ -68,28 +104,6 @@ export const StudentListPage = () => {
 
       <h2 className="text-2xl font-bold mb-4 text-black">View Current Students</h2>
 
-      {editingUser && (
-        <div className="mb-6 border p-4 rounded bg-white shadow-md">
-          <h3 className="text-lg font-semibold mb-3 text-gray-800">
-            Edit Student: {editingUser.name}
-          </h3>
-          <HandleAddOrEdit
-            student={editingUser}
-            updateStudent={updateStudent}
-            loadStudents={loadStudents}
-            buttonText="Update Student"
-            onSuccess={handleEditSuccess}
-            buttonClassName="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 mr-2"
-          />
-          <button
-            className="px-4 py-2 text-sm text-gray-600 bg-gray-200 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500"
-            onClick={() => setEditingUser(null)}
-          >
-            Cancel Edit
-          </button>
-        </div>
-      )}
-
       {parentTarget && (
         <div className="mb-6 border p-4 rounded bg-white shadow-md">
           <ManageParentLinks student={parentTarget} />
@@ -121,33 +135,112 @@ export const StudentListPage = () => {
             </tr>
           ) : (
             students.map((student) => (
-              <tr key={student.id} className="border-t text-black">
-                <td className="p-3">{student.name}</td>
-                <td className="p-3">{student.email}</td>
-                <td className="p-3">{student.phone || "N/A"}</td>
-                <td className="p-3">{getRankName(student.current_rank_id)}</td>
-                <td className="p-3">
-                  <button
-                    onClick={() => handleEdit(student)}
-                    className="text-blue-600 hover:underline focus:outline-none"
-                    disabled={editingUser?.id === student.id}
-                  >
-                    {editingUser?.id === student.id ? "Editing..." : "Edit"}
-                  </button>
-                  <button
-                    onClick={() => setParentTarget(student)}
-                    className="text-purple-600 hover:underline focus:outline-none mr-2"
-                  >
-                    Parents
-                  </button>
-                  <button
-                    onClick={() => requestDelete(student)}
-                    className="text-red-600 hover:underline focus:outline-none"
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
+              <Fragment key={student.id}>
+                <tr className="border-t text-black">
+                  <td className="p-3">{student.name}</td>
+                  <td className="p-3">{student.email}</td>
+                  <td className="p-3">{student.phone || "N/A"}</td>
+                  <td className="p-3">{getRankName(student.current_rank_id)}</td>
+                  <td className="p-3">
+                    <div className="flex flex-col gap-1 items-start">
+                      <button
+                        onClick={() => handleEdit(student)}
+                        disabled={editingUser?.id === student.id}
+                        className="w-full px-3 py-1 text-xs font-medium rounded border border-blue-300 text-blue-700 bg-blue-50 hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {editingUser?.id === student.id ? "Editing..." : "Edit"}
+                      </button>
+                      <button
+                        onClick={() => setParentTarget(student)}
+                        className="w-full px-3 py-1 text-xs font-medium rounded border border-purple-300 text-purple-700 bg-purple-50 hover:bg-purple-100 transition-colors"
+                      >
+                        Parents
+                      </button>
+                      <button
+                        onClick={() => requestDelete(student)}
+                        className="w-full px-3 py-1 text-xs font-medium rounded border border-red-300 text-red-700 bg-red-50 hover:bg-red-100 transition-colors"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                {editingUser?.id === student.id && (
+                  <tr className="bg-blue-50 border-t border-blue-200">
+                    <td colSpan={5} className="p-4">
+                      <div className="flex flex-col gap-3">
+                        <div className="grid grid-cols-4 gap-3">
+                          <div className="flex flex-col gap-1">
+                            <label className="text-xs font-semibold text-gray-600">Name *</label>
+                            <Input
+                              type="text"
+                              placeholder="Full name"
+                              value={editForm.name}
+                              onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
+                              disabled={editSaving}
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <label className="text-xs font-semibold text-gray-600">Email *</label>
+                            <Input
+                              type="email"
+                              placeholder="student@example.com"
+                              value={editForm.email}
+                              onChange={(e) => setEditForm((f) => ({ ...f, email: e.target.value }))}
+                              disabled={editSaving}
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <label className="text-xs font-semibold text-gray-600">Phone</label>
+                            <Input
+                              type="tel"
+                              placeholder="(555) 123-4567"
+                              value={editForm.phone}
+                              onChange={(e) => setEditForm((f) => ({ ...f, phone: e.target.value }))}
+                              disabled={editSaving}
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <label className="text-xs font-semibold text-gray-600">Belt</label>
+                            <select
+                              value={editForm.current_rank_id}
+                              onChange={(e) => setEditForm((f) => ({ ...f, current_rank_id: e.target.value }))}
+                              disabled={editSaving}
+                              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                            >
+                              <option value="">No belt</option>
+                              {ranks
+                                .sort((a, b) => a.rank_order - b.rank_order)
+                                .map((r) => (
+                                  <option key={r.rank_id} value={r.rank_id}>
+                                    {r.rank_name}
+                                  </option>
+                                ))}
+                            </select>
+                          </div>
+                        </div>
+                        {editError && <p className="text-sm text-red-600">{editError}</p>}
+                        <div className="flex gap-2">
+                          <button
+                            onClick={handleEditSave}
+                            disabled={editSaving}
+                            className="px-4 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50"
+                          >
+                            {editSaving ? "Saving..." : "Save Changes"}
+                          </button>
+                          <button
+                            onClick={() => setEditingUser(null)}
+                            disabled={editSaving}
+                            className="px-4 py-2 text-sm text-gray-600 bg-gray-200 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
             ))
           )}
         </tbody>
