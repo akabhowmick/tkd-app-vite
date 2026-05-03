@@ -8,11 +8,43 @@ import { AppConfirmModal } from "../../../ui/modal";
 import { ManageParentLinks } from "./ManageParentLinks";
 import { Input } from "../../../ui/input";
 import { validateFormData } from "../../../../utils/formValidation";
+import { Skeleton } from "../../../ui/skeleton";
 
 type EditForm = { name: string; email: string; phone: string; current_rank_id: string };
 
+const StudentListSkeleton = () => (
+  <div className="max-w-4xl mx-auto p-4">
+    <Skeleton className="h-9 w-56 mb-4" />
+    <Skeleton className="h-10 w-40 my-6" />
+    <Skeleton className="h-8 w-48 mb-4" />
+    <div className="w-full bg-white shadow rounded overflow-hidden">
+      <div className="bg-gray-100 grid grid-cols-5 gap-3 p-3">
+        {["w-16", "w-32", "w-20", "w-16", "w-16"].map((w, i) => (
+          <Skeleton key={i} className={`h-4 ${w}`} />
+        ))}
+      </div>
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div
+          key={i}
+          className={`grid grid-cols-5 gap-3 p-3 border-t ${i % 2 === 0 ? "bg-white" : "bg-gray-100"}`}
+        >
+          <Skeleton className="h-4 w-28" />
+          <Skeleton className="h-4 w-40" />
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-4 w-16" />
+          <div className="flex flex-col gap-1">
+            <Skeleton className="h-6 w-full" />
+            <Skeleton className="h-6 w-full" />
+            <Skeleton className="h-6 w-full" />
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
 export const StudentListPage = () => {
-  const { loadStudents, handleDelete, students, schoolId } = useSchool();
+  const { loadStudents, handleDelete, students, schoolId, loading } = useSchool();
   const { ranks } = useBelts();
   const [editingUser, setEditingUser] = useState<Student | null>(null);
   const [editForm, setEditForm] = useState<EditForm>({ name: "", email: "", phone: "", current_rank_id: "" });
@@ -113,6 +145,8 @@ export const StudentListPage = () => {
     return ranks.find((rank) => rank.rank_id === rankId)?.rank_name ?? rankId;
   };
 
+  if (loading && students.length === 0) return <StudentListSkeleton />;
+
   return (
     <div className="max-w-4xl mx-auto p-4">
       <h1 className="text-3xl font-bold mb-4 text-black">Student Management</h1>
@@ -153,7 +187,7 @@ export const StudentListPage = () => {
           </tr>
         </thead>
         <tbody>
-          {students.length === 0 ? (
+          {!loading && students.length === 0 ? (
             <tr>
               <td colSpan={5} className="p-4 text-center text-gray-500">
                 No students found.
