@@ -17,7 +17,8 @@ export const StudentListPage = () => {
   const [editingUser, setEditingUser] = useState<Student | null>(null);
   const [editForm, setEditForm] = useState<EditForm>({ name: "", email: "", phone: "", current_rank_id: "" });
   const [editError, setEditError] = useState<string | null>(null);
-  const [editSaving, setEditSaving] = useState(false);
+  // studentId → optimistically updated values, cleared after background reload
+  const [pendingEdits, setPendingEdits] = useState<Record<string, Student>>({});
   const [deleteConfirm, setDeleteConfirm] = useState<{
     open: boolean;
     studentId: string;
@@ -44,23 +45,48 @@ export const StudentListPage = () => {
       setEditError(validationError);
       return;
     }
-    setEditSaving(true);
+
+    const studentId = editingUser!.id!;
+    const snapshot = editingUser!;
+    const optimistic: Student = {
+      ...snapshot,
+      name: editForm.name.trim(),
+      email: editForm.email.trim(),
+      phone: editForm.phone.trim(),
+      current_rank_id: editForm.current_rank_id || undefined,
+    };
+
+    // Apply immediately and close the row
+    setPendingEdits((prev) => ({ ...prev, [studentId]: optimistic }));
+    setEditingUser(null);
+
     try {
-      await updateStudent(editingUser!.id!, {
-        name: editForm.name.trim(),
-        email: editForm.email.trim(),
-        phone: editForm.phone.trim(),
+      await updateStudent(studentId, {
+        name: optimistic.name,
+        email: optimistic.email,
+        phone: optimistic.phone,
         role: "Student",
         school_id: schoolId,
-        current_rank_id: editForm.current_rank_id || undefined,
+        current_rank_id: optimistic.current_rank_id,
       });
       await loadStudents();
-      setEditingUser(null);
     } catch {
+      // Revert optimistic value and reopen row with original data + error
+      setPendingEdits((prev) => {
+        const next = { ...prev };
+        delete next[studentId];
+        return next;
+      });
+      handleEdit(snapshot);
       setEditError("Failed to update student. Please try again.");
-    } finally {
-      setEditSaving(false);
+      return;
     }
+
+    setPendingEdits((prev) => {
+      const next = { ...prev };
+      delete next[studentId];
+      return next;
+    });
   };
 
   const requestDelete = (student: Student) => {
@@ -134,114 +160,113 @@ export const StudentListPage = () => {
               </td>
             </tr>
           ) : (
-            students.map((student) => (
-              <Fragment key={student.id}>
-                <tr className="border-t text-black">
-                  <td className="p-3">{student.name}</td>
-                  <td className="p-3">{student.email}</td>
-                  <td className="p-3">{student.phone || "N/A"}</td>
-                  <td className="p-3">{getRankName(student.current_rank_id)}</td>
-                  <td className="p-3">
-                    <div className="flex flex-col gap-1 items-start">
-                      <button
-                        onClick={() => handleEdit(student)}
-                        disabled={editingUser?.id === student.id}
-                        className="w-full px-3 py-1 text-xs font-medium rounded border border-blue-300 text-blue-700 bg-blue-50 hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      >
-                        {editingUser?.id === student.id ? "Editing..." : "Edit"}
-                      </button>
-                      <button
-                        onClick={() => setParentTarget(student)}
-                        className="w-full px-3 py-1 text-xs font-medium rounded border border-purple-300 text-purple-700 bg-purple-50 hover:bg-purple-100 transition-colors"
-                      >
-                        Parents
-                      </button>
-                      <button
-                        onClick={() => requestDelete(student)}
-                        className="w-full px-3 py-1 text-xs font-medium rounded border border-red-300 text-red-700 bg-red-50 hover:bg-red-100 transition-colors"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-                {editingUser?.id === student.id && (
-                  <tr className="bg-blue-50 border-t border-blue-200">
-                    <td colSpan={5} className="p-4">
-                      <div className="flex flex-col gap-3">
-                        <div className="grid grid-cols-4 gap-3">
-                          <div className="flex flex-col gap-1">
-                            <label className="text-xs font-semibold text-gray-600">Name *</label>
-                            <Input
-                              type="text"
-                              placeholder="Full name"
-                              value={editForm.name}
-                              onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
-                              disabled={editSaving}
-                            />
-                          </div>
-                          <div className="flex flex-col gap-1">
-                            <label className="text-xs font-semibold text-gray-600">Email *</label>
-                            <Input
-                              type="email"
-                              placeholder="student@example.com"
-                              value={editForm.email}
-                              onChange={(e) => setEditForm((f) => ({ ...f, email: e.target.value }))}
-                              disabled={editSaving}
-                            />
-                          </div>
-                          <div className="flex flex-col gap-1">
-                            <label className="text-xs font-semibold text-gray-600">Phone</label>
-                            <Input
-                              type="tel"
-                              placeholder="(555) 123-4567"
-                              value={editForm.phone}
-                              onChange={(e) => setEditForm((f) => ({ ...f, phone: e.target.value }))}
-                              disabled={editSaving}
-                            />
-                          </div>
-                          <div className="flex flex-col gap-1">
-                            <label className="text-xs font-semibold text-gray-600">Belt</label>
-                            <select
-                              value={editForm.current_rank_id}
-                              onChange={(e) => setEditForm((f) => ({ ...f, current_rank_id: e.target.value }))}
-                              disabled={editSaving}
-                              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                            >
-                              <option value="">No belt</option>
-                              {ranks
-                                .sort((a, b) => a.rank_order - b.rank_order)
-                                .map((r) => (
-                                  <option key={r.rank_id} value={r.rank_id}>
-                                    {r.rank_name}
-                                  </option>
-                                ))}
-                            </select>
-                          </div>
-                        </div>
-                        {editError && <p className="text-sm text-red-600">{editError}</p>}
-                        <div className="flex gap-2">
-                          <button
-                            onClick={handleEditSave}
-                            disabled={editSaving}
-                            className="px-4 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50"
-                          >
-                            {editSaving ? "Saving..." : "Save Changes"}
-                          </button>
-                          <button
-                            onClick={() => setEditingUser(null)}
-                            disabled={editSaving}
-                            className="px-4 py-2 text-sm text-gray-600 bg-gray-200 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50"
-                          >
-                            Cancel
-                          </button>
-                        </div>
+            students.map((student, idx) => {
+              const display = pendingEdits[student.id!] ?? student;
+              const isPending = !!pendingEdits[student.id!];
+              const rowBg = idx % 2 === 0 ? "bg-white" : "bg-gray-100";
+              return (
+                <Fragment key={student.id}>
+                  <tr className={`border-t text-black ${rowBg} ${isPending ? "opacity-70" : ""}`}>
+                    <td className="p-3">{display.name}</td>
+                    <td className="p-3">{display.email}</td>
+                    <td className="p-3">{display.phone || "N/A"}</td>
+                    <td className="p-3">{getRankName(display.current_rank_id)}</td>
+                    <td className="p-3">
+                      <div className="flex flex-col gap-1 items-start">
+                        <button
+                          onClick={() => handleEdit(student)}
+                          disabled={editingUser?.id === student.id || isPending}
+                          className="w-full px-3 py-1 text-xs font-medium rounded border border-blue-300 text-blue-700 bg-blue-50 hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          {editingUser?.id === student.id ? "Editing..." : isPending ? "Saving..." : "Edit"}
+                        </button>
+                        <button
+                          onClick={() => setParentTarget(student)}
+                          className="w-full px-3 py-1 text-xs font-medium rounded border border-purple-300 text-purple-700 bg-purple-50 hover:bg-purple-100 transition-colors"
+                        >
+                          Parents
+                        </button>
+                        <button
+                          onClick={() => requestDelete(student)}
+                          className="w-full px-3 py-1 text-xs font-medium rounded border border-red-300 text-red-700 bg-red-50 hover:bg-red-100 transition-colors"
+                        >
+                          Delete
+                        </button>
                       </div>
                     </td>
                   </tr>
-                )}
-              </Fragment>
-            ))
+                  {editingUser?.id === student.id && (
+                    <tr className="bg-blue-50 border-t border-blue-200">
+                      <td colSpan={5} className="p-4">
+                        <div className="flex flex-col gap-3">
+                          <div className="grid grid-cols-4 gap-3">
+                            <div className="flex flex-col gap-1">
+                              <label className="text-xs font-semibold text-gray-600">Name *</label>
+                              <Input
+                                type="text"
+                                placeholder="Full name"
+                                value={editForm.name}
+                                onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
+                              />
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              <label className="text-xs font-semibold text-gray-600">Email *</label>
+                              <Input
+                                type="email"
+                                placeholder="student@example.com"
+                                value={editForm.email}
+                                onChange={(e) => setEditForm((f) => ({ ...f, email: e.target.value }))}
+                              />
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              <label className="text-xs font-semibold text-gray-600">Phone</label>
+                              <Input
+                                type="tel"
+                                placeholder="(555) 123-4567"
+                                value={editForm.phone}
+                                onChange={(e) => setEditForm((f) => ({ ...f, phone: e.target.value }))}
+                              />
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              <label className="text-xs font-semibold text-gray-600">Belt</label>
+                              <select
+                                value={editForm.current_rank_id}
+                                onChange={(e) => setEditForm((f) => ({ ...f, current_rank_id: e.target.value }))}
+                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                              >
+                                <option value="">No belt</option>
+                                {ranks
+                                  .sort((a, b) => a.rank_order - b.rank_order)
+                                  .map((r) => (
+                                    <option key={r.rank_id} value={r.rank_id}>
+                                      {r.rank_name}
+                                    </option>
+                                  ))}
+                              </select>
+                            </div>
+                          </div>
+                          {editError && <p className="text-sm text-red-600">{editError}</p>}
+                          <div className="flex gap-2">
+                            <button
+                              onClick={handleEditSave}
+                              className="px-4 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+                            >
+                              Save Changes
+                            </button>
+                            <button
+                              onClick={() => setEditingUser(null)}
+                              className="px-4 py-2 text-sm text-gray-600 bg-gray-200 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
+              );
+            })
           )}
         </tbody>
       </table>

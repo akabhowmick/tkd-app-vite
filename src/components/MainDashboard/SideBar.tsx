@@ -46,7 +46,6 @@ const NAV_SECTIONS: { heading: string | null; items: NavItem[] }[] = [
         icon: Users,
         label: "Students",
         view: "students",
-        children: [{ label: "Student List", view: "students" }],
       },
       {
         icon: School,
