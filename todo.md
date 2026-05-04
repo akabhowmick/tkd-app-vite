@@ -72,3 +72,11 @@ supabase secrets set RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxxxxxx
 Update reminders@yourdomain.com in the Edge Function to your Resend-verified domain
 supabase functions deploy send-renewal-reminders
 Run notification_schedule.sql in the Supabase SQL Editor
+
+## 4. Storage Bucket
+
+Create an **`avatars`** storage bucket in Supabase Storage → New Bucket:
+
+- Name: `avatars`
+- Public: ✅ (required — code uses `getPublicUrl()`)
+- Add a storage policy so authenticated users can upload to their own path (`avatars/{user.id}.*`):

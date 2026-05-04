@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback } from "react";
 import { CreateRenewalFormProps, InstallmentInput } from "../../../../types/student_renewal";
 import { useSchool } from "../../../../context/SchoolContext";
 import { usePrograms } from "../../../../context/ProgramContext";
+import { ProgramFormModal, ProgramFormTarget } from "../Programs/ProgramFormModal";
+import { Plus } from "lucide-react";
 
 // ─────────────────────────────────────────────
 // Helpers
@@ -61,6 +63,15 @@ export const CreateRenewalForm: React.FC<CreateRenewalFormProps> = ({ onSubmit, 
   // ── UI state
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [programFormTarget, setProgramFormTarget] = useState<ProgramFormTarget>(null);
+  const [studentSearch, setStudentSearch] = useState("");
+  const [showStudentDropdown, setShowStudentDropdown] = useState(false);
+
+  const filteredStudents = studentSearch.trim()
+    ? students.filter((s) => s.name.toLowerCase().includes(studentSearch.toLowerCase()))
+    : students;
+
+  const selectedStudent = students.find((s) => s.id === studentId);
 
   // Derive whether the selected program is milestone-based
   const selectedProgram = programs.find((p) => p.program_id === programId);
@@ -159,31 +170,67 @@ export const CreateRenewalForm: React.FC<CreateRenewalFormProps> = ({ onSubmit, 
   const labelClass = "block text-sm font-medium text-gray-700 mb-1";
 
   return (
+    <>
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white text-black rounded-xl p-6 w-full max-w-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
         <h2 className="text-2xl font-bold mb-6">Register Renewal</h2>
 
         <div className="space-y-5">
           {/* Student */}
-          <div>
+          <div className="relative">
             <label className={labelClass}>Student</label>
-            <select
-              value={studentId}
-              onChange={(e) => setStudentId(e.target.value)}
+            <input
+              type="text"
+              value={studentId ? (selectedStudent?.name ?? studentSearch) : studentSearch}
+              onChange={(e) => {
+                setStudentSearch(e.target.value);
+                setStudentId("");
+                setShowStudentDropdown(true);
+              }}
+              onFocus={() => setShowStudentDropdown(true)}
+              onBlur={() => setTimeout(() => setShowStudentDropdown(false), 150)}
+              placeholder="Search by name..."
               className={fieldClass}
-            >
-              <option value="">Select a student...</option>
-              {students.map((s) => (
-                <option key={s.id} value={s.id!}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
+              autoComplete="off"
+            />
+            {showStudentDropdown && filteredStudents.length > 0 && (
+              <ul className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-48 overflow-y-auto">
+                {filteredStudents.map((s) => (
+                  <li
+                    key={s.id}
+                    onMouseDown={() => {
+                      setStudentId(s.id!);
+                      setStudentSearch("");
+                      setShowStudentDropdown(false);
+                    }}
+                    className={`px-3 py-2 text-sm cursor-pointer hover:bg-blue-50 hover:text-blue-700 ${
+                      s.id === studentId ? "bg-blue-50 text-blue-700 font-medium" : "text-gray-800"
+                    }`}
+                  >
+                    {s.name}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {showStudentDropdown && studentSearch.trim() && filteredStudents.length === 0 && (
+              <div className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-1 px-3 py-2 text-sm text-gray-400">
+                No students found
+              </div>
+            )}
           </div>
 
           {/* Program */}
           <div>
-            <label className={labelClass}>Program</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className={labelClass.replace("mb-1", "")}>Program</label>
+              <button
+                type="button"
+                onClick={() => setProgramFormTarget("new")}
+                className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 font-medium"
+              >
+                <Plus size={12} /> Add program
+              </button>
+            </div>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
               {programs.map((prog) => (
                 <button
@@ -382,7 +429,7 @@ export const CreateRenewalForm: React.FC<CreateRenewalFormProps> = ({ onSubmit, 
                     type="text"
                     value={inst.paid_to}
                     onChange={(e) => updateInstallment(idx, "paid_to", e.target.value)}
-                    placeholder="MR, Amy..."
+                    placeholder="Employee Name..."
                     className="px-2 py-1.5 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
                   />
                 </div>
@@ -414,5 +461,11 @@ export const CreateRenewalForm: React.FC<CreateRenewalFormProps> = ({ onSubmit, 
         </div>
       </div>
     </div>
+
+    <ProgramFormModal
+      target={programFormTarget}
+      onClose={() => setProgramFormTarget(null)}
+    />
+    </>
   );
 };

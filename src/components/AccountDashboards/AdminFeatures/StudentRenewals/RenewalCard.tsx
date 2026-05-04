@@ -123,10 +123,19 @@ export const RenewalCard: React.FC<RenewalCardProps> = ({
     e.preventDefault();
     if (!markPaidTarget) return;
     setMarkPaidError(null);
-    if (!markPaidForm.payment_date) { setMarkPaidError("Payment date is required."); return; }
-    if (!markPaidForm.paid_to.trim()) { setMarkPaidError("Paid To is required."); return; }
+    if (!markPaidForm.payment_date) {
+      setMarkPaidError("Payment date is required.");
+      return;
+    }
+    if (!markPaidForm.paid_to.trim()) {
+      setMarkPaidError("Paid To is required.");
+      return;
+    }
     const amountPaid = parseFloat(markPaidForm.amount_paid);
-    if (isNaN(amountPaid) || amountPaid < 0) { setMarkPaidError("Invalid amount paid."); return; }
+    if (isNaN(amountPaid) || amountPaid < 0) {
+      setMarkPaidError("Invalid amount paid.");
+      return;
+    }
 
     setMarkPaidLoading(true);
     try {
@@ -160,12 +169,24 @@ export const RenewalCard: React.FC<RenewalCardProps> = ({
   const handleAddPaymentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setAddError(null);
-    if (!addForm.payment_date) { setAddError("Payment date is required."); return; }
-    if (!addForm.paid_to.trim()) { setAddError("Paid To is required."); return; }
+    if (!addForm.payment_date) {
+      setAddError("Payment date is required.");
+      return;
+    }
+    if (!addForm.paid_to.trim()) {
+      setAddError("Paid To is required.");
+      return;
+    }
     const amountDue = parseFloat(addForm.amount_due);
     const amountPaid = parseFloat(addForm.amount_paid);
-    if (isNaN(amountDue) || amountDue < 0) { setAddError("Invalid amount due."); return; }
-    if (isNaN(amountPaid) || amountPaid < 0) { setAddError("Invalid amount paid."); return; }
+    if (isNaN(amountDue) || amountDue < 0) {
+      setAddError("Invalid amount due.");
+      return;
+    }
+    if (isNaN(amountPaid) || amountPaid < 0) {
+      setAddError("Invalid amount paid.");
+      return;
+    }
 
     setAddLoading(true);
     try {
@@ -216,9 +237,7 @@ export const RenewalCard: React.FC<RenewalCardProps> = ({
         <span>
           Expires:{" "}
           <strong>
-            {period.expiration_date
-              ? new Date(period.expiration_date).toLocaleDateString()
-              : "—"}
+            {period.expiration_date ? new Date(period.expiration_date).toLocaleDateString() : "—"}
           </strong>
         </span>
         <span>
@@ -292,7 +311,12 @@ export const RenewalCard: React.FC<RenewalCardProps> = ({
       )}
 
       {/* ── Manage Modal ── */}
-      <AppModal open={manageOpen} onOpenChange={setManageOpen} title="Manage Renewal" size="compact">
+      <AppModal
+        open={manageOpen}
+        onOpenChange={setManageOpen}
+        title="Manage Renewal"
+        size="compact"
+      >
         <div className="flex flex-col gap-2">
           {!isPaid && (
             <Button
@@ -378,7 +402,7 @@ export const RenewalCard: React.FC<RenewalCardProps> = ({
           <Input
             id="mp-to"
             type="text"
-            placeholder="e.g., MR, Amy"
+            placeholder="e.g., Employee Name"
             value={markPaidForm.paid_to}
             onChange={(e) => setMarkPaidForm((f) => ({ ...f, paid_to: e.target.value }))}
           />
@@ -429,7 +453,7 @@ export const RenewalCard: React.FC<RenewalCardProps> = ({
           <Input
             id="pay-to"
             type="text"
-            placeholder="e.g., MR, Amy"
+            placeholder="e.g., Employee Name"
             value={addForm.paid_to}
             onChange={(e) => setAddForm((f) => ({ ...f, paid_to: e.target.value }))}
           />
