@@ -3,6 +3,7 @@ import React, {
   useContext,
   useEffect,
   useState,
+  useRef,
   ReactNode,
   useCallback,
   useMemo,
@@ -46,8 +47,8 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const [loading, setLoading] = useState<boolean>(true);
   const [students, setStudents] = useState<Student[]>([]);
   const [schoolId, setSchoolId] = useState<string>("");
-  const [studentsCache, setStudentsCache] = useState<Map<string, Student[]>>(new Map());
-  const [lastStudentsFetch, setLastStudentsFetch] = useState<Map<string, number>>(new Map());
+  const studentsCacheRef = useRef<Map<string, Student[]>>(new Map());
+  const lastStudentsFetchRef = useRef<Map<string, number>>(new Map());
   const [salesChange, setSalesChange] = useState<number | null>(null);
   const [attendanceChange, setAttendanceChange] = useState<number | null>(null);
   const [clientsChange, setClientsChange] = useState<number | null>(null);
@@ -75,8 +76,8 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
       const now = Date.now();
       const cacheTimeout = 5 * 60 * 1000;
-      const lastFetch = lastStudentsFetch.get(targetSchoolId) || 0;
-      const cachedStudents = studentsCache.get(targetSchoolId);
+      const lastFetch = lastStudentsFetchRef.current.get(targetSchoolId) || 0;
+      const cachedStudents = studentsCacheRef.current.get(targetSchoolId);
 
       if (!forceRefresh && cachedStudents && now - lastFetch < cacheTimeout) {
         setStudents(cachedStudents);
@@ -88,8 +89,8 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         // getStudents already sorts by last name — no re-sort needed here
         const students = await getStudents(targetSchoolId);
 
-        setStudentsCache((prev) => new Map(prev).set(targetSchoolId, students));
-        setLastStudentsFetch((prev) => new Map(prev).set(targetSchoolId, now));
+        studentsCacheRef.current.set(targetSchoolId, students);
+        lastStudentsFetchRef.current.set(targetSchoolId, now);
         setStudents(students);
       } catch (error) {
         console.error("Error loading students:", error);
@@ -97,7 +98,7 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         setLoading(false);
       }
     },
-    [schoolId, studentsCache, lastStudentsFetch],
+    [schoolId],
   );
 
   const handleDelete = async (id: string) => {
@@ -235,16 +236,8 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     setSchool(null);
     setSchoolId("");
     setStudents([]);
-    setStudentsCache((prev) => {
-      const next = new Map(prev);
-      next.delete(id);
-      return next;
-    });
-    setLastStudentsFetch((prev) => {
-      const next = new Map(prev);
-      next.delete(id);
-      return next;
-    });
+    studentsCacheRef.current.delete(id);
+    lastStudentsFetchRef.current.delete(id);
   };
 
   return (

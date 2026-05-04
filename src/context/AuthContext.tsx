@@ -75,14 +75,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         const m = session.user.user_metadata;
-        setUser({
-          id: session.user.id,
-          name: m?.name || m?.full_name || "Unknown User",
-          email: session.user.email || "",
-          phone: m?.phone || "",
-          role: m?.role || UserRole.Student,
-          createdAt: new Date(session.user.created_at),
-          schoolId: m?.schoolId || "",
+        setUser((prev) => {
+          const next: BaseUser = {
+            id: session.user.id,
+            name: m?.name || m?.full_name || "Unknown User",
+            email: session.user.email || "",
+            phone: m?.phone || "",
+            role: m?.role || UserRole.Student,
+            createdAt: new Date(session.user.created_at),
+            schoolId: m?.schoolId || "",
+          };
+          // Return the existing reference on token refresh so downstream
+          // useEffect([user]) hooks don't re-fire and trigger data refetches.
+          if (prev && prev.id === next.id && prev.role === next.role) return prev;
+          return next;
         });
       } else {
         setUser(null);

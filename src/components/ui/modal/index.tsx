@@ -181,7 +181,7 @@ export function AppFormModal({
             "max-h-[90dvh] flex flex-col",
             className,
           )}
-          onInteractOutside={loading ? (e) => e.preventDefault() : undefined}
+          onInteractOutside={(e) => e.preventDefault()}
           onFocusOutside={(e) => e.preventDefault()}
           onEscapeKeyDown={loading ? (e) => e.preventDefault() : undefined}
         >
@@ -280,6 +280,7 @@ export function AppConfirmModal({
         />
         <AlertDialogPrimitive.Content
           className={cn(modalContentBase, SIZE_CLASSES.compact, "flex flex-col gap-0")}
+          onFocusOutside={(e) => e.preventDefault()}
         >
           {variant === "destructive" && (
             <div className="flex justify-center pt-6 pb-2">
