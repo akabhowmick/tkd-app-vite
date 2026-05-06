@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useBelts } from "../../../../context/BeltContext";
 import { BeltRank } from "../../../../types/belts";
 import { AppFormModal, ModalField } from "../../../ui/modal";
@@ -30,18 +30,39 @@ type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   ranks: BeltRank[];
+  editRank?: BeltRank | null;
 };
 
-export const CreateRankModal = ({ open, onOpenChange, ranks }: Props) => {
-  const { createRank } = useBelts();
+export const CreateRankModal = ({ open, onOpenChange, ranks, editRank }: Props) => {
+  const { createRank, updateRank } = useBelts();
   const [form, setForm] = useState<RankForm>(emptyForm());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (open) {
+      setForm(
+        editRank
+          ? {
+              rank_name: editRank.rank_name,
+              rank_order: String(editRank.rank_order),
+              color_code: editRank.color_code,
+              stripe_color: editRank.stripe_color ?? "",
+            }
+          : emptyForm(),
+      );
+      setError(null);
+    }
+  }, [open, editRank]);
+
   const set = <K extends keyof RankForm>(k: K, v: RankForm[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
 
-  const conflict = ranks.find((r) => r.rank_order === parseInt(form.rank_order));
+  const conflict = ranks.find(
+    (r) =>
+      r.rank_order === parseInt(form.rank_order) &&
+      r.rank_id !== editRank?.rank_id,
+  );
 
   const handleOpenChange = (open: boolean) => {
     if (!open) {
@@ -60,15 +81,24 @@ export const CreateRankModal = ({ open, onOpenChange, ranks }: Props) => {
     }
     setLoading(true);
     try {
-      await createRank({
-        rank_name: form.rank_name.trim(),
-        rank_order: parseInt(form.rank_order) || 1,
-        color_code: form.color_code,
-        stripe_color: form.stripe_color || undefined,
-      });
+      if (editRank) {
+        await updateRank(editRank.rank_id, {
+          rank_name: form.rank_name.trim(),
+          rank_order: parseInt(form.rank_order) || 1,
+          color_code: form.color_code,
+          stripe_color: form.stripe_color || undefined,
+        });
+      } else {
+        await createRank({
+          rank_name: form.rank_name.trim(),
+          rank_order: parseInt(form.rank_order) || 1,
+          color_code: form.color_code,
+          stripe_color: form.stripe_color || undefined,
+        });
+      }
       handleOpenChange(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create rank.");
+      setError(err instanceof Error ? err.message : `Failed to ${editRank ? "update" : "create"} rank.`);
     } finally {
       setLoading(false);
     }
@@ -90,10 +120,10 @@ export const CreateRankModal = ({ open, onOpenChange, ranks }: Props) => {
     <AppFormModal
       open={open}
       onOpenChange={handleOpenChange}
-      title="Create Belt Rank"
+      title={editRank ? "Edit Belt Rank" : "Create Belt Rank"}
       size="compact"
       onSubmit={handleSubmit}
-      submitLabel="Create Rank"
+      submitLabel={editRank ? "Save Changes" : "Create Rank"}
       loading={loading}
       submitDisabled={!!conflict}
       error={error}

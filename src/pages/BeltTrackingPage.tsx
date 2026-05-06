@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useBelts } from "../context/BeltContext";
 import { useSchool } from "../context/SchoolContext";
-import { FaPlus, FaTrophy, FaTrash, FaMedal } from "react-icons/fa";
+import { FaPlus, FaTrophy, FaTrash, FaMedal, FaPencilAlt } from "react-icons/fa";
 import { AppConfirmModal } from "../components/ui/modal";
 import { Skeleton } from "../components/ui/skeleton";
 import { CreateRankModal } from "../components/AccountDashboards/AdminFeatures/BeltTracking/CreateRankModal";
@@ -45,6 +45,7 @@ export const BeltTrackingPage = () => {
   const { students } = useSchool();
   const [activeTab, setActiveTab] = useState<"ranks" | "promotions">("ranks");
   const [rankModalOpen, setRankModalOpen] = useState(false);
+  const [editingRank, setEditingRank] = useState<(typeof ranks)[0] | null>(null);
   const [promoModalOpen, setPromoModalOpen] = useState(false);
 
   const [deleteRankConfirm, setDeleteRankConfirm] = useState<{
@@ -94,7 +95,7 @@ export const BeltTrackingPage = () => {
               <FaTrophy /> Promote Student
             </button>
             <button
-              onClick={() => setRankModalOpen(true)}
+              onClick={() => { setEditingRank(null); setRankModalOpen(true); }}
               className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
             >
               <FaPlus /> New Rank
@@ -128,7 +129,7 @@ export const BeltTrackingPage = () => {
                   <h2 className="text-xl font-semibold text-gray-700 mb-2">No Belt Ranks Yet</h2>
                   <p className="text-gray-500 mb-4">Create your first belt rank to get started</p>
                   <button
-                    onClick={() => setRankModalOpen(true)}
+                    onClick={() => { setEditingRank(null); setRankModalOpen(true); }}
                     className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
                   >
                     Create First Rank
@@ -164,19 +165,30 @@ export const BeltTrackingPage = () => {
                               {stripeLabel ? ` · ${stripeLabel} stripe` : ""}
                             </p>
                           </div>
-                          <button
-                            onClick={() =>
-                              setDeleteRankConfirm({
-                                open: true,
-                                rankId: rank.rank_id,
-                                rankName: rank.rank_name,
-                                loading: false,
-                              })
-                            }
-                            className="text-red-500 hover:text-red-700"
-                          >
-                            <FaTrash />
-                          </button>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => {
+                                setEditingRank(rank);
+                                setRankModalOpen(true);
+                              }}
+                              className="text-blue-500 hover:text-blue-700"
+                            >
+                              <FaPencilAlt />
+                            </button>
+                            <button
+                              onClick={() =>
+                                setDeleteRankConfirm({
+                                  open: true,
+                                  rankId: rank.rank_id,
+                                  rankName: rank.rank_name,
+                                  loading: false,
+                                })
+                              }
+                              className="text-red-500 hover:text-red-700"
+                            >
+                              <FaTrash />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     );
@@ -237,7 +249,15 @@ export const BeltTrackingPage = () => {
         </div>
       </div>
 
-      <CreateRankModal open={rankModalOpen} onOpenChange={setRankModalOpen} ranks={ranks} />
+      <CreateRankModal
+        open={rankModalOpen}
+        onOpenChange={(open) => {
+          setRankModalOpen(open);
+          if (!open) setEditingRank(null);
+        }}
+        ranks={ranks}
+        editRank={editingRank}
+      />
       <PromoteStudentModal open={promoModalOpen} onOpenChange={setPromoModalOpen} />
 
       <AppConfirmModal

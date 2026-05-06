@@ -64,8 +64,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           schoolId: m?.schoolId || "",
         });
         if (storedSchool) setSchool(JSON.parse(storedSchool));
-        setLoading(false);
       }
+      setLoading(false);
     };
 
     fetchUser();
