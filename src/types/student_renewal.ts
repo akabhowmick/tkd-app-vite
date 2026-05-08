@@ -4,7 +4,8 @@ export type UiRenewalStatus =
   | "expiring_soon"
   | "grace_period"
   | "paid"
-  | "payment_overdue";
+  | "payment_overdue"
+  | "milestone";
 
 export function toDbStatus(status: DbRenewalStatus): DbRenewalStatus {
   return status;
@@ -131,6 +132,7 @@ export interface GroupedRenewals {
   expired: RenewalPeriodWithUiStatus[];
   active: RenewalPeriodWithUiStatus[];
   paid: RenewalPeriodWithUiStatus[];
+  milestone: RenewalPeriodWithUiStatus[];
 }
 
 // ─────────────────────────────────────────────

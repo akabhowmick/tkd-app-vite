@@ -80,8 +80,11 @@ export function deriveUiStatus(period: RenewalPeriod, program?: SchoolProgram): 
   // Fully paid
   if (period.balance <= 0 && period.total_due > 0) return "paid";
 
-  // Milestone-based: no expiration logic — just active
-  if (isMilestone) return "active";
+  // Milestone-based: paid milestones get their own bucket; otherwise active
+  if (isMilestone) {
+    if (period.balance <= 0 && period.total_due > 0) return "milestone";
+    return "active";
+  }
 
   // Time-based: expiration-driven
   if (!period.expiration_date) return "active";
@@ -100,6 +103,8 @@ function getStatusMessage(
 ): string {
   if (isMilestone && uiStatus === "active") return "Active — milestone program";
   switch (uiStatus) {
+    case "milestone":
+      return "Milestone program — fully paid";
     case "paid":
       return "Fully paid";
     case "payment_overdue":
@@ -148,6 +153,7 @@ export function groupPeriods(
     expired: [],
     active: [],
     paid: [],
+    milestone: [],
   };
 
   for (const period of periods) {
@@ -162,6 +168,9 @@ export function groupPeriods(
         break;
       case "paid":
         result.paid.push(enriched);
+        break;
+      case "milestone":
+        result.milestone.push(enriched);
         break;
       case "expiring_soon":
         result.expiring_soon.push(enriched);
@@ -190,6 +199,7 @@ export function groupPeriods(
   result.expired.sort(byExpiry);
   result.active.sort(byExpiry);
   result.paid.sort(byExpiry);
+  result.milestone.sort(byExpiry);
 
   return result;
 }

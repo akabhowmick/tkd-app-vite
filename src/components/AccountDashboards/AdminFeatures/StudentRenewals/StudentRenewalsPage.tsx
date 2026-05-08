@@ -151,10 +151,12 @@ export const StudentRenewalsPage: React.FC = () => {
 
         {/* Renewal buckets */}
         <div className="flex flex-col gap-6">
+          {renderCategory("Payment Overdue", "💸", grouped.payment_overdue, "border-orange-600")}
           {renderCategory("Expiring Soon", "⚠️", grouped.expiring_soon, "border-yellow-500")}
           {renderCategory("Grace Period", "🕓", grouped.grace_period, "border-orange-500")}
           {renderCategory("Expired", "⛔", grouped.expired, "border-red-600")}
           {renderCategory("Active", "⏰", grouped.active, "border-blue-500")}
+          {renderCategory("Black Belt Club", "🥋", grouped.milestone, "border-purple-500")}
           {renderCategory("Paid", "✅", grouped.paid, "border-green-500")}
 
           {!loading && Object.values(grouped).every((g) => g.length === 0) && (

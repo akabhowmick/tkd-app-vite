@@ -38,6 +38,18 @@ const STATUS_STYLES: Record<string, { card: string; badge: string; icon: string;
       icon: "✓",
       label: "Paid",
     },
+    milestone: {
+      card: "bg-purple-50 border-purple-200",
+      badge: "bg-purple-100 text-purple-800 border-purple-200",
+      icon: "🥋",
+      label: "Black Belt Club",
+    },
+    payment_overdue: {
+      card: "bg-orange-50 border-orange-300",
+      badge: "bg-orange-100 text-orange-800 border-orange-200",
+      icon: "💸",
+      label: "Payment Overdue",
+    },
   };
 
 type AddPaymentForm = {
@@ -81,11 +93,8 @@ export const RenewalCard: React.FC<RenewalCardProps> = ({
 
   // Mark-paid modal
   const [markPaidOpen, setMarkPaidOpen] = useState(false);
-  const [markPaidTarget, setMarkPaidTarget] = useState<{
-    paymentId: string;
-    amountDue: number;
-    installmentNumber: number;
-  } | null>(null);
+  const [markPaidTarget, setMarkPaidTarget] = useState<RenewalPayment | null>(null);
+  const [installmentPickerOpen, setInstallmentPickerOpen] = useState(false);
   const [markPaidForm, setMarkPaidForm] = useState<MarkPaidForm>({
     payment_date: today(),
     amount_paid: "0",
@@ -101,22 +110,30 @@ export const RenewalCard: React.FC<RenewalCardProps> = ({
 
   // ── Handlers ────────────────────────────────────────────────
 
-  const openMarkPaid = () => {
-    const firstUnpaid = period.payments.find((p) => p.amount_paid < p.amount_due);
-    if (!firstUnpaid) return;
-    setMarkPaidTarget({
-      paymentId: firstUnpaid.payment_id,
-      amountDue: firstUnpaid.amount_due,
-      installmentNumber: firstUnpaid.installment_number,
-    });
+  const selectInstallment = (payment: RenewalPayment) => {
+    setMarkPaidTarget(payment);
     setMarkPaidForm({
       payment_date: today(),
-      amount_paid: firstUnpaid.amount_due.toFixed(2),
+      amount_paid: (payment.amount_due - payment.amount_paid).toFixed(2),
       paid_to: "",
     });
     setMarkPaidError(null);
     setManageOpen(false);
+    setInstallmentPickerOpen(false);
     setMarkPaidOpen(true);
+  };
+
+  const openMarkPaid = () => {
+    const unpaid = period.payments.filter((p) => p.amount_paid < p.amount_due);
+    if (unpaid.length === 0) return;
+
+    if (unpaid.length === 1) {
+      selectInstallment(unpaid[0]);
+      return;
+    }
+
+    setManageOpen(false);
+    setInstallmentPickerOpen(true);
   };
 
   const handleMarkPaidSubmit = async (e: React.FormEvent) => {
@@ -141,7 +158,7 @@ export const RenewalCard: React.FC<RenewalCardProps> = ({
     try {
       await onMarkInstallmentPaid(
         period.period_id,
-        markPaidTarget.paymentId,
+        markPaidTarget.payment_id,
         markPaidForm.payment_date,
         amountPaid,
         markPaidForm.paid_to.trim(),
@@ -369,12 +386,46 @@ export const RenewalCard: React.FC<RenewalCardProps> = ({
         </div>
       </AppModal>
 
+      {/* ── Pick Installment Modal ── */}
+      <AppModal
+        open={installmentPickerOpen}
+        onOpenChange={setInstallmentPickerOpen}
+        title="Which installment was paid?"
+        description="Choose the installment to credit this payment to."
+        size="compact"
+      >
+        <div className="flex flex-col gap-2">
+          {period.payments
+            .filter((p) => p.amount_paid < p.amount_due)
+            .map((p) => {
+              const balance = p.amount_due - p.amount_paid;
+              return (
+                <button
+                  key={p.payment_id}
+                  onClick={() => selectInstallment(p)}
+                  className="flex justify-between items-center px-4 py-3 rounded-lg border border-gray-200 hover:border-primary hover:bg-primary/5 transition-colors text-left"
+                >
+                  <div>
+                    <p className="text-sm font-semibold text-gray-800">
+                      Installment #{p.installment_number}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      Due {p.due_date ? new Date(p.due_date).toLocaleDateString() : "—"}
+                    </p>
+                  </div>
+                  <span className="text-sm font-medium text-red-600">${balance.toFixed(2)}</span>
+                </button>
+              );
+            })}
+        </div>
+      </AppModal>
+
       {/* ── Mark Payment Paid Modal ── */}
       <AppFormModal
         open={markPaidOpen}
         onOpenChange={setMarkPaidOpen}
-        title={`Mark Installment #${markPaidTarget?.installmentNumber ?? ""} Paid`}
-        description={`Amount due: $${markPaidTarget?.amountDue.toFixed(2) ?? "0.00"}`}
+        title={`Mark Installment #${markPaidTarget?.installment_number ?? ""} Paid`}
+        description={`Amount due: $${markPaidTarget?.amount_due.toFixed(2) ?? "0.00"}`}
         size="compact"
         onSubmit={handleMarkPaidSubmit}
         submitLabel="Record Payment"
