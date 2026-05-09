@@ -5,10 +5,10 @@ import { updateStudent, createStudent } from "../../../../api/StudentRequests/st
 import { useSchool } from "../../../../context/SchoolContext";
 import { useBelts } from "../../../../context/BeltContext";
 import { AppConfirmModal } from "../../../ui/modal";
-import { ManageParentLinks } from "./ManageParentLinks";
 import { Input } from "../../../ui/input";
 import { validateFormData } from "../../../../utils/formValidation";
 import { Skeleton } from "../../../ui/skeleton";
+import { StudentProfilePage } from "./StudentProfilePage";
 
 type EditForm = { name: string; email: string; phone: string; current_rank_id: string };
 
@@ -57,7 +57,7 @@ export const StudentListPage = () => {
     studentName: string;
   }>({ open: false, studentId: "", studentName: "" });
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const [parentTarget, setParentTarget] = useState<Student | null>(null);
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
 
   const handleEdit = (user: Student) => {
     setEditingUser(user);
@@ -147,6 +147,10 @@ export const StudentListPage = () => {
 
   if (loading && students.length === 0) return <StudentListSkeleton />;
 
+  if (selectedStudent) {
+    return <StudentProfilePage student={selectedStudent} onBack={() => setSelectedStudent(null)} />;
+  }
+
   return (
     <div className="max-w-4xl mx-auto p-4">
       <h1 className="text-3xl font-bold mb-4 text-black">Student Management</h1>
@@ -163,18 +167,6 @@ export const StudentListPage = () => {
       </div>
 
       <h2 className="text-2xl font-bold mb-4 text-black">View Current Students</h2>
-
-      {parentTarget && (
-        <div className="mb-6 border p-4 rounded bg-white shadow-md">
-          <ManageParentLinks student={parentTarget} />
-          <button
-            className="mt-4 px-4 py-2 text-sm text-gray-600 bg-gray-200 rounded-md hover:bg-gray-300"
-            onClick={() => setParentTarget(null)}
-          >
-            Close
-          </button>
-        </div>
-      )}
 
       <table className="w-full bg-white shadow rounded overflow-hidden">
         <thead className="bg-gray-100 text-left text-black">
@@ -215,10 +207,10 @@ export const StudentListPage = () => {
                           {editingUser?.id === student.id ? "Editing..." : isPending ? "Saving..." : "Edit"}
                         </button>
                         <button
-                          onClick={() => setParentTarget(student)}
+                          onClick={() => setSelectedStudent(student)}
                           className="w-full px-3 py-1 text-xs font-medium rounded border border-purple-300 text-purple-700 bg-purple-50 hover:bg-purple-100 transition-colors"
                         >
-                          Parents
+                          View Student
                         </button>
                         <button
                           onClick={() => requestDelete(student)}
