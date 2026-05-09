@@ -59,6 +59,7 @@ export const StudentRenewalsPage: React.FC = () => {
     renewPeriod,
     markInstallmentPaid,
     addPayment,
+    updatePeriod,
   } = useStudentRenewals();
 
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -96,6 +97,7 @@ export const StudentRenewalsPage: React.FC = () => {
           onResolveAsQuit={quitRenewal}
           onRenew={(p) => renewPeriod(p, p.duration_months ?? 0)}
           onAddPayment={addPayment}
+          onUpdatePeriod={updatePeriod}
         />
       ))}
     </RenewalCategory>

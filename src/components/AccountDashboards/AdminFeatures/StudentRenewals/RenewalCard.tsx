@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { FaCog, FaChevronDown, FaChevronUp } from "react-icons/fa";
 import { RenewalCardProps, RenewalPayment } from "../../../../types/student_renewal";
 import { useSchool } from "../../../../context/SchoolContext";
+import { usePrograms } from "../../../../context/ProgramContext";
 import { AppModal, AppFormModal, AppConfirmModal, ModalField } from "../../../ui/modal";
 import { Input } from "../../../ui/input";
 import { Button } from "../../../ui/button";
@@ -74,8 +75,10 @@ export const RenewalCard: React.FC<RenewalCardProps> = ({
   onResolveAsQuit,
   onRenew,
   onAddPayment,
+  onUpdatePeriod,
 }) => {
   const { students } = useSchool();
+  const { programs } = usePrograms();
   const [paymentsOpen, setPaymentsOpen] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -102,6 +105,10 @@ export const RenewalCard: React.FC<RenewalCardProps> = ({
   });
   const [markPaidLoading, setMarkPaidLoading] = useState(false);
   const [markPaidError, setMarkPaidError] = useState<string | null>(null);
+
+  // Change-program modal
+  const [changeProgramOpen, setChangeProgramOpen] = useState(false);
+  const [changeProgramLoading, setChangeProgramLoading] = useState(false);
 
   const student = students.find((s) => s.id === period.student_id);
   const style = STATUS_STYLES[period.ui_status] ?? STATUS_STYLES.active;
@@ -168,6 +175,20 @@ export const RenewalCard: React.FC<RenewalCardProps> = ({
       setMarkPaidError("Failed to record payment. Please try again.");
     } finally {
       setMarkPaidLoading(false);
+    }
+  };
+
+  const handleChangeProgram = async (programId: string, isMilestone: boolean) => {
+    if (!onUpdatePeriod) return;
+    setChangeProgramLoading(true);
+    try {
+      await onUpdatePeriod(period.period_id, {
+        program_id: programId,
+        ...(isMilestone ? { duration_months: null, expiration_date: null } : {}),
+      });
+      setChangeProgramOpen(false);
+    } finally {
+      setChangeProgramLoading(false);
     }
   };
 
@@ -344,6 +365,18 @@ export const RenewalCard: React.FC<RenewalCardProps> = ({
               ✓ Mark Next Payment Paid
             </Button>
           )}
+          {onUpdatePeriod && (
+            <Button
+              variant="outline"
+              className="w-full border-purple-400 text-purple-700 hover:bg-purple-50"
+              onClick={() => {
+                setManageOpen(false);
+                setChangeProgramOpen(true);
+              }}
+            >
+              🥋 Change Membership Type
+            </Button>
+          )}
           {onAddPayment && (
             <Button variant="default" className="w-full" onClick={openAddPayment}>
               ＋ Add Payment Installment
@@ -383,6 +416,49 @@ export const RenewalCard: React.FC<RenewalCardProps> = ({
           >
             🗑 Delete
           </Button>
+        </div>
+      </AppModal>
+
+      {/* ── Change Membership Type Modal ── */}
+      <AppModal
+        open={changeProgramOpen}
+        onOpenChange={setChangeProgramOpen}
+        title="Change Membership Type"
+        description="Select the program for this renewal."
+        size="compact"
+      >
+        <div className="flex flex-col gap-2">
+          {programs.map((prog) => {
+            const isCurrent = prog.program_id === period.program_id;
+            const isMilestone = prog.program_type === "milestone_based";
+            return (
+              <button
+                key={prog.program_id}
+                disabled={isCurrent || changeProgramLoading}
+                onClick={() => handleChangeProgram(prog.program_id, isMilestone)}
+                className={`flex justify-between items-center px-4 py-3 rounded-lg border transition-colors text-left disabled:opacity-60 ${
+                  isCurrent
+                    ? "border-purple-400 bg-purple-50 cursor-default"
+                    : "border-gray-200 hover:border-purple-400 hover:bg-purple-50"
+                }`}
+              >
+                <div>
+                  <p className="text-sm font-semibold text-gray-800">{prog.name}</p>
+                  {isMilestone && (
+                    <p className="text-xs text-purple-600 mt-0.5">Milestone — no expiration</p>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  {isMilestone && <span className="text-base">🥋</span>}
+                  {isCurrent && (
+                    <span className="text-xs font-medium text-purple-700 bg-purple-100 px-2 py-0.5 rounded-full">
+                      Current
+                    </span>
+                  )}
+                </div>
+              </button>
+            );
+          })}
         </div>
       </AppModal>
 

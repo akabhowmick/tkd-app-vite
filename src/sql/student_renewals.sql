@@ -1,112 +1,72 @@
--- renewal_periods
--- One row per enrollment block per student.
--- Primary key is period_id to match all API calls and TypeScript types.
-
-CREATE TABLE public.renewal_periods (
-  period_id          UUID      NOT NULL DEFAULT gen_random_uuid(),
-  student_id         UUID      NOT NULL,
-  school_id          UUID,
-  duration_months    INTEGER,
-  expiration_date    DATE,
-  number_of_classes  INTEGER,
-  status             TEXT      NOT NULL DEFAULT 'active',
-  resolved_at        TIMESTAMP,
-  resolution_notes   TEXT,
-  created_at         TIMESTAMP NOT NULL DEFAULT now(),
-  updated_at         TIMESTAMP NOT NULL DEFAULT now(),
-
-  CONSTRAINT renewal_periods_pkey PRIMARY KEY (period_id),
-  CONSTRAINT renewal_periods_student_fkey
-    FOREIGN KEY (student_id) REFERENCES students (id) ON DELETE CASCADE,
-  CONSTRAINT renewal_periods_school_fkey
-    FOREIGN KEY (school_id) REFERENCES schools (id),
-  CONSTRAINT renewal_periods_status_check
-    CHECK (status = ANY (ARRAY['active', 'expired', 'renewed', 'quit']))
-);
-
--- Only one active period per student at a time
-CREATE UNIQUE INDEX one_active_period_per_student
-  ON public.renewal_periods (student_id)
-  WHERE status = 'active';
-
-CREATE INDEX idx_periods_student    ON public.renewal_periods (student_id);
-CREATE INDEX idx_periods_school     ON public.renewal_periods (school_id);
-CREATE INDEX idx_periods_status     ON public.renewal_periods (status);
-CREATE INDEX idx_periods_expiration ON public.renewal_periods (expiration_date);
-
--- RLS
-ALTER TABLE public.renewal_periods ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Admins can manage renewal periods for their school"
-  ON public.renewal_periods
-  FOR ALL
-  USING (
-    school_id IN (SELECT id FROM schools WHERE admin_id = auth.uid())
-  )
-  WITH CHECK (
-    school_id IN (SELECT id FROM schools WHERE admin_id = auth.uid())
-  );
-
-
--- renewal_payments
--- One row per installment within a period.
--- Uses period_id (not period_renewal_id) to match app code.
-
-CREATE TABLE public.renewal_payments (
-  payment_id          UUID           NOT NULL DEFAULT gen_random_uuid(),
-  period_id           UUID           NOT NULL,
-  student_id          UUID           NOT NULL,
-  payment_date        DATE,
-  amount_due          NUMERIC(10, 2),
-  amount_paid         NUMERIC(10, 2),
-  installment_number  INTEGER        NOT NULL DEFAULT 1,
-  paid_to             TEXT,
-  created_at          TIMESTAMP      NOT NULL DEFAULT now(),
-
-  CONSTRAINT renewal_payments_pkey PRIMARY KEY (payment_id),
-  CONSTRAINT renewal_payments_period_fkey
-    FOREIGN KEY (period_id) REFERENCES renewal_periods (period_id) ON DELETE CASCADE,
-  CONSTRAINT renewal_payments_student_fkey
-    FOREIGN KEY (student_id) REFERENCES students (id) ON DELETE CASCADE,
-  CONSTRAINT renewal_payments_amount_check
-    CHECK (amount_paid >= 0 AND amount_due >= 0)
-);
-
-CREATE INDEX idx_payments_period  ON public.renewal_payments (period_id);
-CREATE INDEX idx_payments_student ON public.renewal_payments (student_id);
-CREATE INDEX idx_payments_date    ON public.renewal_payments (payment_date);
-
--- RLS
-ALTER TABLE public.renewal_payments ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Admins can manage renewal payments for their school"
-  ON public.renewal_payments
-  FOR ALL
-  USING (
-    student_id IN (
-      SELECT s.id FROM students s
-      JOIN schools sc ON sc.id = s.school_id
-      WHERE sc.admin_id = auth.uid()
+create table public.renewal_payments (
+  payment_id uuid not null default gen_random_uuid (),
+  period_id uuid not null,
+  student_id uuid not null,
+  payment_date date null,
+  amount_due numeric(10, 2) null,
+  amount_paid numeric(10, 2) null,
+  installment_number integer not null default 1,
+  paid_to text null,
+  created_at timestamp without time zone not null default now(),
+  constraint renewal_payments_pkey primary key (payment_id),
+  constraint renewal_payments_period_fkey foreign KEY (period_id) references renewal_periods (period_id) on delete CASCADE,
+  constraint renewal_payments_student_fkey foreign KEY (student_id) references students (id) on delete CASCADE,
+  constraint renewal_payments_amount_check check (
+    (
+      (amount_paid >= (0)::numeric)
+      and (amount_due >= (0)::numeric)
     )
   )
-  WITH CHECK (
-    student_id IN (
-      SELECT s.id FROM students s
-      JOIN schools sc ON sc.id = s.school_id
-      WHERE sc.admin_id = auth.uid()
+) TABLESPACE pg_default;
+
+create index IF not exists idx_payments_period on public.renewal_payments using btree (period_id) TABLESPACE pg_default;
+
+create index IF not exists idx_payments_student on public.renewal_payments using btree (student_id) TABLESPACE pg_default;
+
+create index IF not exists idx_payments_date on public.renewal_payments using btree (payment_date) TABLESPACE pg_default;
+
+
+create table public.renewal_periods (
+  period_id uuid not null default gen_random_uuid (),
+  student_id uuid not null,
+  school_id uuid null,
+  duration_months integer null,
+  expiration_date date null,
+  number_of_classes integer null,
+  status text not null default 'active'::text,
+  resolved_at timestamp without time zone null,
+  resolution_notes text null,
+  created_at timestamp without time zone not null default now(),
+  updated_at timestamp without time zone not null default now(),
+  program_id uuid null,
+  constraint renewal_periods_pkey primary key (period_id),
+  constraint renewal_periods_program_id_fkey foreign KEY (program_id) references school_programs (program_id) on delete set null,
+  constraint renewal_periods_school_fkey foreign KEY (school_id) references schools (id),
+  constraint renewal_periods_student_fkey foreign KEY (student_id) references students (id) on delete CASCADE,
+  constraint renewal_periods_status_check check (
+    (
+      status = any (
+        array[
+          'active'::text,
+          'expired'::text,
+          'renewed'::text,
+          'quit'::text
+        ]
+      )
     )
-  );
+  )
+) TABLESPACE pg_default;
 
+create index IF not exists idx_renewal_periods_program on public.renewal_periods using btree (program_id) TABLESPACE pg_default;
 
--- Nightly cron job (pg_cron)
--- Flips active → expired after the 7-day grace period
-SELECT cron.schedule(
-  'expire-renewal-periods',
-  '0 2 * * *',
-  $$
-    UPDATE public.renewal_periods
-    SET status = 'expired', updated_at = now()
-    WHERE status = 'active'
-      AND expiration_date < CURRENT_DATE - INTERVAL '7 days';
-  $$
-);
+create unique INDEX IF not exists one_active_period_per_student on public.renewal_periods using btree (student_id) TABLESPACE pg_default
+where
+  (status = 'active'::text);
+
+create index IF not exists idx_periods_student on public.renewal_periods using btree (student_id) TABLESPACE pg_default;
+
+create index IF not exists idx_periods_school on public.renewal_periods using btree (school_id) TABLESPACE pg_default;
+
+create index IF not exists idx_periods_status on public.renewal_periods using btree (status) TABLESPACE pg_default;
+
+create index IF not exists idx_periods_expiration on public.renewal_periods using btree (expiration_date) TABLESPACE pg_default;

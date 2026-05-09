@@ -156,6 +156,7 @@ export interface RenewalCardProps {
     periodId: string,
     req: Omit<CreateRenewalPaymentRequest, "period_id" | "student_id">,
   ) => void;
+  onUpdatePeriod?: (periodId: string, updates: UpdateRenewalPeriodRequest) => Promise<void>;
 }
 
 export interface RenewalCategoryProps {

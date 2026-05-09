@@ -9,7 +9,7 @@ export const RenewalCategory: React.FC<RenewalCategoryProps> = ({
   borderColor,
   children,
 }) => {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
 
   if (!periods?.length) return null;
 

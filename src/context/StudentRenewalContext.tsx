@@ -77,14 +77,14 @@ export function deriveUiStatus(period: RenewalPeriod, program?: SchoolProgram): 
   const hasOverdueInstallment = period.payments.some(isInstallmentOverdue);
   if (hasOverdueInstallment) return "payment_overdue";
 
-  // Fully paid
-  if (period.balance <= 0 && period.total_due > 0) return "paid";
-
   // Milestone-based: paid milestones get their own bucket; otherwise active
   if (isMilestone) {
     if (period.balance <= 0 && period.total_due > 0) return "milestone";
     return "active";
   }
+
+  // Fully paid (time-based)
+  if (period.balance <= 0 && period.total_due > 0) return "paid";
 
   // Time-based: expiration-driven
   if (!period.expiration_date) return "active";
