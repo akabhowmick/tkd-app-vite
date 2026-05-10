@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { Student } from "../../../../types/user";
 import { useStudentRenewals, deriveUiStatus } from "../../../../context/StudentRenewalContext";
 import { useBelts } from "../../../../context/BeltContext";
@@ -28,9 +28,13 @@ const fmtMoney = (amount: number) =>
   `$${amount.toFixed(2)}`;
 
 export const StudentProfilePage = ({ student, onBack }: StudentProfilePageProps) => {
-  const { periods } = useStudentRenewals();
+  const { periods, loadPeriods } = useStudentRenewals();
   const { ranks } = useBelts();
   const { programs } = usePrograms();
+
+  useEffect(() => {
+    if (periods.length === 0) loadPeriods();
+  }, []);  // eslint-disable-line react-hooks/exhaustive-deps
 
   const programMap = useMemo(
     () => new Map(programs.map((p) => [p.program_id, p])),
