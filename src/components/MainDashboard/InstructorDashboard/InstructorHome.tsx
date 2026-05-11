@@ -1,12 +1,10 @@
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
 import { useSchool } from "../../../context/SchoolContext";
 import { CalendarCheck, Users, Megaphone, Award } from "lucide-react";
 
-interface Props {
-  onViewChange: (view: string) => void;
-}
-
-export const InstructorHome = ({ onViewChange }: Props) => {
+export const InstructorHome = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { students } = useSchool();
 
@@ -39,7 +37,7 @@ export const InstructorHome = ({ onViewChange }: Props) => {
           {quickActions.map((action) => (
             <button
               key={action.label}
-              onClick={() => onViewChange(action.view)}
+              onClick={() => navigate(`/dashboard/instructor/${action.view}`)}
               className={`${action.color} text-white text-sm font-medium py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center gap-2`}
             >
               <action.icon size={15} />

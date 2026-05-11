@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Student } from "../../../../types/user";
 import { HandleAddOrEdit } from "./HandleAddOrEdit";
 import { updateStudent, createStudent } from "../../../../api/StudentRequests/studentRequests";
@@ -8,7 +9,6 @@ import { AppConfirmModal } from "../../../ui/modal";
 import { Input } from "../../../ui/input";
 import { validateFormData } from "../../../../utils/formValidation";
 import { Skeleton } from "../../../ui/skeleton";
-import { StudentProfilePage } from "./StudentProfilePage";
 
 type EditForm = { name: string; email: string; phone: string; current_rank_id: string };
 
@@ -44,6 +44,8 @@ const StudentListSkeleton = () => (
 );
 
 export const StudentListPage = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const { loadStudents, handleDelete, students, schoolId, loading } = useSchool();
   const { ranks } = useBelts();
   const [editingUser, setEditingUser] = useState<Student | null>(null);
@@ -57,7 +59,10 @@ export const StudentListPage = () => {
     studentName: string;
   }>({ open: false, studentId: "", studentName: "" });
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+
+  const viewStudent = (student: Student) => {
+    navigate(`${location.pathname.replace(/\/$/, "")}/${student.id}`);
+  };
 
   const handleEdit = (user: Student) => {
     setEditingUser(user);
@@ -147,10 +152,6 @@ export const StudentListPage = () => {
 
   if (loading && students.length === 0) return <StudentListSkeleton />;
 
-  if (selectedStudent) {
-    return <StudentProfilePage student={selectedStudent} onBack={() => setSelectedStudent(null)} />;
-  }
-
   return (
     <div className="max-w-4xl mx-auto p-4">
       <h1 className="text-3xl font-bold mb-4 text-black">Student Management</h1>
@@ -207,7 +208,7 @@ export const StudentListPage = () => {
                           {editingUser?.id === student.id ? "Editing..." : isPending ? "Saving..." : "Edit"}
                         </button>
                         <button
-                          onClick={() => setSelectedStudent(student)}
+                          onClick={() => viewStudent(student)}
                           className="w-full px-3 py-1 text-xs font-medium rounded border border-purple-300 text-purple-700 bg-purple-50 hover:bg-purple-100 transition-colors"
                         >
                           View Student

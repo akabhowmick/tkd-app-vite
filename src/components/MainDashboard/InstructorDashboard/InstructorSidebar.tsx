@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard,
   CalendarCheck,
@@ -8,17 +10,8 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { useState } from "react";
 
-export type InstructorView =
-  | "home"
-  | "attendance"
-  | "students"
-  | "announcements"
-  | "belts"
-  | "renewals";
-
-const NAV_ITEMS: { icon: React.ElementType; label: string; view: InstructorView }[] = [
+const NAV_ITEMS: { icon: React.ElementType; label: string; view: string }[] = [
   { icon: LayoutDashboard, label: "Dashboard", view: "home" },
   { icon: CalendarCheck, label: "Take Attendance", view: "attendance" },
   { icon: Users, label: "Students", view: "students" },
@@ -27,12 +20,10 @@ const NAV_ITEMS: { icon: React.ElementType; label: string; view: InstructorView 
   { icon: DollarSign, label: "Renewals", view: "renewals" },
 ];
 
-interface Props {
-  activeView: InstructorView;
-  setActive: (view: InstructorView) => void;
-}
+const toPath = (view: string) =>
+  view === "home" ? "/dashboard/instructor" : `/dashboard/instructor/${view}`;
 
-export const InstructorSidebar = ({ activeView, setActive }: Props) => {
+export const InstructorSidebar = () => {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
@@ -60,29 +51,29 @@ export const InstructorSidebar = ({ activeView, setActive }: Props) => {
       </button>
 
       <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-1">
-        {NAV_ITEMS.map((item) => {
-          const isActive = activeView === item.view;
-          return (
-            <div key={item.view} className="relative group">
-              <button
-                onClick={() => setActive(item.view)}
-                className={`flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
+        {NAV_ITEMS.map((item) => (
+          <div key={item.view} className="relative group">
+            <NavLink
+              to={toPath(item.view)}
+              end={item.view === "home"}
+              className={({ isActive }) =>
+                `flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
                   isActive
                     ? "bg-gray-800 text-white"
                     : "text-gray-200 hover:bg-gray-800 hover:text-white"
-                }`}
-              >
-                <item.icon size={18} className="shrink-0" />
-                {!collapsed && <span>{item.label}</span>}
-              </button>
-              {collapsed && (
-                <span className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-2 rounded bg-gray-800 px-2 py-1 text-xs text-white opacity-0 shadow group-hover:opacity-100 whitespace-nowrap z-50">
-                  {item.label}
-                </span>
-              )}
-            </div>
-          );
-        })}
+                }`
+              }
+            >
+              <item.icon size={18} className="shrink-0" />
+              {!collapsed && <span>{item.label}</span>}
+            </NavLink>
+            {collapsed && (
+              <span className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-2 rounded bg-gray-800 px-2 py-1 text-xs text-white opacity-0 shadow group-hover:opacity-100 whitespace-nowrap z-50">
+                {item.label}
+              </span>
+            )}
+          </div>
+        ))}
       </nav>
     </aside>
   );

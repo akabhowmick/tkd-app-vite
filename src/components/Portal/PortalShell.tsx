@@ -1,43 +1,40 @@
 import { useState } from "react";
-import { Search, Bell, ChevronDown, LogOut, Megaphone, CalendarCheck, DollarSign, Award, LayoutDashboard, ChevronLeft, ChevronRight } from "lucide-react";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { Search, Bell, ChevronDown, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { ViewErrorBoundary } from "../ui/ViewErrorBoundary";
 
-export type PortalView = "home" | "announcements" | "attendance" | "renewal" | "belts";
-
-const NAV_ITEMS: { icon: React.ElementType; label: string; view: PortalView }[] = [
-  { icon: LayoutDashboard, label: "Home", view: "home" },
-  { icon: Megaphone, label: "Announcements", view: "announcements" },
-  { icon: CalendarCheck, label: "Attendance", view: "attendance" },
-  { icon: DollarSign, label: "Membership", view: "renewal" },
-  { icon: Award, label: "Belt History", view: "belts" },
-];
-
-const VIEW_TITLES: Record<PortalView, string> = {
-  home: "Home",
-  announcements: "Announcements",
-  attendance: "Attendance",
-  renewal: "Membership",
-  belts: "Belt History",
-};
-
-interface Props {
-  children: (activeView: PortalView, setActiveView: (v: PortalView) => void) => React.ReactNode;
-  portalLabel: string;
+export interface PortalNavItem {
+  icon: React.ElementType;
+  label: string;
+  path: string; // relative path from basePath ('' for home/index)
 }
 
-export const PortalShell = ({ children, portalLabel }: Props) => {
-  const [activeView, setActiveView] = useState<PortalView>("home");
+interface Props {
+  basePath: string;
+  portalLabel: string;
+  navItems: PortalNavItem[];
+}
+
+export const PortalShell = ({ basePath, portalLabel, navItems }: Props) => {
   const [collapsed, setCollapsed] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = () => {
     logout();
     navigate("/");
   };
+
+  const relative = location.pathname.startsWith(basePath)
+    ? location.pathname.slice(basePath.length).replace(/^\//, "")
+    : "";
+  const firstSegment = relative.split("/")[0] || "";
+  const currentNavItem = navItems.find((n) => n.path === firstSegment) ?? navItems[0];
+  const currentTitle = currentNavItem?.label ?? "Home";
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
@@ -72,29 +69,29 @@ export const PortalShell = ({ children, portalLabel }: Props) => {
         )}
 
         <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-1">
-          {NAV_ITEMS.map((item) => {
-            const isActive = activeView === item.view;
-            return (
-              <div key={item.view} className="relative group">
-                <button
-                  onClick={() => setActiveView(item.view)}
-                  className={`flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
+          {navItems.map((item) => (
+            <div key={item.path} className="relative group">
+              <NavLink
+                to={item.path ? `${basePath}/${item.path}` : basePath}
+                end={!item.path}
+                className={({ isActive }) =>
+                  `flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
                     isActive
                       ? "bg-gray-800 text-white"
                       : "text-gray-200 hover:bg-gray-800 hover:text-white"
-                  }`}
-                >
-                  <item.icon size={18} className="shrink-0" />
-                  {!collapsed && <span>{item.label}</span>}
-                </button>
-                {collapsed && (
-                  <span className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-2 rounded bg-gray-800 px-2 py-1 text-xs text-white opacity-0 shadow group-hover:opacity-100 whitespace-nowrap z-50">
-                    {item.label}
-                  </span>
-                )}
-              </div>
-            );
-          })}
+                  }`
+                }
+              >
+                <item.icon size={18} className="shrink-0" />
+                {!collapsed && <span>{item.label}</span>}
+              </NavLink>
+              {collapsed && (
+                <span className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-2 rounded bg-gray-800 px-2 py-1 text-xs text-white opacity-0 shadow group-hover:opacity-100 whitespace-nowrap z-50">
+                  {item.label}
+                </span>
+              )}
+            </div>
+          ))}
         </nav>
       </aside>
 
@@ -156,21 +153,19 @@ export const PortalShell = ({ children, portalLabel }: Props) => {
         <div className="bg-gray-50 border-b border-gray-200 px-6 py-4 shrink-0">
           <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
             <span>Dashboard</span>
-            {activeView !== "home" && (
+            {currentNavItem?.path && (
               <>
                 <span>/</span>
-                <span>{VIEW_TITLES[activeView]}</span>
+                <span>{currentTitle}</span>
               </>
             )}
           </div>
-          <h1 className="text-2xl font-bold font-heading text-gray-900">
-            {VIEW_TITLES[activeView]}
-          </h1>
+          <h1 className="text-2xl font-bold font-heading text-gray-900">{currentTitle}</h1>
         </div>
 
         <main className="flex-1 overflow-y-auto p-6">
-          <ViewErrorBoundary viewName={VIEW_TITLES[activeView]}>
-            {children(activeView, setActiveView)}
+          <ViewErrorBoundary viewName={currentTitle}>
+            <Outlet />
           </ViewErrorBoundary>
         </main>
       </div>

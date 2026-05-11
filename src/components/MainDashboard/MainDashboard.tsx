@@ -1,41 +1,11 @@
 import { useState, useEffect } from "react";
 import { Search, Bell, ChevronDown, LogOut, User, UserPlus } from "lucide-react";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Sidebar } from "./SideBar";
-import { StatCards } from "./StatCard/StatCards";
-import { SchoolManagement } from "../AccountDashboards/AdminFeatures/SchoolManagement/SchoolManagement";
-import { StudentRenewalsPage } from "../AccountDashboards/AdminFeatures/StudentRenewals/StudentRenewalsPage";
-import { StudentListPage } from "../AccountDashboards/AdminFeatures/StudentView/StudentListPage";
-import { TakeAttendance } from "../AccountDashboards/AdminFeatures/AttendanceRecords/TakeAttendance";
-import { ClassSchedulingPage } from "../../pages/ClassSchedulingPage";
-import { BeltTrackingPage } from "../../pages/BeltTrackingPage";
-import { InventoryPage } from "../../pages/InventoryPage";
-import { ProfilePage } from "./UserProfile/ProfilePage";
 import { useAuth } from "../../context/AuthContext";
-import { useNavigate } from "react-router-dom";
-import { SettingsPage } from "./UserProfile/SettingsPage";
-import { NotificationSettings } from "./NotificationSettings/NotificationSettings";
-import SalesTrackingPage from "./Sales/SalesTrackingPage";
 import { ViewErrorBoundary } from "../ui/ViewErrorBoundary";
-import { AnnouncementsPage } from "../../pages/AnnouncementsPage";
-import { ReportingPage } from "../../pages/ReportingPage";
 import { CreateUserModal } from "../AccountDashboards/AdminFeatures/UserManagement/CreateUserModal";
 import { SearchModal } from "./Search/SearchModal";
-
-const VIEW_COMPONENTS = {
-  school: SchoolManagement,
-  renewals: StudentRenewalsPage,
-  students: StudentListPage,
-  attendance: TakeAttendance,
-  classes: ClassSchedulingPage,
-  belts: BeltTrackingPage,
-  inventory: InventoryPage,
-  sales: SalesTrackingPage,
-  profile: ProfilePage,
-  settings: SettingsPage,
-  notifications: NotificationSettings,
-  announcements: AnnouncementsPage,
-  reporting: ReportingPage,
-} as const;
 
 const VIEW_TITLES: Record<string, string> = {
   home: "Dashboard",
@@ -54,19 +24,15 @@ const VIEW_TITLES: Record<string, string> = {
   announcements: "Announcements",
 };
 
+const ADMIN_BASE = "/dashboard/admin";
+
 export const MainDashboard = () => {
-  const [activeView, setActiveView] = useState(
-    () => sessionStorage.getItem("activeView") ?? "home",
-  );
-  const handleViewChange = (view: string) => {
-    setActiveView(view);
-    sessionStorage.setItem("activeView", view);
-  };
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [createUserOpen, setCreateUserOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = () => {
     logout();
@@ -84,26 +50,16 @@ export const MainDashboard = () => {
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
-  const renderContent = () => {
-    if (activeView === "home") return <StatCards onViewChange={handleViewChange} />;
-    const Component = VIEW_COMPONENTS[activeView as keyof typeof VIEW_COMPONENTS];
-    const content = Component ? (
-      <Component />
-    ) : (
-      <div className="flex items-center justify-center h-64 text-muted-foreground">
-        This section is coming soon.
-      </div>
-    );
-    return (
-      <ViewErrorBoundary viewName={VIEW_TITLES[activeView] ?? activeView}>
-        {content}
-      </ViewErrorBoundary>
-    );
-  };
+  // Derive current view label from URL for breadcrumb/title
+  const relative = location.pathname.startsWith(ADMIN_BASE)
+    ? location.pathname.slice(ADMIN_BASE.length).replace(/^\//, "")
+    : "";
+  const viewKey = relative.split("/")[0] || "home";
+  const currentTitle = VIEW_TITLES[viewKey] ?? VIEW_TITLES["home"];
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
-      <Sidebar setActive={handleViewChange} activeView={activeView} />
+      <Sidebar />
 
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         {/* Header */}
@@ -156,7 +112,7 @@ export const MainDashboard = () => {
                     <div className="py-1">
                       <button
                         onClick={() => {
-                          handleViewChange("profile");
+                          navigate(`${ADMIN_BASE}/profile`);
                           setUserMenuOpen(false);
                         }}
                         className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
@@ -181,19 +137,21 @@ export const MainDashboard = () => {
         <div className="bg-gray-50 border-b border-gray-200 px-6 py-4 shrink-0">
           <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
             <span>Dashboard</span>
-            {activeView !== "home" && (
+            {viewKey !== "home" && (
               <>
                 <span>/</span>
-                <span className="text-gray-600">{VIEW_TITLES[activeView]}</span>
+                <span className="text-gray-600">{currentTitle}</span>
               </>
             )}
           </div>
-          <h1 className="text-2xl font-bold font-heading text-gray-900">
-            {VIEW_TITLES[activeView] || "Dashboard"}
-          </h1>
+          <h1 className="text-2xl font-bold font-heading text-gray-900">{currentTitle}</h1>
         </div>
 
-        <main className="flex-1 overflow-y-auto p-6">{renderContent()}</main>
+        <main className="flex-1 overflow-y-auto p-6">
+          <ViewErrorBoundary viewName={currentTitle}>
+            <Outlet />
+          </ViewErrorBoundary>
+        </main>
       </div>
 
       <CreateUserModal
@@ -204,10 +162,8 @@ export const MainDashboard = () => {
       <SearchModal
         open={searchOpen}
         onClose={() => setSearchOpen(false)}
-        onNavigate={handleViewChange}
+        onNavigate={(view) => navigate(`${ADMIN_BASE}/${view}`)}
       />
     </div>
   );
 };
-
-// A few notes on the photo upload: you'll need a avatars storage bucket in Supabase set to public. If you haven't created one yet, go to Storage in your Supabase dashboard and create a bucket called avatars with public access.

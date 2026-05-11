@@ -10,6 +10,7 @@ import {
   CreateRenewalRequest,
   CreateRenewalPaymentRequest,
   UpdateRenewalPeriodRequest,
+  UpdateRenewalPaymentRequest,
 } from "../types/student_renewal";
 import { SchoolProgram } from "../types/programs";
 import {
@@ -17,6 +18,7 @@ import {
   createRenewalPeriod,
   createRenewalPayment,
   updateRenewalPeriod,
+  updateRenewalPayment,
   markInstallmentPaid,
   deleteRenewalPeriod,
   deleteRenewalPayment,
@@ -126,7 +128,7 @@ function getStatusMessage(
   }
 }
 
-function enrichPeriod(period: RenewalPeriod, program?: SchoolProgram): RenewalPeriodWithUiStatus {
+export function enrichPeriod(period: RenewalPeriod, program?: SchoolProgram): RenewalPeriodWithUiStatus {
   const isMilestone = program?.program_type === "milestone_based";
   const days = period.expiration_date ? getDaysUntilExpiration(period.expiration_date) : null;
   const ui_status = deriveUiStatus(period, program);
@@ -288,6 +290,7 @@ interface StudentRenewalsContextType {
     paidTo: string,
   ) => Promise<void>;
   updatePeriod: (periodId: string, updates: UpdateRenewalPeriodRequest) => Promise<void>;
+  updatePayment: (periodId: string, paymentId: string, updates: UpdateRenewalPaymentRequest) => Promise<void>;
   deletePeriod: (periodId: string) => Promise<void>;
   deletePayment: (periodId: string, paymentId: string) => Promise<void>;
   quitRenewal: (periodId: string, notes?: string) => Promise<void>;
@@ -421,6 +424,16 @@ export const StudentRenewalsProvider = ({ children }: { children: ReactNode }) =
     [withAsync],
   );
 
+  const updatePayment = useCallback(
+    (periodId: string, paymentId: string, updates: UpdateRenewalPaymentRequest): Promise<void> =>
+      withAsync(async () => {
+        await updateRenewalPayment(paymentId, updates);
+        const fresh = await getRenewalPeriodById(periodId);
+        dispatch({ type: "UPSERT_PERIOD", payload: fresh });
+      }),
+    [withAsync],
+  );
+
   const deletePayment = useCallback(
     (periodId: string, paymentId: string): Promise<void> =>
       withAsync(async () => {
@@ -524,6 +537,7 @@ export const StudentRenewalsProvider = ({ children }: { children: ReactNode }) =
     addPayment,
     markInstallmentPaid: markInstallmentPaidFn,
     updatePeriod,
+    updatePayment,
     deletePeriod,
     deletePayment,
     quitRenewal,

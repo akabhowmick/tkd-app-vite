@@ -7,6 +7,7 @@ import {
   TrendingDown,
   Minus,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useSchool } from "../../../context/SchoolContext";
 import { useStudentRenewals } from "../../../context/StudentRenewalContext";
 
@@ -75,7 +76,8 @@ const ChangeBadge = ({ change }: { change: number | null | undefined }) => {
   );
 };
 
-export const StatCards = ({ onViewChange }: { onViewChange?: (view: string) => void }) => {
+export const StatCards = () => {
+  const navigate = useNavigate();
   const schoolData = useSchool();
   const { grouped, recentActivity } = useStudentRenewals();
 
@@ -150,7 +152,7 @@ export const StatCards = ({ onViewChange }: { onViewChange?: (view: string) => v
           ].map((action) => (
             <button
               key={action.label}
-              onClick={() => onViewChange?.(action.view)}
+              onClick={() => navigate(`/dashboard/admin/${action.view}`)}
               className={`${action.color} text-white text-sm font-medium py-2.5 px-4 rounded-lg transition-colors`}
             >
               {action.label}

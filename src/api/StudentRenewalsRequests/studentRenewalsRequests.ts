@@ -5,6 +5,7 @@ import {
   CreateRenewalPeriodRequest,
   CreateRenewalPaymentRequest,
   UpdateRenewalPeriodRequest,
+  UpdateRenewalPaymentRequest,
   DbRenewalStatus,
 } from "../../types/student_renewal";
 
@@ -94,7 +95,7 @@ export async function updateRenewalPeriod(
 
 export async function updateRenewalPayment(
   paymentId: string,
-  updates: Partial<Pick<RenewalPayment, "amount_paid" | "paid_to" | "payment_date">>,
+  updates: UpdateRenewalPaymentRequest,
 ): Promise<void> {
   const { error } = await supabase
     .from("renewal_payments")
