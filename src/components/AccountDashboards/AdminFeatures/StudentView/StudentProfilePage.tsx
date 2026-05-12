@@ -89,15 +89,18 @@ const PaymentHistorySkeleton = () => (
 export const StudentProfilePage = () => {
   const { studentId } = useParams<{ studentId: string }>();
   const navigate = useNavigate();
-  const { students, loadStudents, loading: studentsLoading } = useSchool();
+  const { students, loadStudents, loading: studentsLoading, schoolId } = useSchool();
   const { periods, loading, loadPeriods, updatePayment } = useStudentRenewals();
   const { ranks } = useBelts();
   const { programs } = usePrograms();
 
   useEffect(() => {
     if (students.length === 0) loadStudents();
-    if (periods.length === 0) loadPeriods();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (schoolId && periods.length === 0) loadPeriods();
+  }, [schoolId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const student = students.find((s) => s.id === studentId);
 
@@ -319,7 +322,6 @@ function PaymentRow({ payment, periodId, onSave }: PaymentRowProps) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({
-    due_date: "",
     payment_date: "",
     amount_due: "",
     amount_paid: "",
@@ -328,7 +330,6 @@ function PaymentRow({ payment, periodId, onSave }: PaymentRowProps) {
 
   const startEdit = () => {
     setForm({
-      due_date: payment.due_date ?? "",
       payment_date: payment.payment_date ?? "",
       amount_due: payment.amount_due.toFixed(2),
       amount_paid: payment.amount_paid.toFixed(2),
@@ -360,7 +361,6 @@ function PaymentRow({ payment, periodId, onSave }: PaymentRowProps) {
     setError(null);
     try {
       await onSave(periodId, payment.payment_id, {
-        due_date: form.due_date || null,
         payment_date: form.payment_date || null,
         amount_due: amountDue,
         amount_paid: amountPaid,
@@ -381,14 +381,7 @@ function PaymentRow({ payment, periodId, onSave }: PaymentRowProps) {
       <>
         <tr className="bg-blue-50/40">
           <td className="px-4 py-2 text-gray-500">{payment.installment_number}</td>
-          <td className="px-4 py-2">
-            <Input
-              type="date"
-              value={form.due_date}
-              onChange={(e) => setForm((f) => ({ ...f, due_date: e.target.value }))}
-              className="h-8 text-xs w-32"
-            />
-          </td>
+          <td className="px-4 py-2 text-gray-400 text-xs">{fmt(payment.due_date)}</td>
           <td className="px-4 py-2">
             <Input
               type="date"

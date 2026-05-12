@@ -115,7 +115,6 @@ export interface UpdateRenewalPeriodRequest {
 }
 
 export interface UpdateRenewalPaymentRequest {
-  due_date?: string | null;
   payment_date?: string | null;
   amount_due?: number;
   amount_paid?: number;

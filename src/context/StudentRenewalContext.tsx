@@ -195,10 +195,16 @@ export function groupPeriods(
     return new Date(a.expiration_date).getTime() - new Date(b.expiration_date).getTime();
   };
 
+  const byExpiryDesc = (a: RenewalPeriodWithUiStatus, b: RenewalPeriodWithUiStatus) => {
+    if (!a.expiration_date) return 1;
+    if (!b.expiration_date) return -1;
+    return new Date(b.expiration_date).getTime() - new Date(a.expiration_date).getTime();
+  };
+
   result.payment_overdue.sort(byExpiry);
   result.expiring_soon.sort(byExpiry);
   result.grace_period.sort(byExpiry);
-  result.expired.sort(byExpiry);
+  result.expired.sort(byExpiryDesc);
   result.active.sort(byExpiry);
   result.paid.sort(byExpiry);
   result.milestone.sort(byExpiry);
