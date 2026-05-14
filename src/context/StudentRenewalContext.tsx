@@ -340,6 +340,13 @@ export const StudentRenewalsProvider = ({ children }: { children: ReactNode }) =
   const createRenewal = useCallback(
     (req: CreateRenewalRequest): Promise<void> =>
       withAsync(async () => {
+        if (req.installments.length === 0) {
+          throw new Error("A renewal must have at least one installment.");
+        }
+        if (req.installments.every((i) => i.amount_due <= 0)) {
+          throw new Error("At least one installment must have a positive amount due.");
+        }
+
         const existingActive = state.periods.find(
           (p) => p.student_id === req.period.student_id && p.status === "active",
         );
