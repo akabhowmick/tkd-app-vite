@@ -221,7 +221,7 @@ export const StudentListPage = () => {
               </td>
             </tr>
           ) : (
-            students.map((student, idx) => {
+            paginatedStudents.map((student, idx) => {
               const display = pendingEdits[student.id!] ?? student;
               const isPending = !!pendingEdits[student.id!];
               const rowBg = idx % 2 === 0 ? "bg-white" : "bg-gray-100";
@@ -331,6 +331,33 @@ export const StudentListPage = () => {
           )}
         </tbody>
       </table>
+
+      {students.length > 0 && (
+        <div className="flex items-center justify-between mt-4 text-sm text-gray-600">
+          <span>
+            Showing {Math.min((currentPage - 1) * pageSize + 1, students.length)}–{Math.min(currentPage * pageSize, students.length)} of {students.length} students
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => goToPage(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="px-3 py-1 rounded border border-gray-300 hover:border-gray-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              ←
+            </button>
+            <span className="px-2">
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              onClick={() => goToPage(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1 rounded border border-gray-300 hover:border-gray-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              →
+            </button>
+          </div>
+        </div>
+      )}
 
       <AppConfirmModal
         open={deleteConfirm.open}
