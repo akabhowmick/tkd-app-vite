@@ -31,6 +31,21 @@ export async function deleteAttendance(id: string) {
   return { error };
 }
 
+export async function getAttendanceByStudent(
+  schoolId: string,
+  studentId: string,
+): Promise<AttendanceRecord[]> {
+  const { data, error } = await supabase
+    .from("attendance_records")
+    .select("*")
+    .eq("school_id", schoolId)
+    .eq("student_id", studentId)
+    .order("date", { ascending: false });
+
+  if (error) throw error;
+  return (data ?? []) as AttendanceRecord[];
+}
+
 export async function deleteAttendanceByDate(schoolId: string, date: string) {
   const { error } = await supabase
     .from("attendance_records")

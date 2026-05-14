@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useBelts } from "../../../../context/BeltContext";
 import { useSchool } from "../../../../context/SchoolContext";
 import { Skeleton } from "../../../ui/skeleton";
-import { AttendanceHistory } from "../../../Portal/AttendanceHistory";
+import { AttendanceTab } from "./AttendanceTab";
 import { PaymentHistory } from "./PaymentHistory";
 
 type Tab = "payments" | "attendance";
@@ -116,7 +116,7 @@ export const StudentProfilePage = () => {
       {activeTab === "payments" ? (
         <PaymentHistory studentId={student.id!} />
       ) : (
-        <AttendanceHistory studentId={student.id!} />
+        <AttendanceTab studentId={student.id!} />
       )}
     </div>
   );

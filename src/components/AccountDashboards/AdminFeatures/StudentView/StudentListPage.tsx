@@ -59,6 +59,22 @@ export const StudentListPage = () => {
     studentName: string;
   }>({ open: false, studentId: "", studentName: "" });
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [pageSize, setPageSize] = useState<25 | 50 | 100>(25);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const totalPages = Math.ceil(students.length / pageSize);
+  const paginatedStudents = students.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  const goToPage = (page: number) => {
+    setEditingUser(null);
+    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+  };
+
+  const changePageSize = (size: 25 | 50 | 100) => {
+    setPageSize(size);
+    setCurrentPage(1);
+    setEditingUser(null);
+  };
 
   const viewStudent = (student: Student) => {
     navigate(`${location.pathname.replace(/\/$/, "")}/${student.id}`);
@@ -167,7 +183,25 @@ export const StudentListPage = () => {
         />
       </div>
 
-      <h2 className="text-2xl font-bold mb-4 text-black">View Current Students</h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-2xl font-bold text-black">View Current Students</h2>
+        <div className="flex items-center gap-2 text-sm text-gray-600">
+          <span>Show</span>
+          {([25, 50, 100] as const).map((n) => (
+            <button
+              key={n}
+              onClick={() => changePageSize(n)}
+              className={`px-2.5 py-1 rounded border text-xs font-medium transition-colors ${
+                pageSize === n
+                  ? "bg-black text-white border-black"
+                  : "border-gray-300 hover:border-gray-400"
+              }`}
+            >
+              {n}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <table className="w-full bg-white shadow rounded overflow-hidden">
         <thead className="bg-gray-100 text-left text-black">

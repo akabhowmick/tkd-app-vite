@@ -83,7 +83,7 @@ export const SearchModal = ({ open, onClose, onNavigate }: Props) => {
           type: "student",
           title: s.name,
           subtitle: s.email || "No email",
-          view: "students",
+          view: `students/${s.id}`,
         }),
       );
 
