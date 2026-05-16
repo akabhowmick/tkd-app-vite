@@ -85,14 +85,17 @@ export function deriveUiStatus(period: RenewalPeriod, program?: SchoolProgram): 
     return "active";
   }
 
-  // Fully paid (time-based)
-  if (period.balance <= 0 && period.total_due > 0) return "paid";
-
-  // Time-based: expiration-driven
-  if (!period.expiration_date) return "active";
+  // Time-based: expiration-driven (check BEFORE paid so expired/grace statuses take priority)
+  if (!period.expiration_date) {
+    if (period.balance <= 0 && period.total_due > 0) return "paid";
+    return "active";
+  }
   const days = getDaysUntilExpiration(period.expiration_date);
   if (days < -GRACE_PERIOD_DAYS) return "expired";
   if (days < 0) return "grace_period";
+
+  // Not yet expired — paid takes priority over expiring_soon
+  if (period.balance <= 0 && period.total_due > 0) return "paid";
   if (days <= WARNING_PERIOD_DAYS) return "expiring_soon";
 
   return "active";

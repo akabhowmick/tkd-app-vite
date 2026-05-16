@@ -2,7 +2,7 @@ import { Fragment, useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Student } from "../../../../types/user";
 import { HandleAddOrEdit } from "./HandleAddOrEdit";
-import { updateStudent, createStudent } from "../../../../api/StudentRequests/studentRequests";
+import { createStudent } from "../../../../api/StudentRequests/studentRequests";
 import { useSchool } from "../../../../context/SchoolContext";
 import { useBelts } from "../../../../context/BeltContext";
 import { AppConfirmModal } from "../../../ui/modal";
@@ -46,13 +46,11 @@ const StudentListSkeleton = () => (
 export const StudentListPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { loadStudents, handleDelete, students, schoolId, loading } = useSchool();
+  const { loadStudents, handleDelete, students, schoolId, loading, patchStudent } = useSchool();
   const { ranks } = useBelts();
   const [editingUser, setEditingUser] = useState<Student | null>(null);
   const [editForm, setEditForm] = useState<EditForm>({ name: "", email: "", phone: "", current_rank_id: "" });
   const [editError, setEditError] = useState<string | null>(null);
-  // studentId → optimistically updated values, cleared after background reload
-  const [pendingEdits, setPendingEdits] = useState<Record<string, Student>>({});
   const [deleteConfirm, setDeleteConfirm] = useState<{
     open: boolean;
     studentId: string;
@@ -99,47 +97,22 @@ export const StudentListPage = () => {
       return;
     }
 
-    const studentId = editingUser!.id!;
     const snapshot = editingUser!;
-    const optimistic: Student = {
-      ...snapshot,
-      name: editForm.name.trim(),
-      email: editForm.email.trim(),
-      phone: editForm.phone.trim(),
-      current_rank_id: editForm.current_rank_id || undefined,
-    };
-
-    // Apply immediately and close the row
-    setPendingEdits((prev) => ({ ...prev, [studentId]: optimistic }));
     setEditingUser(null);
 
     try {
-      await updateStudent(studentId, {
-        name: optimistic.name,
-        email: optimistic.email,
-        phone: optimistic.phone,
+      await patchStudent(snapshot.id!, {
+        name: editForm.name.trim(),
+        email: editForm.email.trim(),
+        phone: editForm.phone.trim(),
         role: "Student",
         school_id: schoolId,
-        current_rank_id: optimistic.current_rank_id,
+        current_rank_id: editForm.current_rank_id || undefined,
       });
-      await loadStudents();
     } catch {
-      // Revert optimistic value and reopen row with original data + error
-      setPendingEdits((prev) => {
-        const next = { ...prev };
-        delete next[studentId];
-        return next;
-      });
       handleEdit(snapshot);
       setEditError("Failed to update student. Please try again.");
-      return;
     }
-
-    setPendingEdits((prev) => {
-      const next = { ...prev };
-      delete next[studentId];
-      return next;
-    });
   };
 
   const requestDelete = (student: Student) => {

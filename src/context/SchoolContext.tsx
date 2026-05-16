@@ -13,7 +13,7 @@ import { School } from "../types/school";
 import { getSchoolByAdmin } from "../api/SchoolRequests/schoolRequests";
 import { useAuth } from "./AuthContext";
 import { Student } from "../types/user";
-import { deleteStudent, getStudents } from "../api/StudentRequests/studentRequests";
+import { deleteStudent, getStudents, updateStudent as updateStudentRequest } from "../api/StudentRequests/studentRequests";
 
 interface SchoolContextType {
   sales: number;
@@ -30,6 +30,7 @@ interface SchoolContextType {
   loadStudents: (currentSchoolId?: string, forceRefresh?: boolean) => Promise<void>;
   handleDelete: (id: string) => Promise<void>;
   refreshStudents: () => Promise<void>;
+  patchStudent: (id: string, updates: Partial<Student>) => Promise<void>;
   setSchoolId: React.Dispatch<React.SetStateAction<string>>;
   createSchool: (school: Omit<School, "id" | "created_at">) => Promise<void>;
   updateSchool: (id: string, updates: Partial<Omit<School, "id" | "created_at">>) => Promise<void>;
@@ -116,6 +117,36 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const refreshStudents = useCallback(async () => {
     await loadStudents(schoolId, true);
   }, [loadStudents, schoolId]);
+
+  const studentsRef = useRef<Student[]>(students);
+  useEffect(() => { studentsRef.current = students; }, [students]);
+
+  const patchStudent = useCallback(async (id: string, updates: Partial<Student>) => {
+    const snapshot = studentsRef.current.find((s) => s.id === id);
+    const applyPatch = (list: Student[]) =>
+      list.map((s) => (s.id === id ? { ...s, ...updates } : s));
+
+    setStudents((prev) => applyPatch(prev));
+    if (schoolId) {
+      const cached = studentsCacheRef.current.get(schoolId);
+      if (cached) studentsCacheRef.current.set(schoolId, applyPatch(cached));
+    }
+
+    try {
+      await updateStudentRequest(id, updates);
+    } catch (err) {
+      if (snapshot) {
+        const revert = (list: Student[]) =>
+          list.map((s) => (s.id === id ? snapshot : s));
+        setStudents((prev) => revert(prev));
+        if (schoolId) {
+          const cached = studentsCacheRef.current.get(schoolId);
+          if (cached) studentsCacheRef.current.set(schoolId, revert(cached));
+        }
+      }
+      throw err;
+    }
+  }, [schoolId]);
 
   useEffect(() => {
     if (schoolId) loadStudents(schoolId);
@@ -257,6 +288,7 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         loadStudents,
         handleDelete,
         refreshStudents,
+        patchStudent,
         setSchoolId,
         createSchool,
         updateSchool,
