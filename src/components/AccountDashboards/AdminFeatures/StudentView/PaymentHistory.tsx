@@ -7,7 +7,7 @@ import { usePrograms } from "../../../../context/ProgramContext";
 import { useSchool } from "../../../../context/SchoolContext";
 import { Skeleton } from "../../../ui/skeleton";
 import { Input } from "../../../ui/input";
-import { Pencil, Check, X, Loader2 } from "lucide-react";
+import { Pencil, Check, X, Loader2, Info } from "lucide-react";
 import type {
   RenewalPayment,
   RenewalPeriodWithUiStatus,
@@ -140,6 +140,7 @@ function PeriodBlock({ period, displayStatus, programName, onSave }: PeriodBlock
                   key={payment.payment_id}
                   payment={payment}
                   periodId={period.period_id}
+                  totalInstallments={period.payments.length}
                   onSave={onSave}
                 />
               ))}
@@ -156,10 +157,11 @@ function PeriodBlock({ period, displayStatus, programName, onSave }: PeriodBlock
 interface PaymentRowProps {
   payment: RenewalPayment;
   periodId: string;
+  totalInstallments: number;
   onSave: (periodId: string, paymentId: string, updates: UpdateRenewalPaymentRequest) => Promise<void>;
 }
 
-function PaymentRow({ payment, periodId, onSave }: PaymentRowProps) {
+function PaymentRow({ payment, periodId, totalInstallments, onSave }: PaymentRowProps) {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -297,9 +299,25 @@ function PaymentRow({ payment, periodId, onSave }: PaymentRowProps) {
     );
   }
 
+  const tooltipText = totalInstallments === 1
+    ? "The single full payment for this renewal period."
+    : `Payment ${payment.installment_number} of ${totalInstallments} — the total cost for this renewal is split across ${totalInstallments} installments.`;
+
   return (
     <tr className="hover:bg-gray-50 transition-colors">
-      <td className="px-4 py-2.5 text-gray-500">{payment.installment_number}</td>
+      <td className="px-4 py-2.5 text-gray-500">
+        <div className="flex items-center gap-1">
+          {payment.installment_number}
+          <div className="relative group">
+            <Info className="h-3 w-3 text-gray-300 hover:text-gray-500 cursor-help" />
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-56 bg-gray-800 text-white text-xs rounded-md px-2.5 py-2 shadow-lg z-10 pointer-events-none">
+              <p className="font-semibold mb-0.5">Installment {payment.installment_number} of {totalInstallments}</p>
+              <p className="text-gray-300 leading-relaxed">{tooltipText}</p>
+              <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800" />
+            </div>
+          </div>
+        </div>
+      </td>
       <td className="px-4 py-2.5 text-gray-700">{fmt(payment.due_date)}</td>
       <td className="px-4 py-2.5">
         {payment.payment_date ? (

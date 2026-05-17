@@ -256,18 +256,13 @@ export const RenewalCard: React.FC<RenewalCardProps> = ({
           </h3>
           <p className="text-sm text-gray-500 mt-0.5">{period.status_message}</p>
         </div>
-        <div className="flex items-center gap-2">
-          <span className={`px-2 py-1 rounded-full text-xs font-medium border ${style.badge}`}>
-            {style.icon} {style.label}
-          </span>
-          <button
-            onClick={() => setManageOpen(true)}
-            className="text-gray-500 hover:text-gray-800 transition-colors"
-            title="Manage"
-          >
-            <FaCog />
-          </button>
-        </div>
+        <button
+          onClick={() => setManageOpen(true)}
+          className="text-gray-500 hover:text-gray-800 transition-colors"
+          title="Manage"
+        >
+          <FaCog />
+        </button>
       </div>
 
       {/* Key details */}
