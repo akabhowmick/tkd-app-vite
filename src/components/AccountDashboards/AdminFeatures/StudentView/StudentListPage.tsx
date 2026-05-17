@@ -49,7 +49,12 @@ export const StudentListPage = () => {
   const { loadStudents, handleDelete, students, schoolId, loading, patchStudent } = useSchool();
   const { ranks } = useBelts();
   const [editingUser, setEditingUser] = useState<Student | null>(null);
-  const [editForm, setEditForm] = useState<EditForm>({ name: "", email: "", phone: "", current_rank_id: "" });
+  const [editForm, setEditForm] = useState<EditForm>({
+    name: "",
+    email: "",
+    phone: "",
+    current_rank_id: "",
+  });
   const [editError, setEditError] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{
     open: boolean;
@@ -91,7 +96,11 @@ export const StudentListPage = () => {
 
   const handleEditSave = async () => {
     setEditError(null);
-    const validationError = validateFormData({ name: editForm.name, email: editForm.email, phone: editForm.phone });
+    const validationError = validateFormData({
+      name: editForm.name,
+      email: editForm.email,
+      phone: editForm.phone,
+    });
     if (validationError) {
       setEditError(validationError);
       return;
@@ -195,8 +204,8 @@ export const StudentListPage = () => {
             </tr>
           ) : (
             paginatedStudents.map((student, idx) => {
-              const display = pendingEdits[student.id!] ?? student;
-              const isPending = !!pendingEdits[student.id!];
+              const display = editingUser?.id === student.id ? editForm : student;
+              const isPending = editingUser?.id === student.id;
               const rowBg = idx % 2 === 0 ? "bg-white" : "bg-gray-100";
               return (
                 <Fragment key={student.id}>
@@ -212,7 +221,11 @@ export const StudentListPage = () => {
                           disabled={editingUser?.id === student.id || isPending}
                           className="w-full px-3 py-1 text-xs font-medium rounded border border-blue-300 text-blue-700 bg-blue-50 hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
-                          {editingUser?.id === student.id ? "Editing..." : isPending ? "Saving..." : "Edit"}
+                          {editingUser?.id === student.id
+                            ? "Editing..."
+                            : isPending
+                              ? "Saving..."
+                              : "Edit"}
                         </button>
                         <button
                           onClick={() => viewStudent(student)}
@@ -240,7 +253,9 @@ export const StudentListPage = () => {
                                 type="text"
                                 placeholder="Full name"
                                 value={editForm.name}
-                                onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
+                                onChange={(e) =>
+                                  setEditForm((f) => ({ ...f, name: e.target.value }))
+                                }
                               />
                             </div>
                             <div className="flex flex-col gap-1">
@@ -249,7 +264,9 @@ export const StudentListPage = () => {
                                 type="email"
                                 placeholder="student@example.com"
                                 value={editForm.email}
-                                onChange={(e) => setEditForm((f) => ({ ...f, email: e.target.value }))}
+                                onChange={(e) =>
+                                  setEditForm((f) => ({ ...f, email: e.target.value }))
+                                }
                               />
                             </div>
                             <div className="flex flex-col gap-1">
@@ -258,14 +275,18 @@ export const StudentListPage = () => {
                                 type="tel"
                                 placeholder="(555) 123-4567"
                                 value={editForm.phone}
-                                onChange={(e) => setEditForm((f) => ({ ...f, phone: e.target.value }))}
+                                onChange={(e) =>
+                                  setEditForm((f) => ({ ...f, phone: e.target.value }))
+                                }
                               />
                             </div>
                             <div className="flex flex-col gap-1">
                               <label className="text-xs font-semibold text-gray-600">Belt</label>
                               <select
                                 value={editForm.current_rank_id}
-                                onChange={(e) => setEditForm((f) => ({ ...f, current_rank_id: e.target.value }))}
+                                onChange={(e) =>
+                                  setEditForm((f) => ({ ...f, current_rank_id: e.target.value }))
+                                }
                                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                               >
                                 <option value="">No belt</option>
@@ -308,7 +329,8 @@ export const StudentListPage = () => {
       {students.length > 0 && (
         <div className="flex items-center justify-between mt-4 text-sm text-gray-600">
           <span>
-            Showing {Math.min((currentPage - 1) * pageSize + 1, students.length)}–{Math.min(currentPage * pageSize, students.length)} of {students.length} students
+            Showing {Math.min((currentPage - 1) * pageSize + 1, students.length)}–
+            {Math.min(currentPage * pageSize, students.length)} of {students.length} students
           </span>
           <div className="flex items-center gap-2">
             <button
