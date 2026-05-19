@@ -5,6 +5,7 @@ import { useSchool } from "../../../../context/SchoolContext";
 import { Skeleton } from "../../../ui/skeleton";
 import { AttendanceTab } from "./AttendanceTab";
 import { PaymentHistory } from "./PaymentHistory";
+import { HandleAddOrEdit } from "./HandleAddOrEdit";
 
 type Tab = "payments" | "attendance";
 
@@ -22,7 +23,7 @@ const PageSkeleton = () => (
 export const StudentProfilePage = () => {
   const { studentId } = useParams<{ studentId: string }>();
   const navigate = useNavigate();
-  const { students, loadStudents, loading: studentsLoading } = useSchool();
+  const { students, loadStudents, loading: studentsLoading, patchStudent } = useSchool();
   const { ranks } = useBelts();
   const [activeTab, setActiveTab] = useState<Tab>("payments");
 
@@ -68,7 +69,16 @@ export const StudentProfilePage = () => {
             {student.name.charAt(0).toUpperCase()}
           </div>
           <div className="flex-1">
-            <h1 className="text-2xl font-bold text-black">{student.name}</h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold text-black">{student.name}</h1>
+              <HandleAddOrEdit
+                student={student}
+                updateStudent={async (id, payload) => patchStudent(id, payload)}
+                loadStudents={loadStudents}
+                buttonText="Edit"
+                buttonClassName="px-3 py-1 text-sm font-medium rounded-md border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors"
+              />
+            </div>
             {currentRank ? (
               <span
                 className="inline-block mt-1 px-3 py-1 rounded-full text-sm font-medium text-white"
