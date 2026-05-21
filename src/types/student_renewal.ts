@@ -50,6 +50,8 @@ export interface RenewalPeriod {
   total_due: number;
   total_paid: number;
   balance: number;
+  /** Additional students linked to this renewal (siblings). Empty for solo renewals. */
+  linked_student_ids: string[];
 }
 
 export interface RenewalPeriodWithUiStatus extends RenewalPeriod {
@@ -86,6 +88,8 @@ export interface CreateRenewalPeriodRequest {
   expiration_date: string | null;
   number_of_classes: number;
   program_id: string | null;
+  /** Additional students to link (siblings). Stored in renewal_period_students, not renewal_periods. */
+  linked_student_ids?: string[];
 }
 
 export interface CreateRenewalPaymentRequest {

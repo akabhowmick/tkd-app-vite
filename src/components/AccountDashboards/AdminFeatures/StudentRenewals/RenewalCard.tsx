@@ -254,6 +254,18 @@ export const RenewalCard: React.FC<RenewalCardProps> = ({
           <h3 className="font-semibold text-gray-900">
             {period.duration_months}M · {student?.name ?? "Unknown Student"}
           </h3>
+          {period.linked_student_ids.length > 0 && (
+            <div className="flex flex-wrap gap-x-2 mt-0.5">
+              {period.linked_student_ids.map((id) => {
+                const linked = students.find((s) => s.id === id);
+                return (
+                  <span key={id} className="text-xs text-gray-500">
+                    + {linked?.name ?? id}
+                  </span>
+                );
+              })}
+            </div>
+          )}
           <p className="text-sm text-gray-500 mt-0.5">{period.status_message}</p>
         </div>
         <button

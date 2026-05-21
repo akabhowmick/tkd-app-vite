@@ -19,13 +19,18 @@ function attachPaymentTotals(
   return { ...period, total_due, total_paid, balance: total_due - total_paid };
 }
 
+function mapLinkedStudentIds(raw: { student_id: string }[] | null): string[] {
+  return (raw ?? []).map((r) => r.student_id);
+}
+
 export async function getRenewalPeriods(schoolId: string): Promise<RenewalPeriod[]> {
   const { data, error } = await supabase
     .from("renewal_periods")
     .select(
       `
       *,
-      payments:renewal_payments (*)
+      payments:renewal_payments (*),
+      linked_period_students:renewal_period_students (student_id)
     `,
     )
     .eq("school_id", schoolId)
@@ -33,14 +38,16 @@ export async function getRenewalPeriods(schoolId: string): Promise<RenewalPeriod
 
   if (error) throw error;
 
-  return (data ?? []).map((row) =>
-    attachPaymentTotals({
-      ...row,
+  return (data ?? []).map((row) => {
+    const { linked_period_students, ...rest } = row;
+    return attachPaymentTotals({
+      ...rest,
+      linked_student_ids: mapLinkedStudentIds(linked_period_students),
       payments: (row.payments ?? []).sort(
         (a: RenewalPayment, b: RenewalPayment) => a.installment_number - b.installment_number,
       ),
-    }),
-  );
+    });
+  });
 }
 
 export async function getRenewalPeriodById(periodId: string): Promise<RenewalPeriod> {
@@ -49,7 +56,8 @@ export async function getRenewalPeriodById(periodId: string): Promise<RenewalPer
     .select(
       `
       *,
-      payments:renewal_payments (*)
+      payments:renewal_payments (*),
+      linked_period_students:renewal_period_students (student_id)
     `,
     )
     .eq("period_id", periodId)
@@ -57,8 +65,10 @@ export async function getRenewalPeriodById(periodId: string): Promise<RenewalPer
 
   if (error) throw error;
 
+  const { linked_period_students, ...rest } = data;
   return attachPaymentTotals({
-    ...data,
+    ...rest,
+    linked_student_ids: mapLinkedStudentIds(linked_period_students),
     payments: (data.payments ?? []).sort(
       (a: RenewalPayment, b: RenewalPayment) => a.installment_number - b.installment_number,
     ),
@@ -66,10 +76,35 @@ export async function getRenewalPeriodById(periodId: string): Promise<RenewalPer
 }
 
 export async function createRenewalPeriod(req: CreateRenewalPeriodRequest): Promise<RenewalPeriod> {
-  const { data, error } = await supabase.from("renewal_periods").insert(req).select().single();
+  const { linked_student_ids, ...periodData } = req;
 
+  const { data, error } = await supabase.from("renewal_periods").insert(periodData).select().single();
   if (error) throw error;
-  return { ...data, payments: [], total_due: 0, total_paid: 0, balance: 0 };
+
+  if (linked_student_ids && linked_student_ids.length > 0) {
+    const { error: linkError } = await supabase
+      .from("renewal_period_students")
+      .insert(linked_student_ids.map((student_id) => ({ period_id: data.period_id, student_id })));
+    if (linkError) throw linkError;
+  }
+
+  return {
+    ...data,
+    payments: [],
+    total_due: 0,
+    total_paid: 0,
+    balance: 0,
+    linked_student_ids: linked_student_ids ?? [],
+  };
+}
+
+export async function removeLinkedStudent(periodId: string, studentId: string): Promise<void> {
+  const { error } = await supabase
+    .from("renewal_period_students")
+    .delete()
+    .eq("period_id", periodId)
+    .eq("student_id", studentId);
+  if (error) throw error;
 }
 
 export async function createRenewalPayment(

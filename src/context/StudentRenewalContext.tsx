@@ -359,6 +359,21 @@ export const StudentRenewalsProvider = ({ children }: { children: ReactNode }) =
           );
         }
 
+        const linkedIds = req.period.linked_student_ids ?? [];
+        for (const linkedId of linkedIds) {
+          const conflict = state.periods.find(
+            (p) =>
+              p.status === "active" &&
+              (p.student_id === linkedId || p.linked_student_ids.includes(linkedId)),
+          );
+          if (conflict) {
+            const s = students.find((st) => st.id === linkedId);
+            throw new Error(
+              `${s?.name ?? "A sibling"} already has an active renewal. Resolve it before linking.`,
+            );
+          }
+        }
+
         const newPeriod = await createRenewalPeriod(req.period);
 
         for (const installment of req.installments) {

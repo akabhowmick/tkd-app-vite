@@ -3,7 +3,7 @@ import { CreateRenewalFormProps, InstallmentInput } from "../../../../types/stud
 import { useSchool } from "../../../../context/SchoolContext";
 import { usePrograms } from "../../../../context/ProgramContext";
 import { ProgramFormModal, ProgramFormTarget } from "../Programs/ProgramFormModal";
-import { Plus } from "lucide-react";
+import { Plus, X } from "lucide-react";
 
 // ─────────────────────────────────────────────
 // Helpers
@@ -60,6 +60,11 @@ export const CreateRenewalForm: React.FC<CreateRenewalFormProps> = ({ onSubmit, 
   // ── Installment rows
   const [installments, setInstallments] = useState<InstallmentInput[]>([]);
 
+  // ── Sibling state
+  const [linkedStudentIds, setLinkedStudentIds] = useState<string[]>([]);
+  const [siblingSearch, setSiblingSearch] = useState("");
+  const [showSiblingDropdown, setShowSiblingDropdown] = useState(false);
+
   // ── UI state
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -67,11 +72,30 @@ export const CreateRenewalForm: React.FC<CreateRenewalFormProps> = ({ onSubmit, 
   const [studentSearch, setStudentSearch] = useState("");
   const [showStudentDropdown, setShowStudentDropdown] = useState(false);
 
+  // Students already claimed by primary or sibling slots
+  const takenIds = new Set([studentId, ...linkedStudentIds]);
+
   const filteredStudents = studentSearch.trim()
     ? students.filter((s) => s.name.toLowerCase().includes(studentSearch.toLowerCase()))
     : students;
 
+  const filteredSiblings = students.filter(
+    (s) =>
+      !takenIds.has(s.id ?? "") &&
+      (!siblingSearch.trim() || s.name.toLowerCase().includes(siblingSearch.toLowerCase())),
+  );
+
   const selectedStudent = students.find((s) => s.id === studentId);
+
+  const addSibling = (id: string) => {
+    setLinkedStudentIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
+    setSiblingSearch("");
+    setShowSiblingDropdown(false);
+  };
+
+  const removeSibling = (id: string) => {
+    setLinkedStudentIds((prev) => prev.filter((sid) => sid !== id));
+  };
 
   // Derive whether the selected program is milestone-based
   const selectedProgram = programs.find((p) => p.program_id === programId);
@@ -148,6 +172,7 @@ export const CreateRenewalForm: React.FC<CreateRenewalFormProps> = ({ onSubmit, 
           expiration_date: isMilestone ? null : expirationDate,
           number_of_classes: parseInt(numberOfClasses),
           program_id: programId,
+          linked_student_ids: linkedStudentIds.length > 0 ? linkedStudentIds : undefined,
         },
         installments: installments.map((inst) => ({
           installment_number: inst.installment_number,
@@ -217,6 +242,66 @@ export const CreateRenewalForm: React.FC<CreateRenewalFormProps> = ({ onSubmit, 
                 No students found
               </div>
             )}
+          </div>
+
+          {/* Siblings */}
+          <div>
+            {linkedStudentIds.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-2">
+                {linkedStudentIds.map((id) => {
+                  const s = students.find((st) => st.id === id);
+                  return (
+                    <span
+                      key={id}
+                      className="flex items-center gap-1 bg-blue-50 border border-blue-200 text-blue-800 text-xs font-medium px-2.5 py-1 rounded-full"
+                    >
+                      {s?.name ?? id}
+                      <button
+                        type="button"
+                        onClick={() => removeSibling(id)}
+                        className="hover:text-blue-600 ml-0.5"
+                      >
+                        <X size={11} />
+                      </button>
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+
+            <div className="relative">
+              <input
+                type="text"
+                value={siblingSearch}
+                onChange={(e) => {
+                  setSiblingSearch(e.target.value);
+                  setShowSiblingDropdown(true);
+                }}
+                onFocus={() => setShowSiblingDropdown(true)}
+                onBlur={() => setTimeout(() => setShowSiblingDropdown(false), 150)}
+                placeholder="+ Add sibling..."
+                className={`${fieldClass} text-sm placeholder-blue-400 border-dashed`}
+                autoComplete="off"
+              />
+              {showSiblingDropdown && filteredSiblings.length > 0 && (
+                <ul className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-40 overflow-y-auto">
+                  {filteredSiblings.map((s) => (
+                    <li
+                      key={s.id}
+                      onMouseDown={() => addSibling(s.id!)}
+                      className="px-3 py-2 text-sm cursor-pointer hover:bg-blue-50 hover:text-blue-700 text-gray-800"
+                    >
+                      {s.name}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {showSiblingDropdown && siblingSearch.trim() && filteredSiblings.length === 0 && (
+                <div className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-1 px-3 py-2 text-sm text-gray-400">
+                  No students found
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Program */}
