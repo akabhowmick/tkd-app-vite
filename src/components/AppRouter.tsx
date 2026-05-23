@@ -36,6 +36,7 @@ import { PortalShell, PortalNavItem } from "./Portal/PortalShell";
 import { StatCards } from "./MainDashboard/StatCard/StatCards";
 import { TakeAttendance } from "./AccountDashboards/AdminFeatures/AttendanceRecords/TakeAttendance";
 import { StudentRenewalsPage } from "./AccountDashboards/AdminFeatures/StudentRenewals/StudentRenewalsPage";
+import { CreateRenewalPage } from "./AccountDashboards/AdminFeatures/StudentRenewals/CreateRenewalPage";
 import { StudentListPage } from "./AccountDashboards/AdminFeatures/StudentView/StudentListPage";
 import { StudentProfilePage } from "./AccountDashboards/AdminFeatures/StudentView/StudentProfilePage";
 import { SchoolManagement } from "./AccountDashboards/AdminFeatures/SchoolManagement/SchoolManagement";
@@ -218,6 +219,7 @@ const AppContent: React.FC = () => {
           <Route index element={<StatCards />} />
           <Route path="attendance" element={<TakeAttendance />} />
           <Route path="renewals" element={<StudentRenewalsPage />} />
+          <Route path="renewals/new" element={<CreateRenewalPage />} />
           <Route path="students" element={<StudentListPage />} />
           <Route path="students/:studentId" element={<StudentProfilePage />} />
           <Route path="school" element={<SchoolManagement />} />
@@ -250,6 +252,7 @@ const AppContent: React.FC = () => {
           <Route path="announcements" element={<AnnouncementsPage />} />
           <Route path="belts" element={<BeltTrackingPage />} />
           <Route path="renewals" element={<StudentRenewalsPage />} />
+          <Route path="renewals/new" element={<CreateRenewalPage />} />
         </Route>
 
         {/* ── Student portal ── */}

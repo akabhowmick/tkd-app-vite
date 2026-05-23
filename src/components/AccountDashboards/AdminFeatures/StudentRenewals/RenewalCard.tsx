@@ -110,6 +110,7 @@ export const RenewalCard: React.FC<RenewalCardProps> = ({
   const [changeProgramOpen, setChangeProgramOpen] = useState(false);
   const [changeProgramLoading, setChangeProgramLoading] = useState(false);
 
+
   const student = students.find((s) => s.id === period.student_id);
   const style = STATUS_STYLES[period.ui_status] ?? STATUS_STYLES.active;
   const isPaid = period.balance <= 0 && period.total_due > 0;
@@ -362,8 +363,9 @@ export const RenewalCard: React.FC<RenewalCardProps> = ({
         title="Manage Renewal"
         size="compact"
       >
-        <div className="flex flex-col gap-2">
-          {!isPaid && (
+        <div className="flex flex-col gap-3">
+          {/* Primary context-aware action */}
+          {!isPaid ? (
             <Button
               variant="default"
               className="w-full bg-green-600 hover:bg-green-700"
@@ -371,58 +373,61 @@ export const RenewalCard: React.FC<RenewalCardProps> = ({
             >
               ✓ Mark Next Payment Paid
             </Button>
-          )}
-          {onUpdatePeriod && (
+          ) : onRenew ? (
             <Button
-              variant="outline"
-              className="w-full border-purple-400 text-purple-700 hover:bg-purple-50"
-              onClick={() => {
-                setManageOpen(false);
-                setChangeProgramOpen(true);
-              }}
-            >
-              🥋 Change Membership Type
-            </Button>
-          )}
-          {onAddPayment && (
-            <Button variant="default" className="w-full" onClick={openAddPayment}>
-              ＋ Add Payment Installment
-            </Button>
-          )}
-          {onRenew && (
-            <Button
-              variant="secondary"
-              className="w-full"
-              onClick={() => {
-                onRenew(period);
-                setManageOpen(false);
-              }}
+              variant="default"
+              className="w-full bg-blue-600 hover:bg-blue-700"
+              onClick={() => { setManageOpen(false); onRenew(period); }}
             >
               🔄 Renew
             </Button>
-          )}
-          {onResolveAsQuit && (
-            <Button
-              variant="outline"
-              className="w-full border-yellow-400 text-yellow-700 hover:bg-yellow-50"
-              onClick={() => {
-                onResolveAsQuit(period.period_id);
-                setManageOpen(false);
-              }}
+          ) : null}
+
+          {/* Divider + secondary text-link row */}
+          <div className="border-t border-gray-200 pt-3 flex items-center justify-center gap-0 flex-wrap text-xs">
+            {!isPaid && onRenew && <>
+              <button
+                onClick={() => { setManageOpen(false); onRenew(period); }}
+                className="text-gray-600 hover:text-gray-900 hover:underline transition-colors px-3"
+              >
+                Renew
+              </button>
+              <span className="text-gray-300 select-none">|</span>
+            </>}
+            {onAddPayment && <>
+              <button
+                onClick={openAddPayment}
+                className="text-gray-600 hover:text-gray-900 hover:underline transition-colors px-3"
+              >
+                + Add installment
+              </button>
+              <span className="text-gray-300 select-none">|</span>
+            </>}
+            {onUpdatePeriod && <>
+              <button
+                onClick={() => { setManageOpen(false); setChangeProgramOpen(true); }}
+                className="text-gray-600 hover:text-gray-900 hover:underline transition-colors px-3"
+              >
+                Change type
+              </button>
+              <span className="text-gray-300 select-none">|</span>
+            </>}
+            {onResolveAsQuit && <>
+              <button
+                onClick={() => { onResolveAsQuit(period.period_id); setManageOpen(false); }}
+                className="text-gray-600 hover:text-gray-900 hover:underline transition-colors px-3"
+              >
+                Mark as quit
+              </button>
+              <span className="text-gray-300 select-none">|</span>
+            </>}
+            <button
+              onClick={() => { setManageOpen(false); setDeleteConfirmOpen(true); }}
+              className="text-red-500 hover:text-red-700 hover:underline transition-colors px-3"
             >
-              🚪 Mark as Quit
-            </Button>
-          )}
-          <Button
-            variant="destructive"
-            className="w-full"
-            onClick={() => {
-              setManageOpen(false);
-              setDeleteConfirmOpen(true);
-            }}
-          >
-            🗑 Delete
-          </Button>
+              Delete
+            </button>
+          </div>
         </div>
       </AppModal>
 
@@ -606,6 +611,7 @@ export const RenewalCard: React.FC<RenewalCardProps> = ({
         }}
         confirmLabel="Delete"
       />
+
     </div>
   );
 };

@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useStudentRenewals } from "../../../../context/StudentRenewalContext";
 import { RenewalCategory } from "./RenewalCategory";
 import { RenewalCard } from "./RenewalCard";
-import { CreateRenewalForm } from "./CreateRenewalForm";
 import { RenewalPeriodWithUiStatus } from "../../../../types/student_renewal";
 import { Skeleton } from "../../../ui/skeleton";
 
@@ -49,6 +49,7 @@ const RenewalsSkeleton = () => (
 );
 
 export const StudentRenewalsPage: React.FC = () => {
+  const navigate = useNavigate();
   const {
     grouped,
     loading,
@@ -56,14 +57,10 @@ export const StudentRenewalsPage: React.FC = () => {
     loadPeriods,
     deletePeriod,
     quitRenewal,
-    renewPeriod,
     markInstallmentPaid,
     addPayment,
     updatePeriod,
   } = useStudentRenewals();
-
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const { createRenewal } = useStudentRenewals();
 
   useEffect(() => {
     loadPeriods();
@@ -95,7 +92,7 @@ export const StudentRenewalsPage: React.FC = () => {
           onMarkInstallmentPaid={markInstallmentPaid}
           onDelete={deletePeriod}
           onResolveAsQuit={quitRenewal}
-          onRenew={(p) => renewPeriod(p, p.duration_months ?? 0)}
+          onRenew={(p) => navigate(`new?studentId=${p.student_id}&renewingPeriodId=${p.period_id}`)}
           onAddPayment={addPayment}
           onUpdatePeriod={updatePeriod}
         />
@@ -125,7 +122,7 @@ export const StudentRenewalsPage: React.FC = () => {
             {loading ? "⏳ Loading..." : "📅 Refresh"}
           </button>
           <button
-            onClick={() => setShowCreateForm(true)}
+            onClick={() => navigate("new")}
             disabled={loading}
             className="bg-white text-black rounded-xl shadow-lg px-6 py-3 border-b-4 border-red-500 disabled:opacity-50"
           >
@@ -138,17 +135,6 @@ export const StudentRenewalsPage: React.FC = () => {
           <div className="mb-6 bg-red-50 border border-red-200 rounded-xl px-6 py-4 text-red-700 text-sm">
             {error}
           </div>
-        )}
-
-        {/* Create form */}
-        {showCreateForm && (
-          <CreateRenewalForm
-            onSubmit={async (data) => {
-              await createRenewal(data);
-              setShowCreateForm(false);
-            }}
-            onCancel={() => setShowCreateForm(false)}
-          />
         )}
 
         {/* Renewal buckets */}

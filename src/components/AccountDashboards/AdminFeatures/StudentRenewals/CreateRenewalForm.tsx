@@ -43,12 +43,12 @@ function generateInstallments(
 // Component
 // ─────────────────────────────────────────────
 
-export const CreateRenewalForm: React.FC<CreateRenewalFormProps> = ({ onSubmit, onCancel }) => {
+export const CreateRenewalForm: React.FC<CreateRenewalFormProps> = ({ onSubmit, onCancel, initialStudentId }) => {
   const { students, schoolId } = useSchool();
   const { programs } = usePrograms();
 
   // ── Period-level fields
-  const [studentId, setStudentId] = useState("");
+  const [studentId, setStudentId] = useState(initialStudentId ?? "");
   const [programId, setProgramId] = useState("");
   const [durationMonths, setDurationMonths] = useState("");
   const [startDate, setStartDate] = useState(new Date().toISOString().split("T")[0]);
@@ -196,11 +196,7 @@ export const CreateRenewalForm: React.FC<CreateRenewalFormProps> = ({ onSubmit, 
 
   return (
     <>
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white text-black rounded-xl p-6 w-full max-w-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
-        <h2 className="text-2xl font-bold mb-6">Register Renewal</h2>
-
-        <div className="space-y-5">
+    <div className="space-y-5">
           {/* Student */}
           <div className="relative">
             <label className={labelClass}>Student</label>
@@ -544,8 +540,6 @@ export const CreateRenewalForm: React.FC<CreateRenewalFormProps> = ({ onSubmit, 
             </button>
           </div>
         </div>
-      </div>
-    </div>
 
     <ProgramFormModal
       target={programFormTarget}

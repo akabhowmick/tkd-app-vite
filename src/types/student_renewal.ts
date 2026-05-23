@@ -174,4 +174,5 @@ export interface RenewalCategoryProps {
 export interface CreateRenewalFormProps {
   onSubmit: (data: CreateRenewalRequest) => Promise<void>;
   onCancel: () => void;
+  initialStudentId?: string;
 }
