@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from "react";
 import { track } from "../analytics/posthog";
 import { captureException } from "../analytics/sentry";
+import { useAsyncState } from "../hooks/useAsyncState";
 import {
   BeltRank,
   PromotionWithRanks,
@@ -41,162 +42,109 @@ export const BeltProvider = ({ children }: { children: ReactNode }) => {
   const { schoolId } = useSchool();
   const [ranks, setRanks] = useState<BeltRank[]>([]);
   const [promotions, setPromotions] = useState<PromotionWithRanks[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { loading, error, run, load } = useAsyncState();
 
   const loadRanks = useCallback(async () => {
     if (!schoolId) return;
-
-    try {
-      setLoading(true);
-      setError(null);
+    await load(async () => {
       const data = await getBeltRanks(schoolId);
       setRanks(data);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to load belt ranks";
-      setError(message);
-      console.error("Error loading belt ranks:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [schoolId]);
+    }, "Failed to load belt ranks");
+  }, [schoolId, load]);
 
   const loadPromotions = useCallback(async () => {
     if (!schoolId) return;
-
-    try {
-      setLoading(true);
-      setError(null);
+    await load(async () => {
       const data = await getPromotions(schoolId);
       setPromotions(data);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to load promotions";
-      setError(message);
-      console.error("Error loading promotions:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [schoolId]);
+    }, "Failed to load promotions");
+  }, [schoolId, load]);
 
   const createRank = useCallback(
     async (data: Omit<CreateBeltRankRequest, "school_id">): Promise<BeltRank> => {
       if (!schoolId) throw new Error("School ID required");
-
       try {
-        setLoading(true);
-        setError(null);
-        const newRank = await apiCreateBeltRank({ ...data, school_id: schoolId });
-        await loadRanks();
-        track("belt_rank_created");
-        return newRank;
+        return await run(async () => {
+          const newRank = await apiCreateBeltRank({ ...data, school_id: schoolId });
+          await loadRanks();
+          track("belt_rank_created");
+          return newRank;
+        }, "Failed to create belt rank");
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to create belt rank";
-        setError(message);
         captureException(err, { feature: "belts", action: "createRank" });
         throw err;
-      } finally {
-        setLoading(false);
       }
     },
-    [schoolId, loadRanks],
+    [schoolId, loadRanks, run],
   );
 
   const updateRank = useCallback(
     async (rankId: string, updates: UpdateBeltRankRequest): Promise<void> => {
-      try {
-        setLoading(true);
-        setError(null);
+      await run(async () => {
         await apiUpdateBeltRank(rankId, updates);
         await loadRanks();
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to update belt rank";
-        setError(message);
-        throw err;
-      } finally {
-        setLoading(false);
-      }
+      }, "Failed to update belt rank");
     },
-    [loadRanks],
+    [loadRanks, run],
   );
 
   const deleteRank = useCallback(
     async (rankId: string): Promise<void> => {
       try {
-        setLoading(true);
-        setError(null);
-        await apiDeleteBeltRank(rankId);
-        await loadRanks();
-        track("belt_rank_deleted");
+        await run(async () => {
+          await apiDeleteBeltRank(rankId);
+          await loadRanks();
+          track("belt_rank_deleted");
+        }, "Failed to delete belt rank");
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to delete belt rank";
-        setError(message);
         captureException(err, { feature: "belts", action: "deleteRank" });
         throw err;
-      } finally {
-        setLoading(false);
       }
     },
-    [loadRanks],
+    [loadRanks, run],
   );
 
   const promoteStudent = useCallback(
     async (data: Omit<CreatePromotionRequest, "school_id">): Promise<void> => {
       if (!schoolId) throw new Error("School ID required");
-
       try {
-        setLoading(true);
-        setError(null);
-        await apiCreatePromotion({ ...data, school_id: schoolId });
-        await loadPromotions();
-        track("student_promoted", { promotionType: data.promotion_type ?? "manual" });
+        await run(async () => {
+          await apiCreatePromotion({ ...data, school_id: schoolId });
+          await loadPromotions();
+          track("student_promoted", { promotionType: data.promotion_type ?? "manual" });
+        }, "Failed to promote student");
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to promote student";
-        setError(message);
         captureException(err, { feature: "belts", action: "promoteStudent" });
         throw err;
-      } finally {
-        setLoading(false);
       }
     },
-    [schoolId, loadPromotions],
+    [schoolId, loadPromotions, run],
   );
 
   const deletePromotionRecord = useCallback(
     async (promotionId: string): Promise<void> => {
       try {
-        setLoading(true);
-        setError(null);
-        await apiDeletePromotion(promotionId);
-        await loadPromotions();
-        track("promotion_deleted");
+        await run(async () => {
+          await apiDeletePromotion(promotionId);
+          await loadPromotions();
+          track("promotion_deleted");
+        }, "Failed to delete promotion");
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to delete promotion";
-        setError(message);
         captureException(err, { feature: "belts", action: "deletePromotion" });
         throw err;
-      } finally {
-        setLoading(false);
       }
     },
-    [loadPromotions],
+    [loadPromotions, run],
   );
 
   const getStudentHistory = useCallback(
     async (studentId: string): Promise<PromotionWithRanks[]> => {
-      try {
-        setLoading(true);
-        setError(null);
+      return run(async () => {
         const data = await getStudentPromotions(studentId);
         return data;
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to load student history";
-        setError(message);
-        throw err;
-      } finally {
-        setLoading(false);
-      }
+      }, "Failed to load student history");
     },
-    [],
+    [run],
   );
 
   useEffect(() => {

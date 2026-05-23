@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from "react";
 import { track } from "../analytics/posthog";
 import { captureException } from "../analytics/sentry";
+import { useAsyncState } from "../hooks/useAsyncState";
 import {
   InventoryItemWithAlert,
   InventoryTransaction,
@@ -42,151 +43,106 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
   const [items, setItems] = useState<InventoryItemWithAlert[]>([]);
   const [lowStockItems, setLowStockItems] = useState<InventoryItemWithAlert[]>([]);
   const [transactions, setTransactions] = useState<InventoryTransaction[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { loading, error, run, load } = useAsyncState();
 
   const loadItems = useCallback(async () => {
     if (!schoolId) return;
-
-    try {
-      setLoading(true);
-      setError(null);
+    await load(async () => {
       const [allItems, lowStock] = await Promise.all([
         getInventoryItems(schoolId),
         getLowStockItems(schoolId),
       ]);
       setItems(allItems);
       setLowStockItems(lowStock);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to load inventory";
-      setError(message);
-      console.error("Error loading inventory:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [schoolId]);
+    }, "Failed to load inventory");
+  }, [schoolId, load]);
 
   const loadTransactions = useCallback(async () => {
     if (!schoolId) return;
-
-    try {
-      setLoading(true);
-      setError(null);
+    await load(async () => {
       const data = await getTransactions(schoolId);
       setTransactions(data);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to load transactions";
-      setError(message);
-      console.error("Error loading transactions:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [schoolId]);
+    }, "Failed to load transactions");
+  }, [schoolId, load]);
 
   const createItem = useCallback(
     async (data: Omit<CreateInventoryItemRequest, "school_id">): Promise<void> => {
       if (!schoolId) throw new Error("School ID required");
-
       try {
-        setLoading(true);
-        setError(null);
-        await apiCreateInventoryItem({ ...data, school_id: schoolId });
-        await loadItems();
-        track("inventory_item_created", { category: data.category });
+        await run(async () => {
+          await apiCreateInventoryItem({ ...data, school_id: schoolId });
+          await loadItems();
+          track("inventory_item_created", { category: data.category });
+        }, "Failed to create item");
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to create item";
-        setError(message);
         captureException(err, { feature: "inventory", action: "createItem" });
         throw err;
-      } finally {
-        setLoading(false);
       }
     },
-    [schoolId, loadItems]
+    [schoolId, loadItems, run],
   );
 
   const updateItem = useCallback(
     async (itemId: string, updates: UpdateInventoryItemRequest): Promise<void> => {
-      try {
-        setLoading(true);
-        setError(null);
+      await run(async () => {
         await apiUpdateInventoryItem(itemId, updates);
         await loadItems();
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to update item";
-        setError(message);
-        throw err;
-      } finally {
-        setLoading(false);
-      }
+      }, "Failed to update item");
     },
-    [loadItems]
+    [loadItems, run],
   );
 
   const deleteItem = useCallback(
     async (itemId: string): Promise<void> => {
       try {
-        setLoading(true);
-        setError(null);
-        await apiDeleteInventoryItem(itemId);
-        await loadItems();
-        track("inventory_item_deleted");
+        await run(async () => {
+          await apiDeleteInventoryItem(itemId);
+          await loadItems();
+          track("inventory_item_deleted");
+        }, "Failed to delete item");
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to delete item";
-        setError(message);
         captureException(err, { feature: "inventory", action: "deleteItem" });
         throw err;
-      } finally {
-        setLoading(false);
       }
     },
-    [loadItems]
+    [loadItems, run],
   );
 
   const recordTransaction = useCallback(
     async (data: Omit<CreateTransactionRequest, "school_id">): Promise<void> => {
       if (!schoolId) throw new Error("School ID required");
-
       try {
-        setLoading(true);
-        setError(null);
-        await apiCreateTransaction({ ...data, school_id: schoolId });
-        await Promise.all([loadItems(), loadTransactions()]);
-        const item = items.find((i) => i.item_id === data.item_id);
-        if (data.transaction_type === "sale") {
-          track("inventory_sale_recorded", { category: item?.category ?? "unknown" });
-        } else if (data.transaction_type === "restock") {
-          track("inventory_restock_recorded");
-        }
+        await run(async () => {
+          await apiCreateTransaction({ ...data, school_id: schoolId });
+          await Promise.all([loadItems(), loadTransactions()]);
+          const item = items.find((i) => i.item_id === data.item_id);
+          if (data.transaction_type === "sale") {
+            track("inventory_sale_recorded", { category: item?.category ?? "unknown" });
+          } else if (data.transaction_type === "restock") {
+            track("inventory_restock_recorded");
+          }
+        }, "Failed to record transaction");
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to record transaction";
-        setError(message);
         captureException(err, { feature: "inventory", action: "recordTransaction" });
         throw err;
-      } finally {
-        setLoading(false);
       }
     },
-    [schoolId, loadItems, loadTransactions, items]
+    [schoolId, loadItems, loadTransactions, items, run],
   );
 
   const deleteTransactionRecord = useCallback(
     async (transactionId: string): Promise<void> => {
       try {
-        setLoading(true);
-        setError(null);
-        await apiDeleteTransaction(transactionId);
-        await Promise.all([loadItems(), loadTransactions()]);
+        await run(async () => {
+          await apiDeleteTransaction(transactionId);
+          await Promise.all([loadItems(), loadTransactions()]);
+        }, "Failed to delete transaction");
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to delete transaction";
-        setError(message);
         captureException(err, { feature: "inventory", action: "deleteTransaction" });
         throw err;
-      } finally {
-        setLoading(false);
       }
     },
-    [loadItems, loadTransactions]
+    [loadItems, loadTransactions, run],
   );
 
   useEffect(() => {

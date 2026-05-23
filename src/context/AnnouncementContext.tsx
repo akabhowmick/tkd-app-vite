@@ -6,6 +6,7 @@ import {
   useEffect,
   ReactNode,
 } from "react";
+import { useAsyncState } from "../hooks/useAsyncState";
 import { Announcement, CreateAnnouncementRequest, UpdateAnnouncementRequest } from "../types/announcements";
 import {
   getAnnouncements,
@@ -30,72 +31,52 @@ const AnnouncementContext = createContext<AnnouncementContextType | undefined>(u
 export const AnnouncementProvider = ({ children }: { children: ReactNode }) => {
   const { schoolId } = useSchool();
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { loading, error, run, load } = useAsyncState();
 
   const loadAnnouncements = useCallback(async () => {
     if (!schoolId) return;
-    try {
-      setLoading(true);
-      setError(null);
+    await load(async () => {
       const data = await getAnnouncements(schoolId);
       setAnnouncements(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load announcements");
-    } finally {
-      setLoading(false);
-    }
-  }, [schoolId]);
+    }, "Failed to load announcements");
+  }, [schoolId, load]);
 
   const createAnnouncement = useCallback(
     async (req: Omit<CreateAnnouncementRequest, "school_id">) => {
       if (!schoolId) throw new Error("School ID required");
-      try {
-        setError(null);
+      await run(async () => {
         const newItem = await apiCreate({ ...req, school_id: schoolId });
-        setAnnouncements((prev) => {
-          const updated = [newItem, ...prev];
-          return updated.sort((a, b) => Number(b.pinned) - Number(a.pinned));
-        });
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : "Failed to create announcement";
-        setError(msg);
-        throw err;
-      }
+        setAnnouncements((prev) =>
+          [newItem, ...prev].sort((a, b) => Number(b.pinned) - Number(a.pinned)),
+        );
+      }, "Failed to create announcement");
     },
-    [schoolId]
+    [schoolId, run],
   );
 
   const updateAnnouncement = useCallback(
     async (id: string, updates: UpdateAnnouncementRequest) => {
-      try {
-        setError(null);
+      await run(async () => {
         const updated = await apiUpdate(id, updates);
         setAnnouncements((prev) =>
           prev
             .map((a) => (a.announcement_id === id ? updated : a))
-            .sort((a, b) => Number(b.pinned) - Number(a.pinned))
+            .sort((a, b) => Number(b.pinned) - Number(a.pinned)),
         );
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : "Failed to update announcement";
-        setError(msg);
-        throw err;
-      }
+      }, "Failed to update announcement");
     },
-    []
+    [run],
   );
 
-  const deleteAnnouncement = useCallback(async (id: string) => {
-    try {
-      setError(null);
-      await apiDelete(id);
-      setAnnouncements((prev) => prev.filter((a) => a.announcement_id !== id));
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to delete announcement";
-      setError(msg);
-      throw err;
-    }
-  }, []);
+  const deleteAnnouncement = useCallback(
+    async (id: string) => {
+      await run(async () => {
+        await apiDelete(id);
+        setAnnouncements((prev) => prev.filter((a) => a.announcement_id !== id));
+      }, "Failed to delete announcement");
+    },
+    [run],
+  );
 
   useEffect(() => {
     if (schoolId) loadAnnouncements();

@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from "react";
 import { track } from "../analytics/posthog";
 import { captureException } from "../analytics/sentry";
+import { useAsyncState } from "../hooks/useAsyncState";
 import {
   ClassRow,
   ClassSession,
@@ -39,146 +40,102 @@ const ClassContext = createContext<ClassContextType | undefined>(undefined);
 export const ClassProvider = ({ children }: { children: ReactNode }) => {
   const { schoolId } = useSchool();
   const [classes, setClasses] = useState<ClassWithSessions[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { loading, error, run, load } = useAsyncState();
 
   const loadClasses = useCallback(async () => {
     if (!schoolId) return;
-
-    try {
-      setLoading(true);
-      setError(null);
+    await load(async () => {
       const data = await getClassesWithSessions(schoolId);
       setClasses(data);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to load classes";
-      setError(message);
-      console.error("Error loading classes:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [schoolId]);
+    }, "Failed to load classes");
+  }, [schoolId, load]);
 
   const createClass = useCallback(
     async (data: Omit<CreateClassRequest, "school_id">): Promise<ClassRow> => {
       if (!schoolId) throw new Error("School ID required");
-
       try {
-        setLoading(true);
-        setError(null);
-        const newClass = await apiCreateClass({ ...data, school_id: schoolId });
-        await loadClasses();
-        track("class_created", { ageGroup: data.age_group });
-        return newClass;
+        return await run(async () => {
+          const newClass = await apiCreateClass({ ...data, school_id: schoolId });
+          await loadClasses();
+          track("class_created", { ageGroup: data.age_group });
+          return newClass;
+        }, "Failed to create class");
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to create class";
-        setError(message);
         captureException(err, { feature: "classes", action: "createClass" });
         throw err;
-      } finally {
-        setLoading(false);
       }
     },
-    [schoolId, loadClasses],
+    [schoolId, loadClasses, run],
   );
 
   const updateClass = useCallback(
     async (classId: string, updates: UpdateClassRequest): Promise<void> => {
-      try {
-        setLoading(true);
-        setError(null);
+      await run(async () => {
         await apiUpdateClass(classId, updates);
         await loadClasses();
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to update class";
-        setError(message);
-        throw err;
-      } finally {
-        setLoading(false);
-      }
+      }, "Failed to update class");
     },
-    [loadClasses],
+    [loadClasses, run],
   );
 
   const deleteClass = useCallback(
     async (classId: string): Promise<void> => {
       try {
-        setLoading(true);
-        setError(null);
-        await apiDeleteClass(classId);
-        await loadClasses();
-        track("class_deleted");
+        await run(async () => {
+          await apiDeleteClass(classId);
+          await loadClasses();
+          track("class_deleted");
+        }, "Failed to delete class");
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to delete class";
-        setError(message);
         captureException(err, { feature: "classes", action: "deleteClass" });
         throw err;
-      } finally {
-        setLoading(false);
       }
     },
-    [loadClasses],
+    [loadClasses, run],
   );
 
   const createSession = useCallback(
     async (data: Omit<CreateSessionRequest, "school_id">): Promise<ClassSession> => {
       if (!schoolId) throw new Error("School ID required");
-
       try {
-        setLoading(true);
-        setError(null);
-        const newSession = await apiCreateSession({ ...data, school_id: schoolId });
-        await loadClasses();
-        track("class_session_added", { sessionType: data.session_type });
-        return newSession;
+        return await run(async () => {
+          const newSession = await apiCreateSession({ ...data, school_id: schoolId });
+          await loadClasses();
+          track("class_session_added", { sessionType: data.session_type });
+          return newSession;
+        }, "Failed to create session");
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to create session";
-        setError(message);
         captureException(err, { feature: "classes", action: "createSession" });
         throw err;
-      } finally {
-        setLoading(false);
       }
     },
-    [schoolId, loadClasses],
+    [schoolId, loadClasses, run],
   );
 
   const updateSession = useCallback(
     async (sessionId: string, updates: UpdateSessionRequest): Promise<void> => {
-      try {
-        setLoading(true);
-        setError(null);
+      await run(async () => {
         await apiUpdateSession(sessionId, updates);
         await loadClasses();
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to update session";
-        setError(message);
-        throw err;
-      } finally {
-        setLoading(false);
-      }
+      }, "Failed to update session");
     },
-    [loadClasses],
+    [loadClasses, run],
   );
 
   const deleteSession = useCallback(
     async (sessionId: string): Promise<void> => {
       try {
-        setLoading(true);
-        setError(null);
-        await apiDeleteSession(sessionId);
-        await loadClasses();
-        track("class_session_deleted");
+        await run(async () => {
+          await apiDeleteSession(sessionId);
+          await loadClasses();
+          track("class_session_deleted");
+        }, "Failed to delete session");
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to delete session";
-        setError(message);
         captureException(err, { feature: "classes", action: "deleteSession" });
         throw err;
-      } finally {
-        setLoading(false);
       }
     },
-    [loadClasses],
+    [loadClasses, run],
   );
 
   useEffect(() => {

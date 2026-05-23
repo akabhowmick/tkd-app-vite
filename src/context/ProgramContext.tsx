@@ -1,5 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from "react";
+import { useAsyncState } from "../hooks/useAsyncState";
 import {
   SchoolProgram,
   CreateSchoolProgramRequest,
@@ -31,68 +32,42 @@ const ProgramContext = createContext<ProgramContextType | undefined>(undefined);
 export const ProgramProvider = ({ children }: { children: ReactNode }) => {
   const { schoolId } = useSchool();
   const [programs, setPrograms] = useState<SchoolProgram[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { loading, error, run, load } = useAsyncState();
 
   const loadPrograms = useCallback(async () => {
     if (!schoolId) return;
-    try {
-      setLoading(true);
-      setError(null);
+    await load(async () => {
       // Ensure "Regular" exists before loading
       await ensureDefaultProgram(schoolId);
       const data = await getSchoolPrograms(schoolId);
       setPrograms(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load programs");
-    } finally {
-      setLoading(false);
-    }
-  }, [schoolId]);
+    }, "Failed to load programs");
+  }, [schoolId, load]);
 
   const createProgram = useCallback(
     async (req: Omit<CreateSchoolProgramRequest, "school_id">): Promise<SchoolProgram> => {
       if (!schoolId) throw new Error("School ID required");
-      try {
-        setLoading(true);
-        setError(null);
+      return run(async () => {
         const newProgram = await createSchoolProgram({ ...req, school_id: schoolId });
         setPrograms((prev) => [...prev, newProgram].sort((a, b) => a.name.localeCompare(b.name)));
         return newProgram;
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to create program";
-        setError(message);
-        throw err;
-      } finally {
-        setLoading(false);
-      }
+      }, "Failed to create program");
     },
-    [schoolId],
+    [schoolId, run],
   );
 
   const updateProgram = useCallback(
     async (programId: string, updates: UpdateSchoolProgramRequest): Promise<void> => {
-      try {
-        setLoading(true);
-        setError(null);
+      await run(async () => {
         const updated = await updateSchoolProgram(programId, updates);
         setPrograms((prev) => prev.map((p) => (p.program_id === programId ? updated : p)));
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to update program";
-        setError(message);
-        throw err;
-      } finally {
-        setLoading(false);
-      }
+      }, "Failed to update program");
     },
-    [],
+    [run],
   );
 
   const deleteProgram = useCallback(async (programId: string): Promise<void> => {
-    try {
-      setLoading(true);
-      setError(null);
-
+    await run(async () => {
       // Guard: block deletion if renewals are attached
       const count = await getProgramRenewalCount(programId);
       if (count > 0) {
@@ -100,17 +75,10 @@ export const ProgramProvider = ({ children }: { children: ReactNode }) => {
           `Cannot delete — ${count} renewal${count !== 1 ? "s" : ""} still use this program. Reassign them first.`,
         );
       }
-
       await deleteSchoolProgram(programId);
       setPrograms((prev) => prev.filter((p) => p.program_id !== programId));
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to delete program";
-      setError(message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    }, "Failed to delete program");
+  }, [run]);
 
   const getProgramById = useCallback(
     (programId: string) => programs.find((p) => p.program_id === programId),
