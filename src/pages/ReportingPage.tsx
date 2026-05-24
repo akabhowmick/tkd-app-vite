@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   getWeeklyAttendance,
   getRevenueByCategory,
@@ -27,7 +27,8 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { useSchool } from "../context/SchoolContext";
-import { AlertCircle, TrendingUp, Users, DollarSign, Calendar } from "lucide-react";
+import { useBelts } from "../context/BeltContext";
+import { AlertCircle, TrendingUp, Users, DollarSign, Calendar, Award } from "lucide-react";
 
 const COLORS = ["#be123c", "#2563eb", "#16a34a", "#d97706", "#7c3aed", "#0891b2"];
 
@@ -65,6 +66,7 @@ const SectionCard = ({
 
 export const ReportingPage = () => {
   const { schoolId, students } = useSchool();
+  const { ranks, loading: beltsLoading } = useBelts();
 
   const [attendance, setAttendance] = useState<WeeklyAttendance[]>([]);
   const [attendanceLoading, setAttendanceLoading] = useState(true);
@@ -85,6 +87,20 @@ export const ReportingPage = () => {
 
   // Student name lookup
   const studentMap = Object.fromEntries(students.map((s) => [s.id, s.name]));
+
+  const beltDistribution = useMemo(() => {
+    const countMap: Record<string, number> = {};
+    students.forEach((s) => {
+      const key = s.current_rank_id ?? "__unranked__";
+      countMap[key] = (countMap[key] ?? 0) + 1;
+    });
+    const rows = [...ranks]
+      .sort((a, b) => a.rank_order - b.rank_order)
+      .map((r) => ({ name: r.rank_name, count: countMap[r.rank_id] ?? 0, color: r.color_code }));
+    const unranked = countMap["__unranked__"] ?? 0;
+    if (unranked > 0) rows.push({ name: "Unranked", count: unranked, color: "#9ca3af" });
+    return rows;
+  }, [ranks, students]);
 
   useEffect(() => {
     if (!schoolId) return;
@@ -288,6 +304,57 @@ export const ReportingPage = () => {
               />
             </LineChart>
           </ResponsiveContainer>
+        )}
+      </SectionCard>
+
+      {/* Belt distribution */}
+      <SectionCard
+        title="Students by Belt Rank"
+        icon={Award}
+        loading={beltsLoading && ranks.length === 0}
+        error={null}
+      >
+        {beltDistribution.length === 0 ? (
+          <p className="text-sm text-gray-400 text-center py-8">
+            No belt ranks configured yet.
+          </p>
+        ) : (
+          <div className="flex flex-col gap-4">
+            <ResponsiveContainer width="100%" height={Math.max(180, beltDistribution.length * 36)}>
+              <BarChart
+                data={beltDistribution}
+                layout="vertical"
+                margin={{ top: 4, right: 32, left: 8, bottom: 0 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={false} />
+                <XAxis type="number" tick={{ fontSize: 11 }} allowDecimals={false} />
+                <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={96} />
+                <Tooltip
+                  formatter={(value: number) => [value, "Students"]}
+                  cursor={{ fill: "rgba(0,0,0,0.04)" }}
+                />
+                <Bar dataKey="count" name="Students" radius={[0, 3, 3, 0]} label={{ position: "right", fontSize: 11 }}>
+                  {beltDistribution.map((entry, i) => (
+                    <Cell key={i} fill={entry.color} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+
+            {/* Summary row */}
+            <div className="flex flex-wrap gap-2 pt-1 border-t border-gray-100">
+              {beltDistribution.map((entry) => (
+                <div key={entry.name} className="flex items-center gap-1.5 text-xs text-gray-600">
+                  <span
+                    className="inline-block w-3 h-3 rounded-sm flex-shrink-0"
+                    style={{ backgroundColor: entry.color }}
+                  />
+                  <span>{entry.name}</span>
+                  <span className="font-semibold text-gray-800">{entry.count}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
       </SectionCard>
 
