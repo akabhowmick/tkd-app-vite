@@ -1,22 +1,54 @@
 import { useState } from "react";
 import { useInventory } from "../context/InventoryContext";
 import { useSchool } from "../context/SchoolContext";
-import { InventoryCategory } from "../types/inventory";
-import { InventoryItemWithAlert } from "../types/inventory";
-import { FaExclamationTriangle, FaBoxOpen, FaTrash, FaHistory, FaPlus } from "react-icons/fa";
+import { InventoryCategory, InventoryItemWithAlert } from "../types/inventory";
+import { FaExclamationTriangle, FaBoxOpen, FaTrash, FaHistory, FaPlus, FaTimes } from "react-icons/fa";
 import { AppConfirmModal } from "../components/ui/modal";
-import { AddItemModal } from "../components/AccountDashboards/AdminFeatures/Inventory/AddItemModal";
 import { SellModal } from "../components/AccountDashboards/AdminFeatures/Inventory/SellModal";
 import { RestockModal } from "../components/AccountDashboards/AdminFeatures/Inventory/RestockModal";
+import { Input } from "../components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
 
 const CATEGORIES: InventoryCategory[] = ["Uniforms", "Gear", "Belts", "Merchandise"];
 
+type ItemForm = {
+  item_name: string;
+  category: InventoryCategory;
+  price: string;
+  stock_quantity: string;
+  low_stock_threshold: string;
+  size: string;
+  color: string;
+};
+
+const emptyForm = (): ItemForm => ({
+  item_name: "",
+  category: "Uniforms",
+  price: "",
+  stock_quantity: "0",
+  low_stock_threshold: "5",
+  size: "",
+  color: "",
+});
+
 export const InventoryPage = () => {
-  const { items, lowStockItems, transactions, loading, deleteItem } = useInventory();
+  const { items, lowStockItems, transactions, loading, deleteItem, createItem } = useInventory();
   const { students } = useSchool();
   const [activeTab, setActiveTab] = useState<"items" | "transactions">("items");
   const [selectedCategory, setSelectedCategory] = useState<InventoryCategory | "All">("All");
+
+  // Inline add-item form
   const [addItemOpen, setAddItemOpen] = useState(false);
+  const [form, setForm] = useState<ItemForm>(emptyForm());
+  const [addLoading, setAddLoading] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
+
   const [sellTarget, setSellTarget] = useState<InventoryItemWithAlert | null>(null);
   const [restockTarget, setRestockTarget] = useState<InventoryItemWithAlert | null>(null);
 
@@ -26,6 +58,36 @@ export const InventoryPage = () => {
     itemName: string;
     loading: boolean;
   }>({ open: false, itemId: "", itemName: "", loading: false });
+
+  const setField = <K extends keyof ItemForm>(k: K, v: ItemForm[K]) =>
+    setForm((f) => ({ ...f, [k]: v }));
+
+  const openAddForm = () => { setForm(emptyForm()); setAddError(null); setAddItemOpen(true); };
+  const closeAddForm = () => { setAddItemOpen(false); setAddError(null); };
+
+  const handleAddItem = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAddError(null);
+    if (!form.item_name.trim()) return setAddError("Item name is required.");
+    if (!form.price) return setAddError("Price is required.");
+    setAddLoading(true);
+    try {
+      await createItem({
+        item_name: form.item_name.trim(),
+        category: form.category,
+        price: parseFloat(form.price),
+        stock_quantity: parseInt(form.stock_quantity) || 0,
+        low_stock_threshold: parseInt(form.low_stock_threshold) || 5,
+        size: form.size.trim() || undefined,
+        color: form.color.trim() || undefined,
+      });
+      closeAddForm();
+    } catch (err) {
+      setAddError(err instanceof Error ? err.message : "Failed to add item.");
+    } finally {
+      setAddLoading(false);
+    }
+  };
 
   const filteredItems =
     selectedCategory === "All" ? items : items.filter((item) => item.category === selectedCategory);
@@ -52,13 +114,138 @@ export const InventoryPage = () => {
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-gray-900">Inventory Management</h1>
-          <button
-            onClick={() => setAddItemOpen(true)}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <FaPlus /> Add Item
-          </button>
+          {!addItemOpen && (
+            <button
+              onClick={openAddForm}
+              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <FaPlus /> Add Item
+            </button>
+          )}
         </div>
+
+        {/* Inline add-item form */}
+        {addItemOpen && (
+          <div className="bg-white border border-blue-200 rounded-lg shadow-sm p-5 mb-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold text-gray-800">New Item</h2>
+              <button onClick={closeAddForm} className="text-gray-400 hover:text-gray-600">
+                <FaTimes size={16} />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddItem}>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-4">
+                {/* Item name spans wider */}
+                <div className="col-span-2 sm:col-span-3 lg:col-span-2">
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    Item Name <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    placeholder="e.g., White Uniform"
+                    value={form.item_name}
+                    onChange={(e) => setField("item_name", e.target.value)}
+                    autoFocus
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    Category <span className="text-red-500">*</span>
+                  </label>
+                  <Select value={form.category} onValueChange={(v) => setField("category", v as InventoryCategory)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CATEGORIES.map((c) => (
+                        <SelectItem key={c} value={c}>{c}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    Price <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    placeholder="29.99"
+                    value={form.price}
+                    onChange={(e) => setField("price", e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    Initial Stock <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    type="number"
+                    value={form.stock_quantity}
+                    onChange={(e) => setField("stock_quantity", e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    Low Stock Alert <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    type="number"
+                    value={form.low_stock_threshold}
+                    onChange={(e) => setField("low_stock_threshold", e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    Size <span className="text-gray-400 font-normal">(optional)</span>
+                  </label>
+                  <Input
+                    placeholder="M"
+                    value={form.size}
+                    onChange={(e) => setField("size", e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    Color <span className="text-gray-400 font-normal">(optional)</span>
+                  </label>
+                  <Input
+                    placeholder="White"
+                    value={form.color}
+                    onChange={(e) => setField("color", e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {addError && (
+                <p className="text-sm text-red-600 mb-3">{addError}</p>
+              )}
+
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={closeAddForm}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={addLoading}
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                >
+                  {addLoading ? "Adding…" : "Add Item"}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
 
         {lowStockItems.length > 0 && (
           <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 rounded">
@@ -116,7 +303,7 @@ export const InventoryPage = () => {
                       Add your first inventory item to get started
                     </p>
                     <button
-                      onClick={() => setAddItemOpen(true)}
+                      onClick={openAddForm}
                       className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
                     >
                       Add First Item
@@ -248,7 +435,6 @@ export const InventoryPage = () => {
         </div>
       </div>
 
-      <AddItemModal open={addItemOpen} onOpenChange={setAddItemOpen} />
       <SellModal item={sellTarget} onClose={() => setSellTarget(null)} />
       <RestockModal item={restockTarget} onClose={() => setRestockTarget(null)} />
 

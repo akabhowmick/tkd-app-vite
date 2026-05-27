@@ -196,7 +196,6 @@ export const ReportingPage = () => {
               <Tooltip />
               <Legend wrapperStyle={{ fontSize: 12 }} />
               <Bar dataKey="present" name="Present" fill="#16a34a" radius={[3, 3, 0, 0]} />
-              <Bar dataKey="absent" name="Absent" fill="#dc2626" radius={[3, 3, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         )}
