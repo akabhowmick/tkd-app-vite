@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useClasses } from "../../../../context/ClassContext";
-import { AgeGroup, SessionType } from "../../../../types/classes";
+import { AgeGroup } from "../../../../types/classes";
 import { AppFormModal, ModalField } from "../../../ui/modal";
 import { Input } from "../../../ui/input";
 import {
@@ -18,9 +18,7 @@ const DAYS_OF_WEEK = [
 type ClassForm = {
   class_name: string;
   age_group: AgeGroup;
-  session_type: SessionType;
   day_of_week: string;
-  specific_date: string;
   start_time: string;
   end_time: string;
 };
@@ -28,9 +26,7 @@ type ClassForm = {
 const emptyForm = (): ClassForm => ({
   class_name: "",
   age_group: "Kids",
-  session_type: "recurring",
   day_of_week: "1",
-  specific_date: "",
   start_time: "",
   end_time: "",
 });
@@ -41,7 +37,7 @@ type Props = {
 };
 
 export const CreateClassModal = ({ open, onOpenChange }: Props) => {
-  const { createClass, createSession } = useClasses();
+  const { createClass } = useClasses();
   const [form, setForm] = useState<ClassForm>(emptyForm());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -60,19 +56,12 @@ export const CreateClassModal = ({ open, onOpenChange }: Props) => {
     if (!form.class_name.trim()) return setError("Class name is required.");
     if (!form.start_time) return setError("Start time is required.");
     if (!form.end_time) return setError("End time is required.");
-    if (form.session_type === "one-off" && !form.specific_date) return setError("Date is required.");
     setLoading(true);
     try {
-      const newClass = await createClass({
+      await createClass({
         class_name: form.class_name.trim(),
         age_group: form.age_group,
-      });
-      await createSession({
-        class_id: newClass.class_id,
-        session_type: form.session_type,
-        ...(form.session_type === "recurring"
-          ? { day_of_week: parseInt(form.day_of_week) }
-          : { specific_date: form.specific_date }),
+        day_of_week: parseInt(form.day_of_week),
         start_time: form.start_time,
         end_time: form.end_time,
       });
@@ -117,46 +106,20 @@ export const CreateClassModal = ({ open, onOpenChange }: Props) => {
         </Select>
       </ModalField>
 
-      <ModalField label="Schedule Type" required htmlFor="session-type">
-        <Select
-          value={form.session_type}
-          onValueChange={(v) => set("session_type", v as SessionType)}
-        >
-          <SelectTrigger id="session-type">
+      <ModalField label="Day of Week" required htmlFor="day-of-week">
+        <Select value={form.day_of_week} onValueChange={(v) => set("day_of_week", v)}>
+          <SelectTrigger id="day-of-week">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="recurring">Recurring (Weekly)</SelectItem>
-            <SelectItem value="one-off">One-off Session</SelectItem>
+            {DAYS_OF_WEEK.map((day, idx) => (
+              <SelectItem key={idx} value={String(idx)}>
+                {day}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </ModalField>
-
-      {form.session_type === "recurring" ? (
-        <ModalField label="Day of Week" required htmlFor="day-of-week">
-          <Select value={form.day_of_week} onValueChange={(v) => set("day_of_week", v)}>
-            <SelectTrigger id="day-of-week">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {DAYS_OF_WEEK.map((day, idx) => (
-                <SelectItem key={idx} value={String(idx)}>
-                  {day}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </ModalField>
-      ) : (
-        <ModalField label="Date" required htmlFor="specific-date">
-          <Input
-            id="specific-date"
-            type="date"
-            value={form.specific_date}
-            onChange={(e) => set("specific_date", e.target.value)}
-          />
-        </ModalField>
-      )}
 
       <div className="grid grid-cols-2 gap-4">
         <ModalField label="Start Time" required htmlFor="start-time">
