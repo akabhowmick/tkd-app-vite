@@ -116,8 +116,8 @@ export const AnnouncementsPage = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-sm font-semibold text-gray-800">Announcements</h2>
-          <p className="text-xs text-gray-500 mt-0.5">School-wide updates visible to all members.</p>
+          <h2 className="text-xl font-bold text-gray-900">Announcements</h2>
+          <p className="text-sm text-gray-600 mt-0.5">School-wide updates visible to all members.</p>
         </div>
         {manage && !newOpen && (
           <Button size="sm" onClick={openNew} className="flex items-center gap-1.5">

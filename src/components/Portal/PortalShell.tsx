@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { Search, Bell, ChevronDown, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -151,12 +151,14 @@ export const PortalShell = ({ basePath, portalLabel, navItems }: Props) => {
 
         {/* Breadcrumb */}
         <div className="bg-gray-50 border-b border-gray-200 px-6 py-4 shrink-0">
-          <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
-            <span>Dashboard</span>
+          <div className="flex items-center gap-1.5 text-sm text-gray-500 mb-1">
+            <Link to={basePath} className="hover:text-gray-800 transition-colors">
+              Dashboard
+            </Link>
             {currentNavItem?.path && (
               <>
-                <span>/</span>
-                <span>{currentTitle}</span>
+                <ChevronRight size={14} className="text-gray-400" />
+                <span className="text-gray-800 font-medium">{currentTitle}</span>
               </>
             )}
           </div>

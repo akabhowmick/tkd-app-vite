@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { Search, Bell, ChevronDown, LogOut, User, UserPlus } from "lucide-react";
-import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Search, Bell, ChevronDown, LogOut, User, UserPlus, ChevronRight } from "lucide-react";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Sidebar } from "./SideBar";
 import { useAuth } from "../../context/AuthContext";
 import { ViewErrorBoundary } from "../ui/ViewErrorBoundary";
@@ -135,12 +135,14 @@ export const MainDashboard = () => {
 
         {/* Breadcrumb + title */}
         <div className="bg-gray-50 border-b border-gray-200 px-6 py-4 shrink-0">
-          <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
-            <span>Dashboard</span>
+          <div className="flex items-center gap-1.5 text-sm text-gray-500 mb-1">
+            <Link to={ADMIN_BASE} className="hover:text-gray-800 transition-colors">
+              Dashboard
+            </Link>
             {viewKey !== "home" && (
               <>
-                <span>/</span>
-                <span className="text-gray-600">{currentTitle}</span>
+                <ChevronRight size={14} className="text-gray-400" />
+                <span className="text-gray-800 font-medium">{currentTitle}</span>
               </>
             )}
           </div>

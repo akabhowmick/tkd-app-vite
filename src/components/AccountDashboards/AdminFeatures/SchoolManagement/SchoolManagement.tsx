@@ -56,27 +56,42 @@ export const SchoolManagement = () => {
   }
 
   return (
-    <div className="bg-white text-black rounded shadow p-6 max-w-md mx-auto space-y-4">
-      <h2 className="text-2xl font-bold">Your School</h2>
-      <p>
-        <strong>Name:</strong> {school!.name}
-      </p>
-      <p>
-        <strong>Address:</strong> {school!.address}
-      </p>
-      <div className="flex gap-2">
-        <button
-          onClick={() => setEditing(true)}
-          className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600"
-        >
-          Edit
-        </button>
-        <button
-          onClick={handleDelete}
-          className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
-        >
-          Delete
-        </button>
+    <div className="max-w-2xl mx-auto">
+      <div className="bg-gray-100 rounded-xl shadow-lg border border-gray-300 overflow-hidden">
+        {/* Header banner */}
+        <div className="bg-red-700 h-24 w-full" />
+
+        {/* Profile body */}
+        <div className="px-8 pb-8 -mt-8">
+          <div className="flex items-end justify-between mb-6">
+            <div className="h-16 w-16 rounded-xl bg-white shadow border border-gray-200 flex items-center justify-center">
+              <SchoolIcon size={28} className="text-red-700" />
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setEditing(true)}
+                className="px-4 py-2 text-sm font-medium rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Edit
+              </button>
+              <button
+                onClick={handleDelete}
+                className="px-4 py-2 text-sm font-medium rounded-lg border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+
+          <h2 className="text-2xl font-bold text-gray-900 mb-1">{school!.name}</h2>
+
+          <div className="mt-6 border-t border-gray-100 pt-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">Address</p>
+              <p className="text-sm text-gray-800">{school!.address || "—"}</p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
