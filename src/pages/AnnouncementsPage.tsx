@@ -4,17 +4,74 @@ import { useAuth } from "../context/AuthContext";
 import { UserRole } from "../types/user";
 import { AppConfirmModal } from "../components/ui/modal";
 import { Button } from "../components/ui/button";
-import { Pin, Pencil, Trash2, Plus, Megaphone, X, Check } from "lucide-react";
+import { Pin, Pencil, Trash2, Plus, Megaphone, X, Check, Users } from "lucide-react";
 import { Announcement } from "../types/announcements";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
 
 const canManage = (role?: string) => role === UserRole.Admin || role === UserRole.Instructor;
 
-type AnnouncementForm = { title: string; content: string; pinned: boolean };
-const emptyForm = (): AnnouncementForm => ({ title: "", content: "", pinned: false });
+// ── Audience ────────────────────────────────────────────────────────────────
+const AUDIENCE_OPTIONS = [
+  { value: "all",        label: "All" },
+  { value: "instructor", label: "Instructors" },
+  { value: "parent",     label: "Parents" },
+  { value: "student",    label: "Students" },
+] as const;
+
+const AudienceSelector = ({
+  value,
+  onChange,
+}: {
+  value: string[];
+  onChange: (v: string[]) => void;
+}) => {
+  const toggle = (opt: string) => {
+    if (opt === "all") { onChange(["all"]); return; }
+    const next = value.filter((v) => v !== "all");
+    const updated = next.includes(opt) ? next.filter((v) => v !== opt) : [...next, opt];
+    onChange(updated.length === 0 ? ["all"] : updated);
+  };
+  return (
+    <div>
+      <label className="block text-xs font-medium text-gray-700 mb-2">Visible to</label>
+      <div className="flex flex-wrap gap-2">
+        {AUDIENCE_OPTIONS.map((opt) => {
+          const active =
+            opt.value === "all"
+              ? value.includes("all")
+              : !value.includes("all") && value.includes(opt.value);
+          return (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => toggle(opt.value)}
+              className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                active
+                  ? "bg-primary text-white border-primary"
+                  : "bg-white text-gray-600 border-gray-300 hover:border-gray-500"
+              }`}
+            >
+              {opt.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+const audienceBadgeLabel = (visibleTo: string[]): string | null => {
+  if (!visibleTo || visibleTo.includes("all")) return null;
+  const labels: Record<string, string> = { instructor: "Instructors", parent: "Parents", student: "Students" };
+  return visibleTo.map((v) => labels[v] ?? v).join(" & ");
+};
+
+// ── Form type ────────────────────────────────────────────────────────────────
+type AnnouncementForm = { title: string; content: string; pinned: boolean; visible_to: string[] };
+const emptyForm = (): AnnouncementForm => ({ title: "", content: "", pinned: false, visible_to: ["all"] });
 const formFromAnnouncement = (a: Announcement): AnnouncementForm => ({
-  title: a.title, content: a.content, pinned: a.pinned,
+  title: a.title, content: a.content, pinned: a.pinned, visible_to: a.visible_to ?? ["all"],
 });
 
 export const AnnouncementsPage = () => {
@@ -61,6 +118,7 @@ export const AnnouncementsPage = () => {
         title: newForm.title.trim(),
         content: newForm.content.trim(),
         pinned: newForm.pinned,
+        visible_to: newForm.visible_to,
         created_by: user?.id ?? "",
         created_by_name: user?.name ?? "Unknown",
       });
@@ -84,6 +142,7 @@ export const AnnouncementsPage = () => {
         title: editForm.title.trim(),
         content: editForm.content.trim(),
         pinned: editForm.pinned,
+        visible_to: editForm.visible_to,
       });
       closeEdit();
     } catch (err) {
@@ -135,7 +194,7 @@ export const AnnouncementsPage = () => {
         <div className="bg-white border border-blue-200 rounded-xl shadow-sm p-5">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-sm font-semibold text-gray-800">New Announcement</h3>
-            <button onClick={closeNew} className="text-gray-400 hover:text-gray-600"><X size={16} /></button>
+            <button onClick={closeNew} className="text-gray-500 hover:text-gray-800"><X size={16} /></button>
           </div>
           <form onSubmit={handleCreate} className="flex flex-col gap-3">
             <div>
@@ -156,6 +215,10 @@ export const AnnouncementsPage = () => {
                 onChange={(e) => setNewForm((f) => ({ ...f, content: e.target.value }))}
               />
             </div>
+            <AudienceSelector
+              value={newForm.visible_to}
+              onChange={(v) => setNewForm((f) => ({ ...f, visible_to: v }))}
+            />
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
@@ -206,8 +269,8 @@ export const AnnouncementsPage = () => {
                   /* Inline edit form */
                   <form onSubmit={handleUpdate} className="flex flex-col gap-3">
                     <div className="flex justify-between items-center mb-1">
-                      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Editing</span>
-                      <button type="button" onClick={closeEdit} className="text-gray-400 hover:text-gray-600"><X size={14} /></button>
+                      <span className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Editing</span>
+                      <button type="button" onClick={closeEdit} className="text-gray-500 hover:text-gray-800"><X size={14} /></button>
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-gray-600 mb-1">Title <span className="text-red-500">*</span></label>
@@ -225,6 +288,10 @@ export const AnnouncementsPage = () => {
                         onChange={(e) => setEditForm((f) => ({ ...f, content: e.target.value }))}
                       />
                     </div>
+                    <AudienceSelector
+                      value={editForm.visible_to}
+                      onChange={(v) => setEditForm((f) => ({ ...f, visible_to: v }))}
+                    />
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="checkbox"
@@ -250,30 +317,38 @@ export const AnnouncementsPage = () => {
                         {a.pinned && <Pin size={14} className="text-primary shrink-0 mt-0.5" />}
                         <div className="min-w-0">
                           <h3 className="text-sm font-semibold text-gray-900 leading-snug">{a.title}</h3>
-                          <p className="text-xs text-gray-400 mt-0.5">
-                            {a.created_by_name} ·{" "}
-                            {new Date(a.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                          </p>
+                          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                            <p className="text-xs text-gray-500">
+                              {a.created_by_name} ·{" "}
+                              {new Date(a.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                            </p>
+                            {audienceBadgeLabel(a.visible_to) && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-xs font-medium text-blue-700">
+                                <Users size={10} />
+                                {audienceBadgeLabel(a.visible_to)}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                       {manage && (
                         <div className="flex items-center gap-1 shrink-0">
                           <button
                             onClick={() => openEdit(a)}
-                            className="p-1.5 text-gray-400 hover:text-gray-700 rounded-md hover:bg-gray-100 transition-colors"
+                            className="p-1.5 text-gray-600 hover:text-gray-900 rounded-md hover:bg-gray-100 transition-colors"
                           >
                             <Pencil size={13} />
                           </button>
                           <button
                             onClick={() => setDeleteTarget(a)}
-                            className="p-1.5 text-gray-400 hover:text-red-500 rounded-md hover:bg-red-50 transition-colors"
+                            className="p-1.5 text-gray-600 hover:text-red-600 rounded-md hover:bg-red-50 transition-colors"
                           >
                             <Trash2 size={13} />
                           </button>
                         </div>
                       )}
                     </div>
-                    <p className="text-sm text-gray-600 mt-3 leading-relaxed whitespace-pre-wrap">{a.content}</p>
+                    <p className="text-sm text-gray-800 mt-3 leading-relaxed whitespace-pre-wrap">{a.content}</p>
                   </>
                 )}
               </div>

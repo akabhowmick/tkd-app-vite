@@ -16,23 +16,31 @@ CREATE INDEX idx_announcements_created_at ON announcements(created_at DESC);
 
 ALTER TABLE announcements ENABLE ROW LEVEL SECURITY;
 
--- All authenticated users in the school can read
+-- Migration: add visible_to column (run once against existing tables)
+-- ALTER TABLE announcements
+--   ADD COLUMN IF NOT EXISTS visible_to TEXT[] NOT NULL DEFAULT ARRAY['all']::TEXT[];
+
+-- All authenticated school members can read, filtered by visible_to audience.
+-- Admins, instructors, and school owners always see all announcements.
 CREATE POLICY "School members can view announcements"
-  ON announcements FOR
-SELECT
+  ON announcements FOR SELECT
   USING (
     school_id IN (
-            SELECT id
-    FROM schools
-    WHERE admin_id = auth.uid()
-  UNION
-    SELECT school_id
-    FROM students
-    WHERE id = auth.uid()
-  UNION
-    SELECT school_id
-    FROM users
-    WHERE id = auth.uid()
+      SELECT id   FROM schools  WHERE admin_id     = auth.uid()
+      UNION
+      SELECT school_id FROM students WHERE id       = auth.uid()
+      UNION
+      SELECT school_id FROM users    WHERE id       = auth.uid()
+    )
+    AND (
+      'all' = ANY(visible_to)
+      OR auth.uid() IN (SELECT admin_id FROM schools WHERE id = announcements.school_id)
+      OR (SELECT role FROM users WHERE id = auth.uid()) IN ('admin', 'instructor')
+      OR (SELECT role FROM users WHERE id = auth.uid()) = ANY(visible_to)
+      OR (
+        'student' = ANY(visible_to)
+        AND EXISTS (SELECT 1 FROM students WHERE id = auth.uid())
+      )
     )
   );
 
