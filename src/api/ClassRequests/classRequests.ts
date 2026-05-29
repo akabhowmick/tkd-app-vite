@@ -1,6 +1,7 @@
 import { supabase } from "../supabase";
 import {
   Class,
+  ClassEnrollment,
   CreateClassPayload,
   UpdateClassRequest,
 } from "../../types/classes";
@@ -45,5 +46,39 @@ export async function updateClass(classId: string, updates: UpdateClassRequest):
 
 export async function deleteClass(classId: string): Promise<void> {
   const { error } = await supabase.from("classes").delete().eq("class_id", classId);
+  if (error) throw error;
+}
+
+export async function getStudentEnrollments(
+  studentId: string,
+): Promise<(ClassEnrollment & { class: Class })[]> {
+  const { data, error } = await supabase
+    .from("class_enrollments")
+    .select("*, class:classes(*)")
+    .eq("student_id", studentId)
+    .order("enrolled_at");
+  if (error) throw error;
+  return (data ?? []) as (ClassEnrollment & { class: Class })[];
+}
+
+export async function enrollStudentInClass(
+  classId: string,
+  studentId: string,
+  schoolId: string,
+): Promise<ClassEnrollment> {
+  const { data, error } = await supabase
+    .from("class_enrollments")
+    .insert({ class_id: classId, student_id: studentId, school_id: schoolId })
+    .select()
+    .single();
+  if (error) throw error;
+  return data as ClassEnrollment;
+}
+
+export async function unenrollStudentFromClass(enrollmentId: string): Promise<void> {
+  const { error } = await supabase
+    .from("class_enrollments")
+    .delete()
+    .eq("id", enrollmentId);
   if (error) throw error;
 }

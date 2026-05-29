@@ -4,10 +4,11 @@ import { useBelts } from "../../../../context/BeltContext";
 import { useSchool } from "../../../../context/SchoolContext";
 import { Skeleton } from "../../../ui/skeleton";
 import { AttendanceTab } from "./AttendanceTab";
+import { ClassesTab } from "./ClassesTab";
 import { PaymentHistory } from "./PaymentHistory";
 import { HandleAddOrEdit } from "./HandleAddOrEdit";
 
-type Tab = "payments" | "attendance";
+type Tab = "payments" | "attendance" | "classes";
 
 const PageSkeleton = () => (
   <div className="max-w-4xl mx-auto p-4">
@@ -103,6 +104,12 @@ export const StudentProfilePage = () => {
             <p className="text-xs font-semibold text-gray-400 uppercase mb-0.5">Phone</p>
             <p className="text-sm text-black">{student.phone || "N/A"}</p>
           </div>
+          {student.group_name && (
+            <div>
+              <p className="text-xs font-semibold text-gray-400 uppercase mb-0.5">Group</p>
+              <p className="text-sm text-black">{student.group_name}</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -123,11 +130,9 @@ export const StudentProfilePage = () => {
         ))}
       </div>
 
-      {activeTab === "payments" ? (
-        <PaymentHistory studentId={student.id!} />
-      ) : (
-        <AttendanceTab studentId={student.id!} />
-      )}
+      {activeTab === "payments" && <PaymentHistory studentId={student.id!} />}
+      {activeTab === "attendance" && <AttendanceTab studentId={student.id!} />}
+      {activeTab === "classes" && <ClassesTab studentId={student.id!} />}
     </div>
   );
 };

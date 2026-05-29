@@ -11,13 +11,13 @@ import { Skeleton } from "../../../ui/skeleton";
 import { FaTimes, FaPlus, FaTrash } from "react-icons/fa";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
-type EditForm = { name: string; email: string; phone: string; current_rank_id: string };
-type AddForm  = { name: string; email: string; phone: string; current_rank_id: string };
-type BulkRow  = { name: string; email: string; phone: string; current_rank_id: string };
+type EditForm = { name: string; email: string; phone: string; current_rank_id: string; group_name: string };
+type AddForm  = { name: string; email: string; phone: string; current_rank_id: string; group_name: string };
+type BulkRow  = { name: string; email: string; phone: string; current_rank_id: string; group_name: string };
 type AddTab   = "single" | "bulk";
 
-const emptyAddForm  = (): AddForm  => ({ name: "", email: "", phone: "", current_rank_id: "" });
-const emptyBulkRow  = (): BulkRow  => ({ name: "", email: "", phone: "", current_rank_id: "" });
+const emptyAddForm  = (): AddForm  => ({ name: "", email: "", phone: "", current_rank_id: "", group_name: "" });
+const emptyBulkRow  = (): BulkRow  => ({ name: "", email: "", phone: "", current_rank_id: "", group_name: "" });
 const MAX_BULK = 20;
 
 // ── Skeleton ──────────────────────────────────────────────────────────────────
@@ -27,20 +27,21 @@ const StudentListSkeleton = () => (
     <Skeleton className="h-10 w-40 my-6" />
     <Skeleton className="h-8 w-48 mb-4" />
     <div className="w-full bg-white shadow rounded overflow-hidden">
-      <div className="bg-gray-100 grid grid-cols-5 gap-3 p-3">
-        {["w-16", "w-32", "w-20", "w-16", "w-16"].map((w, i) => (
+      <div className="bg-gray-100 grid grid-cols-6 gap-3 p-3">
+        {["w-16", "w-32", "w-20", "w-16", "w-16", "w-16"].map((w, i) => (
           <Skeleton key={i} className={`h-4 ${w}`} />
         ))}
       </div>
       {Array.from({ length: 6 }).map((_, i) => (
         <div
           key={i}
-          className={`grid grid-cols-5 gap-3 p-3 border-t ${i % 2 === 0 ? "bg-white" : "bg-gray-100"}`}
+          className={`grid grid-cols-6 gap-3 p-3 border-t ${i % 2 === 0 ? "bg-white" : "bg-gray-100"}`}
         >
           <Skeleton className="h-4 w-28" />
           <Skeleton className="h-4 w-40" />
           <Skeleton className="h-4 w-24" />
           <Skeleton className="h-4 w-16" />
+          <Skeleton className="h-4 w-20" />
           <div className="flex flex-col gap-1">
             <Skeleton className="h-6 w-full" />
             <Skeleton className="h-6 w-full" />
@@ -87,7 +88,7 @@ export const StudentListPage = () => {
 
   // ── Edit (inline row) state ────────────────────────────────────────────────
   const [editingUser, setEditingUser] = useState<Student | null>(null);
-  const [editForm, setEditForm] = useState<EditForm>({ name: "", email: "", phone: "", current_rank_id: "" });
+  const [editForm, setEditForm] = useState<EditForm>({ name: "", email: "", phone: "", current_rank_id: "", group_name: "" });
   const [editError, setEditError] = useState<string | null>(null);
 
   // ── Add (inline panel) state ───────────────────────────────────────────────
@@ -131,7 +132,7 @@ export const StudentListPage = () => {
 
   const handleEdit = (user: Student) => {
     setEditingUser(user);
-    setEditForm({ name: user.name, email: user.email, phone: user.phone ?? "", current_rank_id: user.current_rank_id ?? "" });
+    setEditForm({ name: user.name, email: user.email, phone: user.phone ?? "", current_rank_id: user.current_rank_id ?? "", group_name: user.group_name ?? "" });
     setEditError(null);
   };
 
@@ -149,6 +150,7 @@ export const StudentListPage = () => {
         role: "Student",
         school_id: schoolId,
         current_rank_id: editForm.current_rank_id || undefined,
+        group_name: editForm.group_name.trim() || undefined,
       });
     } catch {
       handleEdit(snapshot);
@@ -181,6 +183,7 @@ export const StudentListPage = () => {
         role: "Student",
         school_id: schoolId,
         current_rank_id: addForm.current_rank_id || undefined,
+        group_name: addForm.group_name.trim() || undefined,
       });
       await loadStudents();
       setAddSuccess(`${addForm.name.trim()} added successfully.`);
@@ -209,6 +212,7 @@ export const StudentListPage = () => {
           name: s.name.trim(), email: s.email.trim(), phone: s.phone.trim(),
           role: "Student", school_id: schoolId,
           current_rank_id: s.current_rank_id || undefined,
+          group_name: s.group_name.trim() || undefined,
         });
       } catch { failed.push(s.name || s.email); }
     }
@@ -312,6 +316,10 @@ export const StudentListPage = () => {
                   <label className="block text-xs font-medium text-gray-600 mb-1">Belt <span className="text-gray-400 font-normal">(optional)</span></label>
                   <BeltSelect value={addForm.current_rank_id} onChange={(v) => setAddForm((f) => ({ ...f, current_rank_id: v }))} ranks={ranks} />
                 </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Group <span className="text-gray-400 font-normal">(optional)</span></label>
+                  <Input placeholder="e.g. Kids Monday" value={addForm.group_name} onChange={(e) => setAddForm((f) => ({ ...f, group_name: e.target.value }))} />
+                </div>
               </div>
               {addError && <p className="text-sm text-red-600 mb-3">{addError}</p>}
               <div className="flex justify-end gap-2">
@@ -329,15 +337,15 @@ export const StudentListPage = () => {
           {addTab === "bulk" && (
             <form onSubmit={handleBulkSubmit}>
               {/* Column headers — hidden on mobile, shown on sm+ */}
-              <div className="hidden sm:grid sm:grid-cols-[1fr_1fr_1fr_1fr_2rem] gap-2 px-1 mb-1">
-                {["Name *", "Email *", "Phone", "Belt", ""].map((h, i) => (
+              <div className="hidden sm:grid sm:grid-cols-[1fr_1fr_1fr_1fr_1fr_2rem] gap-2 px-1 mb-1">
+                {["Name *", "Email *", "Phone", "Belt", "Group", ""].map((h, i) => (
                   <span key={i} className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</span>
                 ))}
               </div>
 
               <div className="flex flex-col gap-2 mb-3 max-h-72 overflow-y-auto pr-1">
                 {bulkRows.map((row, idx) => (
-                  <div key={idx} className="grid grid-cols-[1fr_2rem] sm:grid-cols-[1fr_1fr_1fr_1fr_2rem] gap-2 items-start sm:items-center p-3 sm:p-0 rounded-lg border border-gray-200 sm:border-0 sm:rounded-none bg-gray-50 sm:bg-transparent">
+                  <div key={idx} className="grid grid-cols-[1fr_2rem] sm:grid-cols-[1fr_1fr_1fr_1fr_1fr_2rem] gap-2 items-start sm:items-center p-3 sm:p-0 rounded-lg border border-gray-200 sm:border-0 sm:rounded-none bg-gray-50 sm:bg-transparent">
                     {/* On mobile: stacked inside the card */}
                     <div className="grid grid-cols-1 sm:contents gap-2">
                       <div className="sm:hidden">
@@ -365,6 +373,12 @@ export const StudentListPage = () => {
                       <div className="hidden sm:block">
                         <BeltSelect value={row.current_rank_id} onChange={(v) => updateBulkRow(idx, "current_rank_id", v)} ranks={ranks} />
                       </div>
+
+                      <div className="sm:hidden">
+                        <span className="text-xs text-gray-400">Group</span>
+                        <Input placeholder="e.g. Kids Mon" value={row.group_name} onChange={(e) => updateBulkRow(idx, "group_name", e.target.value)} />
+                      </div>
+                      <Input className="hidden sm:flex" placeholder="e.g. Kids Mon" value={row.group_name} onChange={(e) => updateBulkRow(idx, "group_name", e.target.value)} />
                     </div>
 
                     {/* Delete row */}
@@ -431,13 +445,14 @@ export const StudentListPage = () => {
             <th className="p-3">Email</th>
             <th className="p-3">Phone</th>
             <th className="p-3">Belt</th>
+            <th className="p-3">Group</th>
             <th className="p-3">Actions</th>
           </tr>
         </thead>
         <tbody>
           {!loading && students.length === 0 ? (
             <tr>
-              <td colSpan={5} className="p-4 text-center text-gray-500">No students found.</td>
+              <td colSpan={6} className="p-4 text-center text-gray-500">No students found.</td>
             </tr>
           ) : (
             paginatedStudents.map((student, idx) => {
@@ -451,6 +466,7 @@ export const StudentListPage = () => {
                     <td className="p-3">{display.email}</td>
                     <td className="p-3">{display.phone || "N/A"}</td>
                     <td className="p-3">{getRankName(display.current_rank_id)}</td>
+                    <td className="p-3">{display.group_name || "—"}</td>
                     <td className="p-3">
                       <div className="flex flex-col gap-1 items-start">
                         <button
@@ -479,9 +495,9 @@ export const StudentListPage = () => {
                   {/* Inline edit row */}
                   {editingUser?.id === student.id && (
                     <tr className="bg-blue-50 border-t border-blue-200">
-                      <td colSpan={5} className="p-4">
+                      <td colSpan={6} className="p-4">
                         <div className="flex flex-col gap-3">
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
                             <div className="flex flex-col gap-1">
                               <label className="text-xs font-semibold text-gray-600">Name *</label>
                               <Input placeholder="Full name" value={editForm.name} onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))} />
@@ -497,6 +513,10 @@ export const StudentListPage = () => {
                             <div className="flex flex-col gap-1">
                               <label className="text-xs font-semibold text-gray-600">Belt</label>
                               <BeltSelect value={editForm.current_rank_id} onChange={(v) => setEditForm((f) => ({ ...f, current_rank_id: v }))} ranks={ranks} />
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              <label className="text-xs font-semibold text-gray-600">Group</label>
+                              <Input placeholder="e.g. Kids Monday" value={editForm.group_name} onChange={(e) => setEditForm((f) => ({ ...f, group_name: e.target.value }))} />
                             </div>
                           </div>
                           {editError && <p className="text-sm text-red-600">{editError}</p>}

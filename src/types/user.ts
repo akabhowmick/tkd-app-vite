@@ -60,6 +60,7 @@ export interface Student extends UserProfile {
   age?: number; // Age of the student
   current_rank_id?: string; // Taekwondo belt level
   parentId?: string; // Parent's ID (if applicable)
+  group_name?: string; // Optional free-text group label
 }
 
 // Instructor Interface

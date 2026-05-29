@@ -36,3 +36,12 @@ export interface UpdateClassRequest {
 }
 
 export type CreateClassPayload = CreateClassRequest;
+
+export interface ClassEnrollment {
+  id: string;
+  class_id: string;
+  student_id: string;
+  school_id: string;
+  enrolled_at: string;
+  class?: Class;
+}
