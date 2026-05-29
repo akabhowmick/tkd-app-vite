@@ -11,18 +11,17 @@ import { useBelts } from "../../../../context/BeltContext";
 
 const MAX_BULK_STUDENTS = 20;
 
-type SingleForm = { name: string; email: string; phone: string; current_rank_id: string; group_name: string };
-type BulkRow = { name: string; email: string; phone: string; current_rank_id: string; group_name: string };
+type SingleForm = { name: string; email: string; phone: string; current_rank_id: string };
+type BulkRow = { name: string; email: string; phone: string; current_rank_id: string };
 type ModalMode = "closed" | "select" | "single" | "bulk" | "result";
 type ResultState = { success: boolean; message: string; subMessage?: string };
 
-const emptyBulkRow = (): BulkRow => ({ name: "", email: "", phone: "", current_rank_id: "", group_name: "" });
+const emptyBulkRow = (): BulkRow => ({ name: "", email: "", phone: "", current_rank_id: "" });
 const emptySingleForm = (prefill?: Partial<Student>): SingleForm => ({
   name: prefill?.name ?? "",
   email: prefill?.email ?? "",
   phone: prefill?.phone ?? "",
   current_rank_id: prefill?.current_rank_id ?? "",
-  group_name: prefill?.group_name ?? "",
 });
 
 export const HandleAddOrEdit: React.FC<HandleAddOrEditProps> = ({
@@ -91,7 +90,6 @@ export const HandleAddOrEdit: React.FC<HandleAddOrEditProps> = ({
         role: "Student",
         school_id: schoolId,
         current_rank_id: singleForm.current_rank_id || undefined,
-        group_name: singleForm.group_name.trim() || undefined,
       };
 
       if (isEdit && updateStudent && student) {
@@ -149,7 +147,6 @@ export const HandleAddOrEdit: React.FC<HandleAddOrEditProps> = ({
             role: "Student",
             school_id: schoolId,
             current_rank_id: s.current_rank_id || undefined,
-            group_name: s.group_name.trim() || undefined,
           } as Omit<Student, "id">);
         }
       } catch {
@@ -298,15 +295,6 @@ export const HandleAddOrEdit: React.FC<HandleAddOrEditProps> = ({
               ))}
           </select>
         </ModalField>
-        <ModalField label="Group" htmlFor="swal-group" helper="Optional">
-          <Input
-            id="swal-group"
-            type="text"
-            placeholder="e.g. Kids Monday"
-            value={singleForm.group_name}
-            onChange={(e) => setSingleForm((f) => ({ ...f, group_name: e.target.value }))}
-          />
-        </ModalField>
       </AppFormModal>
 
       {/* ── Bulk add modal ── */}
@@ -340,7 +328,7 @@ export const HandleAddOrEdit: React.FC<HandleAddOrEditProps> = ({
         />
         <div className="flex flex-col gap-3 mt-1">
           {/* Column headers */}
-          <div className="grid grid-cols-[1fr_1fr_1fr_1fr_1fr_2rem] gap-2 px-1">
+          <div className="grid grid-cols-[1fr_1fr_1fr_1fr_2rem] gap-2 px-1">
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
               Name *
             </span>
@@ -353,16 +341,13 @@ export const HandleAddOrEdit: React.FC<HandleAddOrEditProps> = ({
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
               Belt
             </span>
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-              Group
-            </span>
             <span />
           </div>
           {bulkRows.map((row, idx) => (
             // Update each row div
             <div
               key={idx}
-              className="grid grid-cols-[1fr_1fr_1fr_1fr_1fr_2rem] gap-2 items-center p-3 rounded-lg border border-border bg-muted/20"
+              className="grid grid-cols-[1fr_1fr_1fr_1fr_2rem] gap-2 items-center p-3 rounded-lg border border-border bg-muted/20"
             >
               <Input
                 type="text"
@@ -396,12 +381,6 @@ export const HandleAddOrEdit: React.FC<HandleAddOrEditProps> = ({
                     </option>
                   ))}
               </select>
-              <Input
-                type="text"
-                placeholder="e.g. Kids Mon"
-                value={row.group_name}
-                onChange={(e) => updateBulkRow(idx, "group_name", e.target.value)}
-              />
               <button
                 type="button"
                 onClick={() => removeBulkRow(idx)}
