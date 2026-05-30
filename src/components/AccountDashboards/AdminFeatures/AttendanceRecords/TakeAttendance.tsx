@@ -3,7 +3,6 @@ import { useSchool } from "../../../../context/SchoolContext";
 import { useAttendance } from "../../../../context/AttendanceContext";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { UserProfile } from "../../../../types/user";
-import { supabase } from "../../../../api/supabase";
 
 type AttendanceStatus = "present" | "absent" | "tardy";
 
@@ -46,6 +45,7 @@ export const TakeAttendance = () => {
     handleSubmit,
     isSubmitting,
     isLoading,
+    markedDates,
   } = useAttendance();
 
   // ── Local UI state ────────────────────────────────────────────────────────
@@ -55,8 +55,6 @@ export const TakeAttendance = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showPresentOnly, setShowPresentOnly] = useState(false);
 
-  // Map of date → present student count for dates with attendance records
-  const [markedDates, setMarkedDates] = useState<Map<string, number>>(new Map());
   const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle");
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -67,28 +65,6 @@ export const TakeAttendance = () => {
     year: "numeric",
   });
 
-  // ── Fetch all dates that have attendance for this school ──────────────────
-  useEffect(() => {
-    if (!schoolId) return;
-
-    const fetchMarkedDates = async () => {
-      const { data } = await supabase
-        .from("attendance_records")
-        .select("date, status")
-        .eq("school_id", schoolId);
-
-      if (data) {
-        const counts = new Map<string, number>();
-        data.forEach((r: { date: string; status: string }) => {
-          if (!counts.has(r.date)) counts.set(r.date, 0);
-          if (r.status === "present") counts.set(r.date, (counts.get(r.date) ?? 0) + 1);
-        });
-        setMarkedDates(counts);
-      }
-    };
-
-    fetchMarkedDates();
-  }, [schoolId]);
 
   // ── Reset local state when date changes ───────────────────────────────────
   useEffect(() => {
@@ -161,11 +137,6 @@ export const TakeAttendance = () => {
     setSubmitError(null);
     const result = await handleSubmit();
     if (result.success) {
-      setMarkedDates((prev) => {
-        const next = new Map(prev);
-        next.set(selectedDate, students.filter((s) => s.id && getStatus(s.id) === "present").length);
-        return next;
-      });
       setSubmitStatus("success");
       setTimeout(() => setSubmitStatus("idle"), 3000);
     } else {
