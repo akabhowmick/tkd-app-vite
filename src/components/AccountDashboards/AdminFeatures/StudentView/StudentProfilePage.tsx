@@ -9,6 +9,7 @@ import { AttendanceTab } from "./AttendanceTab";
 import { ClassesTab } from "./ClassesTab";
 import { PaymentHistory } from "./PaymentHistory";
 import { HandleAddOrEdit } from "./HandleAddOrEdit";
+import { AppConfirmModal } from "../../../ui/modal";
 import { StudentGroup } from "../../../../types/groups";
 import {
   getSchoolGroups,
@@ -41,7 +42,9 @@ const PageSkeleton = () => (
 export const StudentProfilePage = () => {
   const { studentId } = useParams<{ studentId: string }>();
   const navigate = useNavigate();
-  const { students, loadStudents, loading: studentsLoading, patchStudent, schoolId } = useSchool();
+  const { students, loadStudents, loading: studentsLoading, patchStudent, handleDelete, schoolId } = useSchool();
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const { ranks } = useBelts();
   const [activeTab, setActiveTab] = useState<Tab>("payments");
 
@@ -89,6 +92,18 @@ export const StudentProfilePage = () => {
       setEditGroupsOpen(false);
     } finally {
       setSavingGroups(false);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!studentId) return;
+    setDeleteLoading(true);
+    try {
+      await handleDelete(studentId);
+      navigate(-1);
+    } finally {
+      setDeleteLoading(false);
+      setDeleteOpen(false);
     }
   };
 
@@ -140,6 +155,12 @@ export const StudentProfilePage = () => {
                 buttonText="Edit"
                 buttonClassName="px-3 py-1 text-sm font-medium rounded-md border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors"
               />
+              <button
+                onClick={() => setDeleteOpen(true)}
+                className="px-3 py-1 text-sm font-medium rounded-md border border-red-200 text-red-600 hover:bg-red-50 transition-colors"
+              >
+                Delete
+              </button>
             </div>
             {currentRank ? (
               <span
@@ -265,6 +286,17 @@ export const StudentProfilePage = () => {
       {activeTab === "payments" && <PaymentHistory studentId={student.id!} />}
       {activeTab === "attendance" && <AttendanceTab studentId={student.id!} />}
       {activeTab === "classes" && <ClassesTab studentId={student.id!} />}
+
+      <AppConfirmModal
+        open={deleteOpen}
+        onOpenChange={(open) => !deleteLoading && setDeleteOpen(open)}
+        title="Delete Student?"
+        description={`Are you sure you want to delete ${student.name}? This action cannot be undone.`}
+        onConfirm={confirmDelete}
+        loading={deleteLoading}
+        variant="destructive"
+        confirmLabel="Delete Student"
+      />
     </div>
   );
 };
