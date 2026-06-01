@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { CalendarCheck, CalendarX } from "lucide-react";
-import { useSchool } from "../../../../context/SchoolContext";
-import { getAttendanceByStudent } from "../../../../api/Attendance/attendanceRequests";
+import { useAttendance } from "../../../../context/AttendanceContext";
 import { AttendanceRecord } from "../../../../types/attendance";
 
 function getPeriodBounds(period: "week" | "month" | "quarter" | "year"): [Date, Date] {
@@ -39,19 +38,19 @@ const PERIOD_CARDS: { key: "week" | "month" | "quarter" | "year"; label: string 
 ];
 
 export function AttendanceTab({ studentId }: { studentId: string }) {
-  const { schoolId } = useSchool();
+  const { getStudentAttendance } = useAttendance();
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!schoolId || !studentId) return;
+    if (!studentId) return;
     setLoading(true);
-    getAttendanceByStudent(schoolId, studentId)
+    getStudentAttendance(studentId)
       .then(setRecords)
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
-  }, [schoolId, studentId]);
+  }, [studentId, getStudentAttendance]);
 
   if (loading) {
     return (

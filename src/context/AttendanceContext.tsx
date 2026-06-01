@@ -1,7 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useSchool } from "../context/SchoolContext";
-import { createAttendance, deleteAttendanceByDate, getAttendanceByDate } from "../api/Attendance/attendanceRequests";
+import { createAttendance, deleteAttendanceByDate, getAttendanceByDate, getAttendanceByStudent } from "../api/Attendance/attendanceRequests";
 import { getTodayDate } from "../utils/AttendanceUtils/DateUtils";
 import { AttendanceRecord } from "../types/attendance";
 import { track } from "../analytics/posthog";
@@ -26,6 +26,7 @@ interface AttendanceContextType {
   handleAttendanceChange: (studentId: string, status: AttendanceStatus) => void;
   handleAttendanceClear: (studentId: string) => void;
   handleSubmit: () => Promise<{ success: boolean; error?: string }>;
+  getStudentAttendance: (studentId: string) => Promise<AttendanceRecord[]>;
 }
 
 const AttendanceContext = createContext<AttendanceContextType | undefined>(undefined);
@@ -223,6 +224,11 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
   };
 
+  const getStudentAttendance = useCallback(
+    (studentId: string) => getAttendanceByStudent(schoolId!, studentId),
+    [schoolId],
+  );
+
   const markedCount = Object.keys(attendance).length;
   const canSubmit = !isSubmitting;
 
@@ -244,6 +250,7 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         handleAttendanceChange,
         handleAttendanceClear,
         handleSubmit,
+        getStudentAttendance,
       }}
     >
       {children}

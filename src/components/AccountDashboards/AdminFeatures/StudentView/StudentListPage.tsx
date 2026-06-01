@@ -8,7 +8,7 @@ import { Input } from "../../../ui/input";
 import { validateFormData } from "../../../../utils/formValidation";
 import { Skeleton } from "../../../ui/skeleton";
 import { FaPlus } from "react-icons/fa";
-import { getAllGroupMembersForSchool } from "../../../../api/GroupRequests/groupRequests";
+import { useGroups } from "../../../../context/GroupContext";
 import { AddStudentPanel } from "./AddStudentPanel";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -78,6 +78,7 @@ export const StudentListPage = () => {
   const location  = useLocation();
   const { loadStudents, handleDelete, students, schoolId, loading, patchStudent } = useSchool();
   const { ranks } = useBelts();
+  const { getGroupMembers } = useGroups();
 
   const [groupMap, setGroupMap]   = useState<Map<string, string[]>>(new Map());
   const [addOpen, setAddOpen]     = useState(false);
@@ -102,7 +103,7 @@ export const StudentListPage = () => {
   useEffect(() => {
     loadStudents();
     if (schoolId) {
-      getAllGroupMembersForSchool(schoolId).then((rows) => {
+      getGroupMembers().then((rows) => {
         const map = new Map<string, string[]>();
         for (const r of rows) {
           const names = map.get(r.student_id) ?? [];

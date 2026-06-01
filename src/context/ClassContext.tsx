@@ -4,6 +4,7 @@ import { captureException } from "../analytics/sentry";
 import { useAsyncState } from "../hooks/useAsyncState";
 import {
   Class,
+  ClassEnrollment,
   CreateClassRequest,
   UpdateClassRequest,
 } from "../types/classes";
@@ -12,6 +13,9 @@ import {
   createClass as apiCreateClass,
   updateClass as apiUpdateClass,
   deleteClass as apiDeleteClass,
+  getStudentEnrollments,
+  enrollStudentInClass,
+  unenrollStudentFromClass,
 } from "../api/ClassRequests/classRequests";
 import { useSchool } from "./SchoolContext";
 
@@ -23,6 +27,9 @@ interface ClassContextType {
   createClass: (data: Omit<CreateClassRequest, "school_id">) => Promise<Class>;
   updateClass: (classId: string, updates: UpdateClassRequest) => Promise<void>;
   deleteClass: (classId: string) => Promise<void>;
+  getStudentEnrollments: (studentId: string) => Promise<(ClassEnrollment & { class: Class })[]>;
+  enrollStudent: (classId: string, studentId: string) => Promise<ClassEnrollment>;
+  unenrollStudent: (enrollmentId: string) => Promise<void>;
 }
 
 const ClassContext = createContext<ClassContextType | undefined>(undefined);
@@ -84,6 +91,28 @@ export const ClassProvider = ({ children }: { children: ReactNode }) => {
     [loadClasses, run],
   );
 
+  const getStudentEnrollmentsCallback = useCallback(
+    (studentId: string) => getStudentEnrollments(studentId),
+    [],
+  );
+
+  const enrollStudent = useCallback(
+    async (classId: string, studentId: string): Promise<ClassEnrollment> => {
+      if (!schoolId) throw new Error("School ID required");
+      return run(
+        () => enrollStudentInClass(classId, studentId, schoolId),
+        "Failed to enroll student",
+      );
+    },
+    [schoolId, run],
+  );
+
+  const unenrollStudent = useCallback(
+    (enrollmentId: string): Promise<void> =>
+      run(() => unenrollStudentFromClass(enrollmentId), "Failed to unenroll student"),
+    [run],
+  );
+
   useEffect(() => {
     if (schoolId) {
       loadClasses();
@@ -92,7 +121,12 @@ export const ClassProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <ClassContext.Provider
-      value={{ classes, loading, error, loadClasses, createClass, updateClass, deleteClass }}
+      value={{
+        classes, loading, error, loadClasses, createClass, updateClass, deleteClass,
+        getStudentEnrollments: getStudentEnrollmentsCallback,
+        enrollStudent,
+        unenrollStudent,
+      }}
     >
       {children}
     </ClassContext.Provider>

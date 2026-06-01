@@ -26,6 +26,9 @@ import { BeltProvider } from "../context/BeltContext";
 import { InventoryProvider } from "../context/InventoryContext";
 import { ProgramProvider } from "../context/ProgramContext";
 import { AnnouncementProvider } from "../context/AnnouncementContext";
+import { ReportingProvider } from "../context/ReportingContext";
+import { GroupProvider } from "../context/GroupContext";
+import { NotificationProvider } from "../context/NotificationContext";
 
 // Layout components
 import { MainDashboard } from "./MainDashboard/MainDashboard";
@@ -79,17 +82,23 @@ import TermsOfService from "../pages/TermsOfService";
 const AdminProviders = ({ children }: { children: React.ReactNode }) => (
   <SchoolProvider>
     <ProgramProvider>
-      <StudentRenewalsProvider>
-        <AttendanceProvider>
-          <ClassProvider>
-            <BeltProvider>
-              <InventoryProvider>
-                <AnnouncementProvider>{children}</AnnouncementProvider>
-              </InventoryProvider>
-            </BeltProvider>
-          </ClassProvider>
-        </AttendanceProvider>
-      </StudentRenewalsProvider>
+      <ReportingProvider>
+        <GroupProvider>
+          <NotificationProvider>
+        <StudentRenewalsProvider>
+          <AttendanceProvider>
+            <ClassProvider>
+              <BeltProvider>
+                <InventoryProvider>
+                  <AnnouncementProvider>{children}</AnnouncementProvider>
+                </InventoryProvider>
+              </BeltProvider>
+            </ClassProvider>
+          </AttendanceProvider>
+        </StudentRenewalsProvider>
+          </NotificationProvider>
+        </GroupProvider>
+      </ReportingProvider>
     </ProgramProvider>
   </SchoolProvider>
 );

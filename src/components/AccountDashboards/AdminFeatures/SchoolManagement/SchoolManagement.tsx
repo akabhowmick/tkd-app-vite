@@ -1,58 +1,36 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { SchoolForm } from "./SchoolForm";
 import { School } from "../../../../types/school";
-import { StudentGroup } from "../../../../types/groups";
 import { useSchool } from "../../../../context/SchoolContext";
+import { useGroups } from "../../../../context/GroupContext";
 import { School as SchoolIcon } from "lucide-react";
 import { FaPlus, FaTimes, FaPencilAlt, FaCheck } from "react-icons/fa";
 import { Trash2 } from "lucide-react";
-import {
-  getSchoolGroups,
-  createGroup,
-  updateGroup,
-  deleteGroup,
-} from "../../../../api/GroupRequests/groupRequests";
 import { AppConfirmModal } from "../../../ui/modal";
 import { Input } from "../../../ui/input";
 
 export const SchoolManagement = () => {
   const { school, loading, updateSchool, createSchool, deleteSchool } = useSchool();
+  const { groups, loading: groupsLoading, createGroup, updateGroup, deleteGroup } = useGroups();
   const [editing, setEditing] = useState(false);
 
-  // ── Groups state ────────────────────────────────────────────────────────────
-  const [groups, setGroups] = useState<StudentGroup[]>([]);
-  const [groupsLoading, setGroupsLoading] = useState(false);
+  // ── Groups UI state ──────────────────────────────────────────────────────────
   const [newGroupName, setNewGroupName] = useState("");
   const [addingGroup, setAddingGroup] = useState(false);
   const [addGroupError, setAddGroupError] = useState<string | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
-  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; group: StudentGroup | null }>({
+  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; group: { id: string; name: string } | null }>({
     open: false, group: null,
   });
   const [deleteLoading, setDeleteLoading] = useState(false);
-
-  const loadGroups = async () => {
-    if (!school?.id) return;
-    setGroupsLoading(true);
-    try {
-      setGroups(await getSchoolGroups(school.id));
-    } finally {
-      setGroupsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (school?.id) loadGroups();
-  }, [school?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleAddGroup = async () => {
     const name = newGroupName.trim();
     if (!name) return;
     setAddGroupError(null);
     try {
-      const created = await createGroup(school!.id, name);
-      setGroups((prev) => [...prev, created].sort((a, b) => a.name.localeCompare(b.name)));
+      await createGroup(name);
       setNewGroupName("");
       setAddingGroup(false);
     } catch {
@@ -60,7 +38,7 @@ export const SchoolManagement = () => {
     }
   };
 
-  const startRename = (group: StudentGroup) => {
+  const startRename = (group: { id: string; name: string }) => {
     setRenamingId(group.id);
     setRenameValue(group.name);
   };
@@ -69,10 +47,7 @@ export const SchoolManagement = () => {
     const name = renameValue.trim();
     if (!name) return;
     try {
-      const updated = await updateGroup(groupId, name);
-      setGroups((prev) =>
-        prev.map((g) => (g.id === groupId ? updated : g)).sort((a, b) => a.name.localeCompare(b.name)),
-      );
+      await updateGroup(groupId, name);
       setRenamingId(null);
     } catch {
       // silently keep editing on error
@@ -84,7 +59,6 @@ export const SchoolManagement = () => {
     setDeleteLoading(true);
     try {
       await deleteGroup(deleteConfirm.group.id);
-      setGroups((prev) => prev.filter((g) => g.id !== deleteConfirm.group!.id));
     } finally {
       setDeleteLoading(false);
       setDeleteConfirm({ open: false, group: null });

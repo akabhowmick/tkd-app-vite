@@ -1,11 +1,8 @@
 import { useEffect, useState } from "react";
 import { Bell, Clock, Mail, Save, AlertCircle } from "lucide-react";
 import { useSchool } from "../../../context/SchoolContext";
-import {
-  getNotificationSettings,
-  upsertNotificationSettings,
-  type ReminderWindow,
-} from "../../../api/NotificationRequests/notificationRequests";
+import { useNotifications } from "../../../context/NotificationContext";
+import { type ReminderWindow } from "../../../api/NotificationRequests/notificationRequests";
 
 interface Config {
   remindersEnabled: boolean;
@@ -32,29 +29,21 @@ type SaveState = "idle" | "saving" | "saved" | "error";
 export const NotificationSettings = () => {
   const { school } = useSchool();
   const schoolId = school?.id;
+  const { settings, loading, saveSettings } = useNotifications();
 
   const [config, setConfig] = useState<Config>(DEFAULT_CONFIG);
   const [saveState, setSaveState] = useState<SaveState>("idle");
-  const [loading, setLoading] = useState(true);
 
-  // Load saved settings on mount
   useEffect(() => {
-    if (!schoolId) return;
-
-    getNotificationSettings(schoolId)
-      .then((data) => {
-        if (data) {
-          setConfig({
-            remindersEnabled: data.reminders_enabled,
-            reminderDays: data.reminder_days,
-            sendToAdmin: data.send_to_admin,
-            sendToParent: data.send_to_parent,
-          });
-        }
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, [schoolId]);
+    if (settings) {
+      setConfig({
+        remindersEnabled: settings.reminders_enabled,
+        reminderDays: settings.reminder_days,
+        sendToAdmin: settings.send_to_admin,
+        sendToParent: settings.send_to_parent,
+      });
+    }
+  }, [settings]);
 
   const toggleReminderDay = (day: ReminderWindow) => {
     setConfig((prev) => {
@@ -74,7 +63,7 @@ export const NotificationSettings = () => {
     if (!schoolId) return;
     setSaveState("saving");
     try {
-      await upsertNotificationSettings({
+      await saveSettings({
         school_id: schoolId,
         reminders_enabled: config.remindersEnabled,
         reminder_days: config.reminderDays,

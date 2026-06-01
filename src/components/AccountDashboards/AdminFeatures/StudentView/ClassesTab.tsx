@@ -1,14 +1,8 @@
 import { useEffect, useState } from "react";
 import { FaPlus, FaTimes } from "react-icons/fa";
 import { Trash2 } from "lucide-react";
-import { useSchool } from "../../../../context/SchoolContext";
 import { useClasses } from "../../../../context/ClassContext";
 import { Checkbox } from "../../../ui/checkbox";
-import {
-  getStudentEnrollments,
-  enrollStudentInClass,
-  unenrollStudentFromClass,
-} from "../../../../api/ClassRequests/classRequests";
 import { Class, ClassEnrollment } from "../../../../types/classes";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -30,8 +24,7 @@ const AGE_BADGE: Record<string, string> = {
 type EnrollmentWithClass = ClassEnrollment & { class: Class };
 
 export function ClassesTab({ studentId }: { studentId: string }) {
-  const { schoolId } = useSchool();
-  const { classes, loadClasses } = useClasses();
+  const { classes, loadClasses, getStudentEnrollments, enrollStudent, unenrollStudent } = useClasses();
 
   const [enrollments, setEnrollments] = useState<EnrollmentWithClass[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,7 +39,7 @@ export function ClassesTab({ studentId }: { studentId: string }) {
     setLoading(true);
     getStudentEnrollments(studentId)
       .then((data) => setEnrollments(data as EnrollmentWithClass[]))
-      .catch((err) => setError(err.message))
+      .catch((err: Error) => setError(err.message))
       .finally(() => setLoading(false));
   };
 
@@ -76,7 +69,7 @@ export function ClassesTab({ studentId }: { studentId: string }) {
     const failed: string[] = [];
     for (const classId of selected) {
       try {
-        await enrollStudentInClass(classId, studentId, schoolId);
+        await enrollStudent(classId, studentId);
       } catch {
         const cls = classes.find((c) => c.class_id === classId);
         failed.push(cls?.class_name ?? classId);
@@ -95,7 +88,7 @@ export function ClassesTab({ studentId }: { studentId: string }) {
   const handleRemove = async (enrollmentId: string) => {
     setRemoveLoadingId(enrollmentId);
     try {
-      await unenrollStudentFromClass(enrollmentId);
+      await unenrollStudent(enrollmentId);
       setEnrollments((prev) => prev.filter((e) => e.id !== enrollmentId));
     } finally {
       setRemoveLoadingId(null);

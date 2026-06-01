@@ -1,16 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
-import {
-  getWeeklyAttendance,
-  getRevenueByCategory,
-  getRevenueByPaymentType,
-  getStudentGrowth,
-  getExpiringRenewals,
-  WeeklyAttendance,
-  CategoryRevenue,
-  PaymentTypeRevenue,
-  StudentGrowth,
-  ExpiringRenewal,
-} from "../api/ReportingRequests/reportingRequests";
+import { useMemo } from "react";
+import { ExpiringRenewal } from "../api/ReportingRequests/reportingRequests";
+import { useReporting } from "../context/ReportingContext";
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -22,58 +12,6 @@ import { AlertCircle, TrendingUp, Users, DollarSign, Calendar, Award } from "luc
 const COLORS = ["#be123c", "#2563eb", "#16a34a", "#d97706", "#7c3aed", "#0891b2"];
 const MONEY_FMT = (v: unknown) =>
   `$${Number(v).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
-
-// ── Data hook ────────────────────────────────────────────────────────────────
-
-function useReportingData(schoolId: string | null | undefined) {
-  const [attendance, setAttendance] = useState<WeeklyAttendance[]>([]);
-  const [attendanceLoading, setAttendanceLoading] = useState(true);
-  const [attendanceError, setAttendanceError] = useState<string | null>(null);
-
-  const [categoryRevenue, setCategoryRevenue] = useState<CategoryRevenue[]>([]);
-  const [paymentRevenue, setPaymentRevenue] = useState<PaymentTypeRevenue[]>([]);
-  const [revenueLoading, setRevenueLoading] = useState(true);
-  const [revenueError, setRevenueError] = useState<string | null>(null);
-
-  const [growth, setGrowth] = useState<StudentGrowth[]>([]);
-  const [growthLoading, setGrowthLoading] = useState(true);
-  const [growthError, setGrowthError] = useState<string | null>(null);
-
-  const [expiring, setExpiring] = useState<ExpiringRenewal[]>([]);
-  const [expiringLoading, setExpiringLoading] = useState(true);
-  const [expiringError, setExpiringError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!schoolId) return;
-
-    getWeeklyAttendance(schoolId)
-      .then(setAttendance)
-      .catch((e) => setAttendanceError(e.message))
-      .finally(() => setAttendanceLoading(false));
-
-    Promise.all([getRevenueByCategory(schoolId), getRevenueByPaymentType(schoolId)])
-      .then(([cat, pay]) => { setCategoryRevenue(cat); setPaymentRevenue(pay); })
-      .catch((e) => setRevenueError(e.message))
-      .finally(() => setRevenueLoading(false));
-
-    getStudentGrowth(schoolId)
-      .then(setGrowth)
-      .catch((e) => setGrowthError(e.message))
-      .finally(() => setGrowthLoading(false));
-
-    getExpiringRenewals(schoolId, 30)
-      .then(setExpiring)
-      .catch((e) => setExpiringError(e.message))
-      .finally(() => setExpiringLoading(false));
-  }, [schoolId]);
-
-  return {
-    attendance, attendanceLoading, attendanceError,
-    categoryRevenue, paymentRevenue, revenueLoading, revenueError,
-    growth, growthLoading, growthError,
-    expiring, expiringLoading, expiringError,
-  };
-}
 
 // ── Shared card wrapper ───────────────────────────────────────────────────────
 
@@ -156,14 +94,14 @@ const ExpiringRenewalsTable = ({
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export const ReportingPage = () => {
-  const { schoolId, students } = useSchool();
+  const { students } = useSchool();
   const { ranks, loading: beltsLoading } = useBelts();
   const {
     attendance, attendanceLoading, attendanceError,
     categoryRevenue, paymentRevenue, revenueLoading, revenueError,
     growth, growthLoading, growthError,
     expiring, expiringLoading, expiringError,
-  } = useReportingData(schoolId);
+  } = useReporting();
 
   const studentMap = useMemo(
     () => Object.fromEntries(students.map((s) => [s.id, s.name])),

@@ -11,11 +11,7 @@ import { PaymentHistory } from "./PaymentHistory";
 import { HandleAddOrEdit } from "./HandleAddOrEdit";
 import { AppConfirmModal } from "../../../ui/modal";
 import { StudentGroup } from "../../../../types/groups";
-import {
-  getSchoolGroups,
-  getStudentGroups,
-  setStudentGroups,
-} from "../../../../api/GroupRequests/groupRequests";
+import { useGroups } from "../../../../context/GroupContext";
 
 type Tab = "payments" | "attendance" | "classes";
 
@@ -42,7 +38,8 @@ const PageSkeleton = () => (
 export const StudentProfilePage = () => {
   const { studentId } = useParams<{ studentId: string }>();
   const navigate = useNavigate();
-  const { students, loadStudents, loading: studentsLoading, patchStudent, handleDelete, schoolId } = useSchool();
+  const { students, loadStudents, loading: studentsLoading, patchStudent, handleDelete } = useSchool();
+  const { groups: allGroups, getStudentGroups, setStudentGroups } = useGroups();
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const { ranks } = useBelts();
@@ -50,7 +47,6 @@ export const StudentProfilePage = () => {
 
   // ── Group state ──────────────────────────────────────────────────────────────
   const [studentGroupIds, setStudentGroupIds] = useState<Set<string>>(new Set());
-  const [allGroups, setAllGroups] = useState<StudentGroup[]>([]);
   const [groupsLoading, setGroupsLoading] = useState(true);
   const [editGroupsOpen, setEditGroupsOpen] = useState(false);
   const [pendingGroupIds, setPendingGroupIds] = useState<Set<string>>(new Set());
@@ -61,15 +57,12 @@ export const StudentProfilePage = () => {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (!studentId || !schoolId) return;
+    if (!studentId) return;
     setGroupsLoading(true);
-    Promise.all([getSchoolGroups(schoolId), getStudentGroups(studentId)])
-      .then(([all, mine]) => {
-        setAllGroups(all);
-        setStudentGroupIds(new Set(mine.map((g) => g.id)));
-      })
+    getStudentGroups(studentId)
+      .then((mine) => setStudentGroupIds(new Set(mine.map((g) => g.id))))
       .finally(() => setGroupsLoading(false));
-  }, [studentId, schoolId]);
+  }, [studentId, getStudentGroups]);
 
   const openEditGroups = () => {
     setPendingGroupIds(new Set(studentGroupIds));
