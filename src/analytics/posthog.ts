@@ -56,7 +56,22 @@ type AnalyticsEvent =
   | { name: "inventory_sale_recorded"; props: { category: string } }
   | { name: "inventory_restock_recorded"; props?: never }
   | { name: "sidebar_view_changed"; props: { view: string } }
-  | { name: "sidebar_collapsed"; props: { collapsed: boolean } };
+  | { name: "sidebar_collapsed"; props: { collapsed: boolean } }
+  | { name: "student_updated"; props?: never }
+  | { name: "student_deleted"; props?: never }
+  | { name: "school_created"; props?: never }
+  | { name: "school_updated"; props?: never }
+  | { name: "school_deleted"; props?: never }
+  | { name: "announcement_created"; props?: never }
+  | { name: "announcement_updated"; props?: never }
+  | { name: "announcement_deleted"; props?: never }
+  | { name: "program_created"; props?: never }
+  | { name: "program_updated"; props?: never }
+  | { name: "program_deleted"; props?: never }
+  | { name: "group_created"; props?: never }
+  | { name: "group_updated"; props?: never }
+  | { name: "group_deleted"; props?: never }
+  | { name: "notification_settings_saved"; props?: never };
 
 type EventName = AnalyticsEvent["name"];
 type EventProps<N extends EventName> = Extract<AnalyticsEvent, { name: N }>["props"];

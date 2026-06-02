@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { captureException } from "../analytics/sentry";
 
 export function useAsyncState() {
   const [loading, setLoading] = useState(false);
@@ -17,6 +18,7 @@ export function useAsyncState() {
       } catch (err) {
         const message = err instanceof Error ? err.message : fallbackMessage;
         setError(message);
+        captureException(err);
         if (rethrow) throw err;
         return undefined;
       } finally {

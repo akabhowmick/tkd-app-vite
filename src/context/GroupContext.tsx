@@ -11,6 +11,8 @@ import {
   getAllGroupMembersForSchool,
 } from "../api/GroupRequests/groupRequests";
 import { useSchool } from "./SchoolContext";
+import { track } from "../analytics/posthog";
+import { captureException } from "../analytics/sentry";
 
 interface GroupContextType {
   groups: StudentGroup[];
@@ -46,6 +48,7 @@ export const GroupProvider = ({ children }: { children: ReactNode }) => {
       return run(async () => {
         const created = await apiCreateGroup(schoolId, name);
         setGroups((prev) => [...prev, created].sort((a, b) => a.name.localeCompare(b.name)));
+        track("group_created");
         return created;
       }, "Failed to create group");
     },
@@ -59,6 +62,7 @@ export const GroupProvider = ({ children }: { children: ReactNode }) => {
         setGroups((prev) =>
           prev.map((g) => (g.id === id ? updated : g)).sort((a, b) => a.name.localeCompare(b.name)),
         );
+        track("group_updated");
         return updated;
       }, "Failed to update group"),
     [run],
@@ -69,6 +73,7 @@ export const GroupProvider = ({ children }: { children: ReactNode }) => {
       run(async () => {
         await apiDeleteGroup(id);
         setGroups((prev) => prev.filter((g) => g.id !== id));
+        track("group_deleted");
       }, "Failed to delete group"),
     [run],
   );
@@ -87,7 +92,14 @@ export const GroupProvider = ({ children }: { children: ReactNode }) => {
   );
 
   const setStudentGroups = useCallback(
-    (studentId: string, groupIds: string[]) => apiSetStudentGroups(studentId, groupIds),
+    async (studentId: string, groupIds: string[]): Promise<void> => {
+      try {
+        await apiSetStudentGroups(studentId, groupIds);
+      } catch (err) {
+        captureException(err, { feature: "groups", action: "setStudentGroups" });
+        throw err;
+      }
+    },
     [],
   );
 

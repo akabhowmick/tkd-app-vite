@@ -15,6 +15,7 @@ import {
   deleteAnnouncement as apiDelete,
 } from "../api/AnnouncementRequests/announcementRequests";
 import { useSchool } from "./SchoolContext";
+import { track } from "../analytics/posthog";
 
 interface AnnouncementContextType {
   announcements: Announcement[];
@@ -49,6 +50,7 @@ export const AnnouncementProvider = ({ children }: { children: ReactNode }) => {
         setAnnouncements((prev) =>
           [newItem, ...prev].sort((a, b) => Number(b.pinned) - Number(a.pinned)),
         );
+        track("announcement_created");
       }, "Failed to create announcement");
     },
     [schoolId, run],
@@ -63,6 +65,7 @@ export const AnnouncementProvider = ({ children }: { children: ReactNode }) => {
             .map((a) => (a.announcement_id === id ? updated : a))
             .sort((a, b) => Number(b.pinned) - Number(a.pinned)),
         );
+        track("announcement_updated");
       }, "Failed to update announcement");
     },
     [run],
@@ -73,6 +76,7 @@ export const AnnouncementProvider = ({ children }: { children: ReactNode }) => {
       await run(async () => {
         await apiDelete(id);
         setAnnouncements((prev) => prev.filter((a) => a.announcement_id !== id));
+        track("announcement_deleted");
       }, "Failed to delete announcement");
     },
     [run],

@@ -1,3 +1,18 @@
+## PostHog + Sentry — env vars needed
+
+The analytics code is wired up but nothing is being sent because `.env` still has placeholder values. Replace these three lines in `.env`:
+
+```
+VITE_POSTHOG_KEY=phc_<your key from PostHog project settings>
+VITE_POSTHOG_HOST=https://us.i.posthog.com
+VITE_SENTRY_DSN=https://<key>@<org>.ingest.sentry.io/<project_id>
+```
+
+- PostHog key: posthog.com → your project → Settings → Project API Key
+- Sentry DSN: sentry.io → your project → Settings → Client Keys (DSN)
+
+---
+
 Issue 2 — Sale type uses number for sale_id but Supabase returns a string UUID now
 The Sale interface in src/types/sales.ts has sale_id: number but sales.sql now defines it as BIGSERIAL, so this is actually fine. However student_id?: number in the Sale type will conflict with the UUID in Supabase. Worth flagging.
 

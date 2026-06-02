@@ -14,6 +14,8 @@ import { getSchoolByAdmin } from "../api/SchoolRequests/schoolRequests";
 import { useAuth } from "./AuthContext";
 import { Student } from "../types/user";
 import { deleteStudent, getStudents, updateStudent as updateStudentRequest } from "../api/StudentRequests/studentRequests";
+import { track } from "../analytics/posthog";
+import { captureException } from "../analytics/sentry";
 
 interface SchoolContextType {
   sales: number;
@@ -65,6 +67,7 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       }
     } catch (error) {
       console.error("Error fetching school:", error);
+      captureException(error, { feature: "school", action: "fetchSchool" });
     } finally {
       setLoading(false);
     }
@@ -95,6 +98,7 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         setStudents(students);
       } catch (error) {
         console.error("Error loading students:", error);
+        captureException(error, { feature: "school", action: "loadStudents" });
       } finally {
         setLoading(false);
       }
@@ -103,8 +107,14 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   );
 
   const handleDelete = async (id: string) => {
-    await deleteStudent(id);
-    await loadStudents(schoolId, true);
+    try {
+      await deleteStudent(id);
+      await loadStudents(schoolId, true);
+      track("student_deleted");
+    } catch (err) {
+      captureException(err, { feature: "school", action: "deleteStudent" });
+      throw err;
+    }
   };
 
   useEffect(() => {
@@ -134,6 +144,7 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
     try {
       await updateStudentRequest(id, updates);
+      track("student_updated");
     } catch (err) {
       if (snapshot) {
         const revert = (list: Student[]) =>
@@ -144,6 +155,7 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
           if (cached) studentsCacheRef.current.set(schoolId, revert(cached));
         }
       }
+      captureException(err, { feature: "school", action: "patchStudent" });
       throw err;
     }
   }, [schoolId]);
@@ -235,6 +247,7 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         setClientsChange(null);
       } catch (err) {
         console.error("Error fetching school dashboard metrics:", err);
+        captureException(err, { feature: "school", action: "fetchMetrics" });
       } finally {
         setLoading(false);
       }
@@ -248,6 +261,7 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     if (error) throw error;
     setSchool(data);
     setSchoolId(data.id);
+    track("school_created");
   };
 
   const updateSchool = async (id: string, updates: Partial<Omit<School, "id" | "created_at">>) => {
@@ -259,6 +273,7 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       .single();
     if (error) throw error;
     setSchool(data);
+    track("school_updated");
   };
 
   const deleteSchool = async (id: string) => {
@@ -269,6 +284,7 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     setStudents([]);
     studentsCacheRef.current.delete(id);
     lastStudentsFetchRef.current.delete(id);
+    track("school_deleted");
   };
 
   return (

@@ -15,6 +15,7 @@ import {
   ensureDefaultProgram,
 } from "../api/SchoolProgramRequests/schoolProgramRequests";
 import { useSchool } from "./SchoolContext";
+import { track } from "../analytics/posthog";
 
 interface ProgramContextType {
   programs: SchoolProgram[];
@@ -50,6 +51,7 @@ export const ProgramProvider = ({ children }: { children: ReactNode }) => {
       return run(async () => {
         const newProgram = await createSchoolProgram({ ...req, school_id: schoolId });
         setPrograms((prev) => [...prev, newProgram].sort((a, b) => a.name.localeCompare(b.name)));
+        track("program_created");
         return newProgram;
       }, "Failed to create program");
     },
@@ -61,6 +63,7 @@ export const ProgramProvider = ({ children }: { children: ReactNode }) => {
       await run(async () => {
         const updated = await updateSchoolProgram(programId, updates);
         setPrograms((prev) => prev.map((p) => (p.program_id === programId ? updated : p)));
+        track("program_updated");
       }, "Failed to update program");
     },
     [run],
@@ -77,6 +80,7 @@ export const ProgramProvider = ({ children }: { children: ReactNode }) => {
       }
       await deleteSchoolProgram(programId);
       setPrograms((prev) => prev.filter((p) => p.program_id !== programId));
+      track("program_deleted");
     }, "Failed to delete program");
   }, [run]);
 

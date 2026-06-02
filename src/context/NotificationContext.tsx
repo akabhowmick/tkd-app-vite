@@ -7,6 +7,7 @@ import {
   UpsertNotificationSettings,
 } from "../api/NotificationRequests/notificationRequests";
 import { useSchool } from "./SchoolContext";
+import { track } from "../analytics/posthog";
 
 interface NotificationContextType {
   settings: NotificationSettings | null;
@@ -35,6 +36,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
       await run(async () => {
         const updated = await upsertNotificationSettings(data);
         setSettings(updated);
+        track("notification_settings_saved");
       }, "Failed to save notification settings");
     },
     [run],
