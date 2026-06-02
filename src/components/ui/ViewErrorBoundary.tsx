@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
+import { captureException } from "../../analytics/sentry";
 
 interface Props {
   viewName: string;
@@ -18,6 +19,7 @@ export class ViewErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error(`[ViewErrorBoundary] Crash in "${this.props.viewName}":`, error, info);
+    captureException(error, { feature: this.props.viewName, action: "render" });
   }
 
   private reset = () => this.setState({ error: null });

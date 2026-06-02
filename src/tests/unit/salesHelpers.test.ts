@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   formatCurrency,
   getCategoryLabel,
+  getPaymentTypeLabel,
   validateSaleForm,
 } from "../../utils/SaleHelperFunc";
 import { SaleFormData } from "../../types/sales";
@@ -53,6 +54,25 @@ describe("getCategoryLabel", () => {
   it("falls back to the raw value for unknown category", () => {
     // @ts-expect-error intentionally unknown category
     expect(getCategoryLabel("unknown_cat")).toBe("unknown_cat");
+  });
+});
+
+describe("getPaymentTypeLabel", () => {
+  it("returns Cash for cash", () => {
+    expect(getPaymentTypeLabel("cash")).toBe("Cash");
+  });
+
+  it("returns Check for check", () => {
+    expect(getPaymentTypeLabel("check")).toBe("Check");
+  });
+
+  it("returns Credit Card for credit", () => {
+    expect(getPaymentTypeLabel("credit")).toBe("Credit Card");
+  });
+
+  it("falls back to raw value for unknown type", () => {
+    // @ts-expect-error intentionally unknown payment type
+    expect(getPaymentTypeLabel("venmo")).toBe("venmo");
   });
 });
 

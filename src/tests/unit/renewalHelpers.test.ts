@@ -9,6 +9,8 @@ import {
   determineRenewalStatus,
   calculateRemainingBalance,
   calculatePaymentPercentage,
+  calculateAmountPerClass,
+  formatRenewalDate,
 } from "../../utils/RenewalsUtils/renewalHelpers";
 import { RenewalPeriod } from "../../types/student_renewal";
 
@@ -191,6 +193,52 @@ describe("determineRenewalStatus", () => {
       total_paid: 100,
     });
     expect(determineRenewalStatus(p)).toBe("paid");
+  });
+});
+
+describe("calculateAmountPerClass", () => {
+  it("divides total evenly across classes", () => {
+    expect(calculateAmountPerClass(120, 4)).toBe(30);
+  });
+
+  it("returns fractional amount when not evenly divisible", () => {
+    expect(calculateAmountPerClass(100, 3)).toBeCloseTo(33.333, 2);
+  });
+
+  it("returns 0 when numberOfClasses is 0", () => {
+    expect(calculateAmountPerClass(120, 0)).toBe(0);
+  });
+
+  it("returns 0 when numberOfClasses is negative", () => {
+    expect(calculateAmountPerClass(120, -1)).toBe(0);
+  });
+
+  it("returns 0 when totalAmount is 0", () => {
+    expect(calculateAmountPerClass(0, 4)).toBe(0);
+  });
+
+  it("handles a single class", () => {
+    expect(calculateAmountPerClass(75, 1)).toBe(75);
+  });
+});
+
+describe("formatRenewalDate", () => {
+  it("formats a date in en-US long format by default", () => {
+    // Using T12:00:00 local noon avoids UTC-midnight day-offset issues
+    expect(formatRenewalDate("2025-08-15T12:00:00")).toBe("August 15, 2025");
+  });
+
+  it("contains month name, day, and year", () => {
+    const result = formatRenewalDate("2025-01-01T12:00:00");
+    expect(result).toContain("January");
+    expect(result).toContain("1");
+    expect(result).toContain("2025");
+  });
+
+  it("returns different output for a different locale", () => {
+    const enUS = formatRenewalDate("2025-08-15T12:00:00", "en-US");
+    const enGB = formatRenewalDate("2025-08-15T12:00:00", "en-GB");
+    expect(enUS).not.toBe(enGB);
   });
 });
 

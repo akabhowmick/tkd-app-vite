@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { track } from "../../analytics/posthog";
 import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -92,7 +93,7 @@ export const Sidebar = () => {
 
       {/* Collapse toggle */}
       <button
-        onClick={() => setCollapsed((c) => !c)}
+        onClick={() => setCollapsed((c) => { track("sidebar_collapsed", { collapsed: !c }); return !c; })}
         className="absolute -right-3 top-5 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-gray-700 border border-gray-600 text-gray-200 hover:bg-gray-600 shadow"
         aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
       >

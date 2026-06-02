@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useReducer, useCallback, useMemo, ReactNode } from "react";
 import { track } from "../analytics/posthog";
+import { captureException } from "../analytics/sentry";
 import {
   RenewalPeriod,
   RenewalPayment,
@@ -47,7 +48,7 @@ function getDaysUntilExpiration(expirationDate: string): number {
   return Math.floor((expiry.getTime() - today.getTime()) / 86_400_000);
 }
 
-function isInstallmentOverdue(payment: RenewalPayment): boolean {
+export function isInstallmentOverdue(payment: RenewalPayment): boolean {
   if (payment.payment_date !== null) return false;
   if (!payment.due_date) return false;
   const today = new Date();
@@ -57,7 +58,7 @@ function isInstallmentOverdue(payment: RenewalPayment): boolean {
   return due < today;
 }
 
-function getNextUnpaidInstallment(payments: RenewalPayment[]): RenewalPayment | null {
+export function getNextUnpaidInstallment(payments: RenewalPayment[]): RenewalPayment | null {
   return payments.find((p) => p.payment_date === null && p.amount_paid < p.amount_due) ?? null;
 }
 
@@ -324,6 +325,7 @@ export const StudentRenewalsProvider = ({ children }: { children: ReactNode }) =
     } catch (err) {
       const message = err instanceof Error ? err.message : "Something went wrong";
       dispatch({ type: "SET_ERROR", payload: message });
+      captureException(err, { feature: "renewals" });
       throw err;
     } finally {
       dispatch({ type: "SET_LOADING", payload: false });

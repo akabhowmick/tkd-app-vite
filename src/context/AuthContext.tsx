@@ -22,7 +22,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const friendlyAuthError = (message: string): string => {
+export const friendlyAuthError = (message: string): string => {
   if (message.includes("Invalid login credentials")) return "Incorrect email or password.";
   if (message.includes("Email not confirmed"))
     return "Please confirm your email before logging in.";
@@ -63,6 +63,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           createdAt: new Date(data.user.created_at),
           schoolId: m?.schoolId || "",
         });
+        identifyUser(data.user.id, { email: data.user.email, role: m?.role });
+        setSentryUser({ id: data.user.id, email: data.user.email });
         if (storedSchool) setSchool(JSON.parse(storedSchool));
       }
       setLoading(false);

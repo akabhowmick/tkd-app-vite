@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { track } from "../../../../analytics/posthog";
 import { useSchool } from "../../../../context/SchoolContext";
 import { useAttendance } from "../../../../context/AttendanceContext";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -106,6 +107,7 @@ export const TakeAttendance = () => {
   };
 
   const markAllPresent = () => {
+    track("attendance_mark_all", { status: "present" });
     const nextOverrides: Record<string, AttendanceStatus> = {};
     students.forEach((s) => {
       if (s.id) {
