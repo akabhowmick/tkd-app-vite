@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useStudentRenewals } from "../../../../context/StudentRenewalContext";
 import { RenewalCategory } from "./RenewalCategory";
@@ -6,7 +6,6 @@ import { RenewalCard } from "./RenewalCard";
 import { RenewalsCalendar } from "./RenewalsCalendar";
 import { RenewalPeriodWithUiStatus } from "../../../../types/student_renewal";
 import { Skeleton } from "../../../ui/skeleton";
-import { List, CalendarDays } from "lucide-react";
 
 const RenewalsSkeleton = () => (
   <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
@@ -52,7 +51,6 @@ const RenewalsSkeleton = () => (
 
 export const StudentRenewalsPage: React.FC = () => {
   const navigate = useNavigate();
-  const [view, setView] = useState<"list" | "calendar">("list");
   const {
     grouped,
     loading,
@@ -116,7 +114,7 @@ export const StudentRenewalsPage: React.FC = () => {
         </div>
 
         {/* Actions */}
-        <div className="flex flex-wrap items-center gap-4 mb-8">
+        <div className="flex flex-wrap gap-4 mb-8">
           <button
             onClick={loadPeriods}
             disabled={loading}
@@ -131,32 +129,6 @@ export const StudentRenewalsPage: React.FC = () => {
           >
             ➕ Register Renewal
           </button>
-
-          {/* View toggle */}
-          <div className="ml-auto flex items-center rounded-lg border border-gray-200 bg-white shadow-sm overflow-hidden">
-            <button
-              onClick={() => setView("list")}
-              className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium transition-colors ${
-                view === "list"
-                  ? "bg-gray-900 text-white"
-                  : "text-gray-600 hover:bg-gray-50"
-              }`}
-            >
-              <List size={15} />
-              List
-            </button>
-            <button
-              onClick={() => setView("calendar")}
-              className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium transition-colors ${
-                view === "calendar"
-                  ? "bg-gray-900 text-white"
-                  : "text-gray-600 hover:bg-gray-50"
-              }`}
-            >
-              <CalendarDays size={15} />
-              Calendar
-            </button>
-          </div>
         </div>
 
         {/* Error */}
@@ -166,26 +138,27 @@ export const StudentRenewalsPage: React.FC = () => {
           </div>
         )}
 
-        {/* Content: list or calendar */}
-        {view === "calendar" ? (
+        {/* Calendar */}
+        <div className="mb-8">
           <RenewalsCalendar />
-        ) : (
-          <div className="flex flex-col gap-6">
-            {renderCategory("Payment Overdue", "💸", grouped.payment_overdue, "border-orange-600")}
-            {renderCategory("Expiring Soon", "⚠️", grouped.expiring_soon, "border-yellow-500")}
-            {renderCategory("Grace Period", "🕓", grouped.grace_period, "border-orange-500")}
-            {renderCategory("Expired", "⛔", grouped.expired, "border-red-600")}
-            {renderCategory("Active", "⏰", grouped.active, "border-blue-500")}
-            {renderCategory("Black Belt Club", "🥋", grouped.milestone, "border-purple-500")}
-            {renderCategory("Paid", "✅", grouped.paid, "border-green-500")}
+        </div>
 
-            {!loading && Object.values(grouped).every((g) => g.length === 0) && (
-              <div className="text-center text-gray-400 py-16 text-sm">
-                No renewals yet. Register one to get started.
-              </div>
-            )}
-          </div>
-        )}
+        {/* Renewal list */}
+        <div className="flex flex-col gap-6">
+          {renderCategory("Payment Overdue", "💸", grouped.payment_overdue, "border-orange-600")}
+          {renderCategory("Expiring Soon", "⚠️", grouped.expiring_soon, "border-yellow-500")}
+          {renderCategory("Grace Period", "🕓", grouped.grace_period, "border-orange-500")}
+          {renderCategory("Expired", "⛔", grouped.expired, "border-red-600")}
+          {renderCategory("Active", "⏰", grouped.active, "border-blue-500")}
+          {renderCategory("Black Belt Club", "🥋", grouped.milestone, "border-purple-500")}
+          {renderCategory("Paid", "✅", grouped.paid, "border-green-500")}
+
+          {!loading && Object.values(grouped).every((g) => g.length === 0) && (
+            <div className="text-center text-gray-400 py-16 text-sm">
+              No renewals yet. Register one to get started.
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
