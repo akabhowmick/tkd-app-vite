@@ -6,10 +6,13 @@ import {
   TrendingUp,
   TrendingDown,
   Minus,
+  Clock,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useSchool } from "../../../context/SchoolContext";
 import { useStudentRenewals } from "../../../context/StudentRenewalContext";
+import { useMemo } from "react";
+import { RenewalPeriodWithUiStatus } from "../../../types/student_renewal";
 
 const CARDS = [
   {
@@ -76,12 +79,49 @@ const ChangeBadge = ({ change }: { change: number | null | undefined }) => {
   );
 };
 
+const URGENCY_DOT: Partial<Record<string, string>> = {
+  expired: "bg-red-500",
+  grace_period: "bg-orange-500",
+  expiring_soon: "bg-yellow-500",
+  payment_overdue: "bg-orange-600",
+  active: "bg-blue-400",
+  paid: "bg-green-500",
+};
+
 export const StatCards = () => {
   const navigate = useNavigate();
   const schoolData = useSchool();
   const { grouped, recentActivity } = useStudentRenewals();
 
   const expiringCount = grouped.expiring_soon.length + grouped.grace_period.length;
+
+  // Periods expiring within the next 14 days (including grace period up to 7 days past)
+  const upcoming = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const pastCutoff = new Date(today);
+    pastCutoff.setDate(today.getDate() - 7);
+    const futureCutoff = new Date(today);
+    futureCutoff.setDate(today.getDate() + 14);
+
+    return (Object.values(grouped).flat() as RenewalPeriodWithUiStatus[])
+      .filter((p) => {
+        if (!p.expiration_date) return false;
+        const exp = new Date(p.expiration_date);
+        return exp >= pastCutoff && exp <= futureCutoff;
+      })
+      .sort(
+        (a, b) =>
+          new Date(a.expiration_date!).getTime() - new Date(b.expiration_date!).getTime(),
+      )
+      .slice(0, 8);
+  }, [grouped]);
+
+  const studentMap = useMemo(() => {
+    const m = new Map<string, string>();
+    schoolData.students.forEach((s) => { if (s.id) m.set(s.id, s.name); });
+    return m;
+  }, [schoolData.students]);
 
   return (
     <div className="space-y-6">
@@ -178,6 +218,66 @@ export const StatCards = () => {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+      </div>
+
+      {/* Upcoming Renewals */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <div className="p-2 rounded-lg bg-amber-100">
+              <Clock size={16} className="text-amber-600" />
+            </div>
+            <h2 className="text-base font-semibold text-gray-900">Upcoming Renewals</h2>
+          </div>
+          <span className="text-xs text-gray-400">Next 14 days</span>
+        </div>
+
+        {upcoming.length === 0 ? (
+          <p className="text-sm text-gray-400 italic">No renewals expiring in the next 14 days.</p>
+        ) : (
+          <div className="space-y-2">
+            {upcoming.map((period) => {
+              const studentName = studentMap.get(period.student_id) ?? "Unknown Student";
+              const days = period.days_until_expiration;
+              const dotColor = URGENCY_DOT[period.ui_status] ?? "bg-gray-400";
+
+              let daysLabel: string;
+              if (days === null) {
+                daysLabel = "";
+              } else if (days < 0) {
+                daysLabel = `${Math.abs(days)}d overdue`;
+              } else if (days === 0) {
+                daysLabel = "Today";
+              } else {
+                daysLabel = `${days}d`;
+              }
+
+              return (
+                <div key={period.period_id} className="flex items-center gap-3 py-1.5">
+                  <div className={`h-2 w-2 rounded-full flex-shrink-0 ${dotColor}`} />
+                  <p className="text-sm text-gray-700 flex-1 truncate">{studentName}</p>
+                  <span
+                    className={`text-xs font-medium flex-shrink-0 ${
+                      days !== null && days < 0
+                        ? "text-red-600"
+                        : days !== null && days <= 3
+                        ? "text-orange-600"
+                        : "text-gray-500"
+                    }`}
+                  >
+                    {daysLabel}
+                  </span>
+                </div>
+              );
+            })}
+            <button
+              onClick={() => navigate("/dashboard/admin/renewals")}
+              className="mt-2 w-full text-center text-xs font-medium text-primary hover:underline pt-1"
+            >
+              View all renewals
+            </button>
           </div>
         )}
       </div>
