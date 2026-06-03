@@ -72,12 +72,13 @@ export const RenewalsCalendar: React.FC = () => {
     };
 
     (Object.values(grouped).flat() as RenewalPeriodWithUiStatus[]).forEach((period) => {
+      if (!period) return;
       const studentName = studentMap.get(period.student_id) ?? "Unknown";
       const programName = period.program_id ? programMap.get(period.program_id) : undefined;
 
       // Renewal expiration event
       if (period.expiration_date) {
-        const key = period.expiration_date.split("T")[0];
+        const key = String(period.expiration_date).split("T")[0];
         add(key, {
           type: "expiration",
           studentId: period.student_id,
@@ -87,11 +88,11 @@ export const RenewalsCalendar: React.FC = () => {
         });
       }
 
-      // Unpaid installment events
-      period.payments
-        .filter((p) => p.payment_date === null && p.due_date !== null)
+      // Unpaid installment events — use !! to catch both null and undefined
+      (period.payments ?? [])
+        .filter((p) => !p.payment_date && !!p.due_date)
         .forEach((payment) => {
-          const key = payment.due_date!.split("T")[0];
+          const key = String(payment.due_date).split("T")[0];
           add(key, {
             type: "installment",
             studentId: period.student_id,
