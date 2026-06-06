@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { FaCog, FaChevronDown, FaChevronUp } from "react-icons/fa";
 import { RenewalCardProps, RenewalPayment } from "../../../../types/student_renewal";
 import { useSchool } from "../../../../context/SchoolContext";
@@ -76,11 +76,13 @@ export const RenewalCard: React.FC<RenewalCardProps> = ({
   onRenew,
   onAddPayment,
   onUpdatePeriod,
+  initialManageOpen,
+  onAllModalsClosed,
 }) => {
   const { students } = useSchool();
   const { programs } = usePrograms();
   const [paymentsOpen, setPaymentsOpen] = useState(false);
-  const [manageOpen, setManageOpen] = useState(false);
+  const [manageOpen, setManageOpen] = useState(initialManageOpen ?? false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   // Add-installment modal
@@ -110,6 +112,18 @@ export const RenewalCard: React.FC<RenewalCardProps> = ({
   const [changeProgramOpen, setChangeProgramOpen] = useState(false);
   const [changeProgramLoading, setChangeProgramLoading] = useState(false);
 
+  // Fire onAllModalsClosed once every modal layer has returned to false
+  const hasOpenedOnce = useRef(initialManageOpen ?? false);
+  useEffect(() => {
+    const anyOpen =
+      manageOpen || installmentPickerOpen || markPaidOpen ||
+      addPaymentOpen || changeProgramOpen || deleteConfirmOpen;
+    if (anyOpen) {
+      hasOpenedOnce.current = true;
+    } else if (hasOpenedOnce.current) {
+      onAllModalsClosed?.();
+    }
+  }, [manageOpen, installmentPickerOpen, markPaidOpen, addPaymentOpen, changeProgramOpen, deleteConfirmOpen, onAllModalsClosed]);
 
   const student = students.find((s) => s.id === period.student_id);
   const style = STATUS_STYLES[period.ui_status] ?? STATUS_STYLES.active;

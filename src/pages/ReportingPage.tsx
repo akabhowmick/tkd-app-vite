@@ -59,9 +59,9 @@ const ExpiringRenewalsTable = ({
         <thead>
           <tr className="border-b border-gray-100">
             {["Student", "Expires", "Days Left"].map((h) => (
-              <th key={h} className="text-left py-2 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
+              <th key={h} scope="col" className="text-left py-2 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
             ))}
-            <th className="text-right py-2 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Balance</th>
+            <th scope="col" className="text-right py-2 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Balance</th>
           </tr>
         </thead>
         <tbody>
@@ -155,7 +155,7 @@ export const ReportingPage = () => {
           <p className="text-sm text-gray-400 text-center py-8">No attendance data yet.</p>
         ) : (
           <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={attendance} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
+            <BarChart data={attendance} margin={{ top: 4, right: 8, left: -8, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis dataKey="week" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
@@ -212,7 +212,7 @@ export const ReportingPage = () => {
           <p className="text-sm text-gray-400 text-center py-8">No student data yet.</p>
         ) : (
           <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={growth} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
+            <LineChart data={growth} margin={{ top: 4, right: 8, left: -8, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis dataKey="month" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />

@@ -105,3 +105,9 @@
   background: #2b22cf;
   animation-delay: 3s;
 }
+
+@media (max-width: 640px) {
+  .circle {
+    display: none;
+  }
+}

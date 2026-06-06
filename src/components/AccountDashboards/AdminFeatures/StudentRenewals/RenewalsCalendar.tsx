@@ -6,6 +6,7 @@ import { useSchool } from "../../../../context/SchoolContext";
 import { usePrograms } from "../../../../context/ProgramContext";
 import { useNavigate } from "react-router-dom";
 import { RenewalPeriodWithUiStatus } from "../../../../types/student_renewal";
+import { RenewalCard } from "./RenewalCard";
 
 type CalendarEvent = {
   type: "expiration" | "installment";
@@ -38,7 +39,14 @@ function getTodayKey(): string {
 }
 
 export const RenewalsCalendar: React.FC = () => {
-  const { grouped } = useStudentRenewals();
+  const {
+    grouped,
+    deletePeriod,
+    quitRenewal,
+    markInstallmentPaid,
+    addPayment,
+    updatePeriod,
+  } = useStudentRenewals();
   const { students } = useSchool();
   const { programs } = usePrograms();
   const navigate = useNavigate();
@@ -49,6 +57,7 @@ export const RenewalsCalendar: React.FC = () => {
   const [year, setYear] = useState(todayDate.getFullYear());
   const [month, setMonth] = useState(todayDate.getMonth());
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const [selectedPeriodId, setSelectedPeriodId] = useState<string | null>(null);
 
   const studentMap = useMemo(() => {
     const m = new Map<string, string>();
@@ -62,6 +71,11 @@ export const RenewalsCalendar: React.FC = () => {
     return m;
   }, [programs]);
 
+  const allPeriods = useMemo(
+    () => Object.values(grouped).flat() as RenewalPeriodWithUiStatus[],
+    [grouped],
+  );
+
   // Build a map: YYYY-MM-DD → CalendarEvent[] (expirations first, then installments)
   const eventMap = useMemo(() => {
     const m = new Map<string, CalendarEvent[]>();
@@ -71,7 +85,7 @@ export const RenewalsCalendar: React.FC = () => {
       m.get(key)!.push(event);
     };
 
-    (Object.values(grouped).flat() as RenewalPeriodWithUiStatus[]).forEach((period) => {
+    allPeriods.forEach((period) => {
       if (!period) return;
       const studentName = studentMap.get(period.student_id) ?? "Unknown";
       const programName = period.program_id ? programMap.get(period.program_id) : undefined;
@@ -104,7 +118,7 @@ export const RenewalsCalendar: React.FC = () => {
     });
 
     return m;
-  }, [grouped, studentMap, programMap]);
+  }, [allPeriods, studentMap, programMap]);
 
   const grid = useMemo(() => buildCalendarGrid(year, month), [year, month]);
 
@@ -118,14 +132,42 @@ export const RenewalsCalendar: React.FC = () => {
     setYear(d.getFullYear());
     setMonth(d.getMonth());
     setSelectedKey(null);
+    setSelectedPeriodId(null);
+  }
+
+  function closePanel() {
+    setSelectedKey(null);
+    setSelectedPeriodId(null);
   }
 
   const selectedEvents = selectedKey ? (eventMap.get(selectedKey) ?? []) : [];
   const selectedExpirations = selectedEvents.filter((e) => e.type === "expiration");
   const selectedInstallments = selectedEvents.filter((e) => e.type === "installment");
 
+  // Derived — not state — so it stays in sync with grouped updates
+  const managingPeriod = selectedPeriodId
+    ? (allPeriods.find((p) => p.period_id === selectedPeriodId) ?? null)
+    : null;
+
   return (
     <div className="space-y-4">
+      {/* Hidden card mount — portals the Manage modal to document.body */}
+      {managingPeriod && (
+        <div className="hidden" aria-hidden="true">
+          <RenewalCard
+            period={managingPeriod}
+            initialManageOpen={true}
+            onAllModalsClosed={() => setSelectedPeriodId(null)}
+            onMarkInstallmentPaid={markInstallmentPaid}
+            onDelete={(id) => { deletePeriod(id); setSelectedPeriodId(null); }}
+            onResolveAsQuit={(id) => { quitRenewal(id); setSelectedPeriodId(null); }}
+            onRenew={(p) => navigate(`new?studentId=${p.student_id}&renewingPeriodId=${p.period_id}`)}
+            onAddPayment={addPayment}
+            onUpdatePeriod={updatePeriod}
+          />
+        </div>
+      )}
+
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         {/* Header: legend + month navigation */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
@@ -198,7 +240,16 @@ export const RenewalsCalendar: React.FC = () => {
             return (
               <div
                 key={dateKey}
-                onClick={() => setSelectedKey(isSelected ? null : dateKey)}
+                onClick={() => {
+                  if (hasEvents) {
+                    if (isSelected) {
+                      closePanel();
+                    } else {
+                      setSelectedKey(dateKey);
+                      setSelectedPeriodId(null);
+                    }
+                  }
+                }}
                 className={cn(
                   "border-r border-b border-gray-200 min-h-[90px] p-1 flex flex-col transition-colors",
                   hasEvents ? "cursor-pointer hover:bg-gray-50" : "cursor-default",
@@ -261,7 +312,7 @@ export const RenewalsCalendar: React.FC = () => {
               })}
             </h3>
             <button
-              onClick={() => setSelectedKey(null)}
+              onClick={closePanel}
               className="text-gray-400 hover:text-gray-600 transition-colors"
               aria-label="Close panel"
             >
@@ -278,9 +329,10 @@ export const RenewalsCalendar: React.FC = () => {
                 </p>
                 <div className="space-y-2">
                   {selectedExpirations.map((event, idx) => (
-                    <div
+                    <button
                       key={`exp-${event.periodId}-${idx}`}
-                      className="flex items-center justify-between px-4 py-3 rounded-lg bg-red-50 border border-red-100"
+                      onClick={() => setSelectedPeriodId(event.periodId)}
+                      className="w-full flex items-center justify-between px-4 py-3 rounded-lg bg-red-50 border border-red-100 hover:border-red-300 hover:bg-red-100 transition-colors text-left"
                     >
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-gray-900 truncate">
@@ -290,18 +342,10 @@ export const RenewalsCalendar: React.FC = () => {
                           <p className="text-xs text-gray-500 truncate">{event.programName}</p>
                         )}
                       </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate(
-                            `new?studentId=${event.studentId}&renewingPeriodId=${event.periodId}`,
-                          );
-                        }}
-                        className="ml-3 flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-md bg-primary text-white hover:bg-primary/90 transition-colors"
-                      >
-                        Renew
-                      </button>
-                    </div>
+                      <span className="ml-3 flex-shrink-0 text-xs font-semibold text-red-600">
+                        Manage →
+                      </span>
+                    </button>
                   ))}
                 </div>
               </div>
@@ -315,9 +359,10 @@ export const RenewalsCalendar: React.FC = () => {
                 </p>
                 <div className="space-y-2">
                   {selectedInstallments.map((event, idx) => (
-                    <div
+                    <button
                       key={`inst-${event.periodId}-${idx}`}
-                      className="flex items-center justify-between px-4 py-3 rounded-lg bg-green-50 border border-green-100"
+                      onClick={() => setSelectedPeriodId(event.periodId)}
+                      className="w-full flex items-center justify-between px-4 py-3 rounded-lg bg-green-50 border border-green-100 hover:border-green-300 hover:bg-green-100 transition-colors text-left"
                     >
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-gray-900 truncate">
@@ -329,16 +374,10 @@ export const RenewalsCalendar: React.FC = () => {
                           </p>
                         )}
                       </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate(`new?studentId=${event.studentId}&renewingPeriodId=${event.periodId}`);
-                        }}
-                        className="ml-3 flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-md border border-green-600 text-green-700 hover:bg-green-100 transition-colors"
-                      >
-                        View
-                      </button>
-                    </div>
+                      <span className="ml-3 flex-shrink-0 text-xs font-semibold text-green-700">
+                        Manage →
+                      </span>
+                    </button>
                   ))}
                 </div>
               </div>

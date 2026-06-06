@@ -161,6 +161,10 @@ export interface RenewalCardProps {
     req: Omit<CreateRenewalPaymentRequest, "period_id" | "student_id">,
   ) => void;
   onUpdatePeriod?: (periodId: string, updates: UpdateRenewalPeriodRequest) => Promise<void>;
+  /** Start with the Manage Renewal modal already open (used by calendar rows). */
+  initialManageOpen?: boolean;
+  /** Called once all modal layers have closed (manage + all sub-modals). */
+  onAllModalsClosed?: () => void;
 }
 
 export interface RenewalCategoryProps {
