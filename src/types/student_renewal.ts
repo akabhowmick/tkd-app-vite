@@ -51,7 +51,7 @@ export interface RenewalPeriod {
   total_paid: number;
   balance: number;
   /** Additional students linked to this renewal (siblings). Empty for solo renewals. */
-  linked_student_ids: string[];
+  linked_student_ids?: string[];
 }
 
 export interface RenewalPeriodWithUiStatus extends RenewalPeriod {

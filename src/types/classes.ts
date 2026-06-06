@@ -37,6 +37,30 @@ export interface UpdateClassRequest {
 
 export type CreateClassPayload = CreateClassRequest;
 
+export type SessionType = "recurring" | "one_time";
+
+export interface ClassSession {
+  session_id: string;
+  class_id: string;
+  school_id: string;
+  session_type: SessionType;
+  day_of_week?: number;
+  start_time?: string;
+  end_time?: string;
+  session_date?: string;
+  created_at?: string;
+}
+
+export interface CreateSessionPayload {
+  class_id: string;
+  school_id: string;
+  session_type: SessionType;
+  day_of_week?: number;
+  start_time?: string;
+  end_time?: string;
+  session_date?: string;
+}
+
 export interface ClassEnrollment {
   id: string;
   class_id: string;

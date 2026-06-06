@@ -31,7 +31,7 @@ function buildCalendarDays(year: number, month: number): (string | null)[] {
 }
 
 export const TakeAttendance = () => {
-  const { students, schoolId } = useSchool();
+  const { students } = useSchool();
 
   const {
     attendance: contextAttendance,

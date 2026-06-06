@@ -2,7 +2,9 @@ import { supabase } from "../supabase";
 import {
   Class,
   ClassEnrollment,
+  ClassSession,
   CreateClassPayload,
+  CreateSessionPayload,
   UpdateClassRequest,
 } from "../../types/classes";
 
@@ -80,5 +82,51 @@ export async function unenrollStudentFromClass(enrollmentId: string): Promise<vo
     .from("class_enrollments")
     .delete()
     .eq("id", enrollmentId);
+  if (error) throw error;
+}
+
+export async function getClassesWithSessions(
+  schoolId: string,
+): Promise<(Class & { sessions: ClassSession[] })[]> {
+  const { data: classes, error: classError } = await supabase
+    .from("classes")
+    .select("*")
+    .eq("school_id", schoolId)
+    .order("class_name");
+  if (classError) throw classError;
+  const { data: sessions, error: sessionError } = await supabase
+    .from("class_sessions")
+    .select("*")
+    .eq("school_id", schoolId)
+    .order("day_of_week");
+  if (sessionError) throw sessionError;
+  const sessionsByClass = ((sessions ?? []) as ClassSession[]).reduce<Record<string, ClassSession[]>>(
+    (acc, s) => {
+      (acc[s.class_id] ??= []).push(s);
+      return acc;
+    },
+    {},
+  );
+  return ((classes ?? []) as Class[]).map((c) => ({
+    ...c,
+    sessions: sessionsByClass[c.class_id] ?? [],
+  }));
+}
+
+export async function createSession(payload: CreateSessionPayload): Promise<ClassSession> {
+  const { data, error } = await supabase
+    .from("class_sessions")
+    .insert(payload)
+    .select()
+    .single();
+  if (error) throw error;
+  return data as ClassSession;
+}
+
+export async function deleteSession(sessionId: string): Promise<void> {
+  const { error } = await supabase
+    .from("class_sessions")
+    .delete()
+    .eq("session_id", sessionId);
   if (error) throw error;
 }

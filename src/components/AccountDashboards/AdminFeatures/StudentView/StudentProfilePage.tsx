@@ -10,7 +10,6 @@ import { ClassesTab } from "./ClassesTab";
 import { PaymentHistory } from "./PaymentHistory";
 import { HandleAddOrEdit } from "./HandleAddOrEdit";
 import { AppConfirmModal } from "../../../ui/modal";
-import { StudentGroup } from "../../../../types/groups";
 import { useGroups } from "../../../../context/GroupContext";
 
 type Tab = "payments" | "attendance" | "classes";

@@ -366,7 +366,7 @@ export const StudentRenewalsProvider = ({ children }: { children: ReactNode }) =
           const conflict = state.periods.find(
             (p) =>
               p.status === "active" &&
-              (p.student_id === linkedId || p.linked_student_ids.includes(linkedId)),
+              (p.student_id === linkedId || (p.linked_student_ids ?? []).includes(linkedId)),
           );
           if (conflict) {
             const s = students.find((st) => st.id === linkedId);

@@ -43,7 +43,7 @@ export async function getStudentGroups(studentId: string): Promise<StudentGroup[
     .select("group:student_groups(*)")
     .eq("student_id", studentId);
   if (error) throw error;
-  return (data ?? []).map((row: { group: StudentGroup }) => row.group).filter(Boolean);
+  return ((data ?? []) as unknown as { group: StudentGroup }[]).map((row) => row.group).filter(Boolean);
 }
 
 export async function setStudentGroups(studentId: string, groupIds: string[]): Promise<void> {
@@ -69,7 +69,7 @@ export async function getAllGroupMembersForSchool(
     .select("student_id, group_id, group:student_groups!inner(name, school_id)")
     .eq("group.school_id", schoolId);
   if (error) throw error;
-  return (data ?? []).map((row: { student_id: string; group_id: string; group: { name: string } }) => ({
+  return ((data ?? []) as unknown as { student_id: string; group_id: string; group: { name: string } }[]).map((row) => ({
     student_id: row.student_id,
     group_id: row.group_id,
     group_name: row.group?.name ?? "",
