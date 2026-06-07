@@ -92,9 +92,7 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       }
 
       try {
-        console.log("[Attendance] Fetching attendance for", { schoolId, selectedDate });
         const { data, error } = await getAttendanceByDate(schoolId, selectedDate);
-        console.log("[Attendance] Fetch result:", { data, error, rowCount: data?.length ?? "null" });
 
         if (data) {
           const existing = data.reduce(
@@ -104,13 +102,6 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
             },
             {},
           );
-          const statusCounts = Object.values(existing).reduce<Record<string, number>>((acc, s) => {
-            acc[s] = (acc[s] ?? 0) + 1;
-            return acc;
-          }, {});
-          console.log("[Attendance] Loaded", Object.keys(existing).length, "records from DB, statuses:", statusCounts);
-          console.log("[Attendance] Student IDs in context:", students.map((s) => s.id));
-          console.log("[Attendance] Student IDs from DB records:", Object.keys(existing));
           setAttendance(existing);
         } else if (error) {
           console.error("[Attendance] Fetch error:", error);
@@ -168,10 +159,7 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   };
 
   const handleSubmit = async (): Promise<{ success: boolean; error?: string }> => {
-    console.log("[Attendance] handleSubmit called", { schoolId, userId: user?.id, selectedDate });
-
     if (!schoolId || !user) {
-      console.warn("[Attendance] Aborting: missing schoolId or user", { schoolId, user });
       return { success: false, error: "Not authenticated." };
     }
     setIsSubmitting(true);
@@ -184,26 +172,20 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         date: selectedDate,
       }));
 
-      console.log("[Attendance] Records to save:", records);
-
       // Delete existing records for this date first so cleared students are removed
-      console.log("[Attendance] Deleting existing records for", { schoolId, selectedDate });
       const { error: deleteError } = await deleteAttendanceByDate(schoolId, selectedDate);
       if (deleteError) {
         console.error("[Attendance] Delete error:", deleteError);
         captureException(deleteError, { feature: "attendance", action: "deleteAttendance" });
         return { success: false, error: "Failed to save attendance." };
       }
-      console.log("[Attendance] Delete successful");
 
       if (records.length === 0) {
-        console.log("[Attendance] No records to insert, saving empty attendance");
         await fetchMarkedDates();
         track("attendance_saved", { studentCount: 0, date: selectedDate });
         return { success: true };
       }
 
-      console.log("[Attendance] Inserting", records.length, "records");
       const { error } = await createAttendance(records);
 
       if (error) {
