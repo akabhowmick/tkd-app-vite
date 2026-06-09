@@ -3,27 +3,43 @@ import { SchoolForm } from "./SchoolForm";
 import { School } from "../../../../types/school";
 import { useSchool } from "../../../../context/SchoolContext";
 import { useGroups } from "../../../../context/GroupContext";
-import { School as SchoolIcon } from "lucide-react";
+import { School as SchoolIcon, Search, X } from "lucide-react";
 import { FaPlus, FaTimes, FaPencilAlt, FaCheck } from "react-icons/fa";
 import { Trash2 } from "lucide-react";
 import { AppConfirmModal } from "../../../ui/modal";
 import { Input } from "../../../ui/input";
+import { Student } from "../../../../types/user";
 
 export const SchoolManagement = () => {
-  const { school, loading, updateSchool, createSchool, deleteSchool } = useSchool();
-  const { groups, loading: groupsLoading, createGroup, updateGroup, deleteGroup } = useGroups();
+  const { school, loading, updateSchool, createSchool, deleteSchool, students } = useSchool();
+  const {
+    groups,
+    loading: groupsLoading,
+    createGroup,
+    updateGroup,
+    deleteGroup,
+    getGroupStudentIds,
+    addMemberToGroup,
+    removeMemberFromGroup,
+  } = useGroups();
   const [editing, setEditing] = useState(false);
 
   // ── Groups UI state ──────────────────────────────────────────────────────────
   const [newGroupName, setNewGroupName] = useState("");
   const [addingGroup, setAddingGroup] = useState(false);
   const [addGroupError, setAddGroupError] = useState<string | null>(null);
-  const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; group: { id: string; name: string } | null }>({
     open: false, group: null,
   });
   const [deleteLoading, setDeleteLoading] = useState(false);
+
+  // ── Member management state ──────────────────────────────────────────────────
+  const [expandedGroupId, setExpandedGroupId] = useState<string | null>(null);
+  const [groupMembers, setGroupMembers] = useState<Record<string, string[]>>({});
+  const [memberLoading, setMemberLoading] = useState(false);
+  const [memberSearch, setMemberSearch] = useState("");
+  const [showMemberDropdown, setShowMemberDropdown] = useState(false);
 
   const handleAddGroup = async () => {
     const name = newGroupName.trim();
@@ -38,9 +54,26 @@ export const SchoolManagement = () => {
     }
   };
 
-  const startRename = (group: { id: string; name: string }) => {
-    setRenamingId(group.id);
+  const startEdit = async (group: { id: string; name: string }) => {
     setRenameValue(group.name);
+    setExpandedGroupId(group.id);
+    setMemberSearch("");
+    setShowMemberDropdown(false);
+    if (groupMembers[group.id] === undefined) {
+      setMemberLoading(true);
+      try {
+        const ids = await getGroupStudentIds(group.id);
+        setGroupMembers((prev) => ({ ...prev, [group.id]: ids }));
+      } finally {
+        setMemberLoading(false);
+      }
+    }
+  };
+
+  const cancelEdit = () => {
+    setExpandedGroupId(null);
+    setMemberSearch("");
+    setShowMemberDropdown(false);
   };
 
   const handleRename = async (groupId: string) => {
@@ -48,7 +81,7 @@ export const SchoolManagement = () => {
     if (!name) return;
     try {
       await updateGroup(groupId, name);
-      setRenamingId(null);
+      // keep expanded panel open after rename
     } catch {
       // silently keep editing on error
     }
@@ -59,11 +92,45 @@ export const SchoolManagement = () => {
     setDeleteLoading(true);
     try {
       await deleteGroup(deleteConfirm.group.id);
+      if (expandedGroupId === deleteConfirm.group.id) cancelEdit();
     } finally {
       setDeleteLoading(false);
       setDeleteConfirm({ open: false, group: null });
     }
   };
+
+  const handleAddMember = async (student: Student) => {
+    if (!expandedGroupId) return;
+    const gid = expandedGroupId;
+    setGroupMembers((prev) => ({ ...prev, [gid]: [...(prev[gid] ?? []), student.id!] }));
+    setMemberSearch("");
+    setShowMemberDropdown(false);
+    try {
+      await addMemberToGroup(student.id!, gid);
+    } catch {
+      // revert optimistic update
+      setGroupMembers((prev) => ({ ...prev, [gid]: (prev[gid] ?? []).filter((id) => id !== student.id) }));
+    }
+  };
+
+  const handleRemoveMember = async (studentId: string) => {
+    if (!expandedGroupId) return;
+    const gid = expandedGroupId;
+    setGroupMembers((prev) => ({ ...prev, [gid]: (prev[gid] ?? []).filter((id) => id !== studentId) }));
+    try {
+      await removeMemberFromGroup(studentId, gid);
+    } catch {
+      // revert optimistic update
+      setGroupMembers((prev) => ({ ...prev, [gid]: [...(prev[gid] ?? []), studentId] }));
+    }
+  };
+
+  const currentMembers = expandedGroupId ? (groupMembers[expandedGroupId] ?? []) : [];
+  const filteredStudents = students.filter(
+    (s) =>
+      !currentMembers.includes(s.id!) &&
+      (!memberSearch.trim() || s.name.toLowerCase().includes(memberSearch.toLowerCase())),
+  );
 
   // ── School CRUD ─────────────────────────────────────────────────────────────
   const handleSchoolDelete = async () => {
@@ -199,48 +266,135 @@ export const SchoolManagement = () => {
         ) : (
           <div className="flex flex-col gap-1">
             {groups.map((group) => (
-              <div
-                key={group.id}
-                className="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-50 border border-transparent hover:border-gray-100 transition-colors"
-              >
-                {renamingId === group.id ? (
-                  <div className="flex items-center gap-2 flex-1">
-                    <Input
-                      autoFocus
-                      value={renameValue}
-                      onChange={(e) => setRenameValue(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === "Enter") handleRename(group.id); if (e.key === "Escape") setRenamingId(null); }}
-                      className="h-8 text-sm"
-                    />
-                    <button
-                      onClick={() => handleRename(group.id)}
-                      disabled={!renameValue.trim()}
-                      className="text-green-600 hover:text-green-700 disabled:opacity-40"
-                    >
-                      <FaCheck size={13} />
-                    </button>
-                    <button onClick={() => setRenamingId(null)} className="text-gray-400 hover:text-gray-600">
-                      <FaTimes size={13} />
-                    </button>
-                  </div>
-                ) : (
-                  <>
+              <div key={group.id}>
+                {/* ── Collapsed row ── */}
+                {expandedGroupId !== group.id && (
+                  <div className="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-50 border border-transparent hover:border-gray-100 transition-colors">
                     <span className="text-sm font-medium text-gray-800">{group.name}</span>
                     <div className="flex items-center gap-1">
                       <button
-                        onClick={() => startRename(group)}
+                        onClick={() => startEdit(group)}
                         className="p-1.5 rounded-md text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                        title="Edit group"
                       >
                         <FaPencilAlt size={12} />
                       </button>
                       <button
                         onClick={() => setDeleteConfirm({ open: true, group })}
                         className="p-1.5 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                        title="Delete group"
                       >
                         <Trash2 size={14} />
                       </button>
                     </div>
-                  </>
+                  </div>
+                )}
+
+                {/* ── Expanded edit panel ── */}
+                {expandedGroupId === group.id && (
+                  <div className="rounded-lg border border-blue-200 bg-blue-50/40 p-4 flex flex-col gap-4">
+                    {/* Rename row */}
+                    <div className="flex items-center gap-2">
+                      <Input
+                        autoFocus
+                        value={renameValue}
+                        onChange={(e) => setRenameValue(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleRename(group.id);
+                          if (e.key === "Escape") cancelEdit();
+                        }}
+                        className="h-8 text-sm font-medium"
+                      />
+                      <button
+                        onClick={() => handleRename(group.id)}
+                        disabled={!renameValue.trim()}
+                        className="text-green-600 hover:text-green-700 disabled:opacity-40 p-1"
+                        title="Save name"
+                      >
+                        <FaCheck size={13} />
+                      </button>
+                      <button
+                        onClick={cancelEdit}
+                        className="text-gray-400 hover:text-gray-600 p-1"
+                        title="Close"
+                      >
+                        <FaTimes size={13} />
+                      </button>
+                    </div>
+
+                    {/* Members section */}
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">
+                        Members
+                      </p>
+                      {memberLoading ? (
+                        <div className="flex items-center gap-2 text-sm text-gray-400">
+                          <div className="h-3.5 w-3.5 rounded-full border-2 border-gray-300 border-t-transparent animate-spin" />
+                          Loading…
+                        </div>
+                      ) : currentMembers.length === 0 ? (
+                        <p className="text-sm text-gray-400">No members yet.</p>
+                      ) : (
+                        <div className="flex flex-wrap gap-2">
+                          {currentMembers.map((sid) => {
+                            const s = students.find((st) => st.id === sid);
+                            return (
+                              <span
+                                key={sid}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-gray-100 text-gray-700 text-xs font-medium"
+                              >
+                                {s?.name ?? sid}
+                                <button
+                                  onClick={() => handleRemoveMember(sid)}
+                                  className="ml-0.5 text-gray-400 hover:text-red-500 transition-colors"
+                                  title="Remove from group"
+                                >
+                                  <X size={11} />
+                                </button>
+                              </span>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Add student search */}
+                    <div className="relative">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">
+                        Add Student
+                      </p>
+                      <div className="relative">
+                        <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                        <input
+                          type="text"
+                          placeholder="Search students…"
+                          value={memberSearch}
+                          onChange={(e) => { setMemberSearch(e.target.value); setShowMemberDropdown(true); }}
+                          onFocus={() => setShowMemberDropdown(true)}
+                          onBlur={() => setTimeout(() => setShowMemberDropdown(false), 150)}
+                          className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"
+                        />
+                      </div>
+                      {showMemberDropdown && filteredStudents.length > 0 && (
+                        <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                          {filteredStudents.map((s) => (
+                            <button
+                              key={s.id}
+                              onMouseDown={() => handleAddMember(s)}
+                              className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                            >
+                              {s.name}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {showMemberDropdown && memberSearch.trim() && filteredStudents.length === 0 && (
+                        <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg px-3 py-2 text-sm text-gray-400">
+                          No students found
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 )}
               </div>
             ))}

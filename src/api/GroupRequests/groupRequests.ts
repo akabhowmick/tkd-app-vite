@@ -61,6 +61,31 @@ export async function setStudentGroups(studentId: string, groupIds: string[]): P
   if (insertError) throw insertError;
 }
 
+export async function getGroupStudentIds(groupId: string): Promise<string[]> {
+  const { data, error } = await supabase
+    .from("student_group_members")
+    .select("student_id")
+    .eq("group_id", groupId);
+  if (error) throw error;
+  return (data ?? []).map((r: { student_id: string }) => r.student_id);
+}
+
+export async function addMemberToGroup(studentId: string, groupId: string): Promise<void> {
+  const { error } = await supabase
+    .from("student_group_members")
+    .insert({ student_id: studentId, group_id: groupId });
+  if (error) throw error;
+}
+
+export async function removeMemberFromGroup(studentId: string, groupId: string): Promise<void> {
+  const { error } = await supabase
+    .from("student_group_members")
+    .delete()
+    .eq("student_id", studentId)
+    .eq("group_id", groupId);
+  if (error) throw error;
+}
+
 export async function getAllGroupMembersForSchool(
   schoolId: string,
 ): Promise<{ student_id: string; group_id: string; group_name: string }[]> {

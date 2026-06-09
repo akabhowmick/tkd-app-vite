@@ -9,6 +9,9 @@ import {
   getStudentGroups as apiGetStudentGroups,
   setStudentGroups as apiSetStudentGroups,
   getAllGroupMembersForSchool,
+  getGroupStudentIds as apiGetGroupStudentIds,
+  addMemberToGroup as apiAddMemberToGroup,
+  removeMemberFromGroup as apiRemoveMemberFromGroup,
 } from "../api/GroupRequests/groupRequests";
 import { useSchool } from "./SchoolContext";
 import { track } from "../analytics/posthog";
@@ -25,6 +28,9 @@ interface GroupContextType {
   getGroupMembers: () => Promise<{ student_id: string; group_id: string; group_name: string }[]>;
   getStudentGroups: (studentId: string) => Promise<StudentGroup[]>;
   setStudentGroups: (studentId: string, groupIds: string[]) => Promise<void>;
+  getGroupStudentIds: (groupId: string) => Promise<string[]>;
+  addMemberToGroup: (studentId: string, groupId: string) => Promise<void>;
+  removeMemberFromGroup: (studentId: string, groupId: string) => Promise<void>;
 }
 
 const GroupContext = createContext<GroupContextType | undefined>(undefined);
@@ -103,6 +109,35 @@ export const GroupProvider = ({ children }: { children: ReactNode }) => {
     [],
   );
 
+  const getGroupStudentIds = useCallback(
+    (groupId: string) => apiGetGroupStudentIds(groupId),
+    [],
+  );
+
+  const addMemberToGroup = useCallback(
+    async (studentId: string, groupId: string): Promise<void> => {
+      try {
+        await apiAddMemberToGroup(studentId, groupId);
+      } catch (err) {
+        captureException(err, { feature: "groups", action: "addMemberToGroup" });
+        throw err;
+      }
+    },
+    [],
+  );
+
+  const removeMemberFromGroup = useCallback(
+    async (studentId: string, groupId: string): Promise<void> => {
+      try {
+        await apiRemoveMemberFromGroup(studentId, groupId);
+      } catch (err) {
+        captureException(err, { feature: "groups", action: "removeMemberFromGroup" });
+        throw err;
+      }
+    },
+    [],
+  );
+
   useEffect(() => {
     if (schoolId) loadGroups();
   }, [schoolId, loadGroups]);
@@ -120,6 +155,9 @@ export const GroupProvider = ({ children }: { children: ReactNode }) => {
         getGroupMembers,
         getStudentGroups,
         setStudentGroups,
+        getGroupStudentIds,
+        addMemberToGroup,
+        removeMemberFromGroup,
       }}
     >
       {children}
