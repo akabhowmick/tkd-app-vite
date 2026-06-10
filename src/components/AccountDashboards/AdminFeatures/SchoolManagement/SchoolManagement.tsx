@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { SchoolForm } from "./SchoolForm";
 import { School } from "../../../../types/school";
 import { useSchool } from "../../../../context/SchoolContext";
@@ -40,6 +40,8 @@ export const SchoolManagement = () => {
   const [memberLoading, setMemberLoading] = useState(false);
   const [memberSearch, setMemberSearch] = useState("");
   const [showMemberDropdown, setShowMemberDropdown] = useState(false);
+  const [dropdownIndex, setDropdownIndex] = useState(-1);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const handleAddGroup = async () => {
     const name = newGroupName.trim();
@@ -131,6 +133,12 @@ export const SchoolManagement = () => {
       !currentMembers.includes(s.id!) &&
       (!memberSearch.trim() || s.name.toLowerCase().includes(memberSearch.toLowerCase())),
   );
+
+  useEffect(() => {
+    if (dropdownIndex < 0 || !dropdownRef.current) return;
+    const item = dropdownRef.current.children[dropdownIndex] as HTMLElement | undefined;
+    item?.scrollIntoView({ block: "nearest" });
+  }, [dropdownIndex]);
 
   // ── School CRUD ─────────────────────────────────────────────────────────────
   const handleSchoolDelete = async () => {
@@ -369,19 +377,45 @@ export const SchoolManagement = () => {
                           type="text"
                           placeholder="Search students…"
                           value={memberSearch}
-                          onChange={(e) => { setMemberSearch(e.target.value); setShowMemberDropdown(true); }}
+                          onChange={(e) => {
+                            setMemberSearch(e.target.value);
+                            setShowMemberDropdown(true);
+                            setDropdownIndex(-1);
+                          }}
                           onFocus={() => setShowMemberDropdown(true)}
                           onBlur={() => setTimeout(() => setShowMemberDropdown(false), 150)}
+                          onKeyDown={(e) => {
+                            if (!showMemberDropdown || filteredStudents.length === 0) return;
+                            if (e.key === "ArrowDown") {
+                              e.preventDefault();
+                              setDropdownIndex((i) => Math.min(i + 1, filteredStudents.length - 1));
+                            } else if (e.key === "ArrowUp") {
+                              e.preventDefault();
+                              setDropdownIndex((i) => Math.max(i - 1, 0));
+                            } else if (e.key === "Enter") {
+                              e.preventDefault();
+                              const target = dropdownIndex >= 0 ? filteredStudents[dropdownIndex] : filteredStudents[0];
+                              if (target) handleAddMember(target);
+                              setDropdownIndex(-1);
+                            } else if (e.key === "Escape") {
+                              setShowMemberDropdown(false);
+                              setDropdownIndex(-1);
+                            }
+                          }}
                           className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"
                         />
                       </div>
                       {showMemberDropdown && filteredStudents.length > 0 && (
-                        <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-48 overflow-y-auto">
-                          {filteredStudents.map((s) => (
+                        <div ref={dropdownRef} className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                          {filteredStudents.map((s, i) => (
                             <button
                               key={s.id}
                               onMouseDown={() => handleAddMember(s)}
-                              className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                              className={`w-full text-left px-3 py-2 text-sm transition-colors ${
+                                i === dropdownIndex
+                                  ? "bg-blue-100 text-blue-700"
+                                  : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"
+                              }`}
                             >
                               {s.name}
                             </button>

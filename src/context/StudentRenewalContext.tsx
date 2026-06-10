@@ -352,10 +352,23 @@ export const StudentRenewalsProvider = ({ children }: { children: ReactNode }) =
           throw new Error("At least one installment must have a positive amount due.");
         }
 
-        const existingActive = state.periods.find(
-          (p) => p.student_id === req.period.student_id && p.status === "active",
-        );
+        const blockingStatuses: UiRenewalStatus[] = ["active", "expiring_soon", "payment_overdue", "paid", "milestone"];
+        const studentPeriods = state.periods.filter((p) => p.student_id === req.period.student_id);
+        console.log("[createRenewal] student_id:", req.period.student_id);
+        console.log("[createRenewal] all periods for student:", studentPeriods.map((p) => ({
+          period_id: p.period_id,
+          db_status: p.status,
+          expiration_date: p.expiration_date,
+          ui_status: deriveUiStatus(p),
+        })));
+        const existingActive = studentPeriods.find((p) => blockingStatuses.includes(deriveUiStatus(p)));
         if (existingActive) {
+          console.log("[createRenewal] BLOCKED by period:", {
+            period_id: existingActive.period_id,
+            db_status: existingActive.status,
+            expiration_date: existingActive.expiration_date,
+            ui_status: deriveUiStatus(existingActive),
+          });
           throw new Error(
             "This student already has an active renewal. Resolve it before creating a new one.",
           );
@@ -365,7 +378,7 @@ export const StudentRenewalsProvider = ({ children }: { children: ReactNode }) =
         for (const linkedId of linkedIds) {
           const conflict = state.periods.find(
             (p) =>
-              p.status === "active" &&
+              blockingStatuses.includes(deriveUiStatus(p)) &&
               (p.student_id === linkedId || (p.linked_student_ids ?? []).includes(linkedId)),
           );
           if (conflict) {
