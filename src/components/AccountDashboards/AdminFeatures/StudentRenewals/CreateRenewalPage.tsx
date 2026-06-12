@@ -22,7 +22,7 @@ export const CreateRenewalPage: React.FC = () => {
       });
     }
     await createRenewal(data);
-    navigate("..");
+    navigate(`../students/${data.period.student_id}`);
   };
 
   return (
