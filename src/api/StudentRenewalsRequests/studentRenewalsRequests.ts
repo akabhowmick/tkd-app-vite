@@ -111,7 +111,6 @@ export async function createRenewalPayment(
   req: CreateRenewalPaymentRequest,
 ): Promise<RenewalPayment> {
   const { data, error } = await supabase.from("renewal_payments").insert(req).select().single();
-
   if (error) throw error;
   return data;
 }
@@ -149,6 +148,17 @@ export async function deleteRenewalPeriod(periodId: string): Promise<void> {
 export async function deleteRenewalPayment(paymentId: string): Promise<void> {
   const { error } = await supabase.from("renewal_payments").delete().eq("payment_id", paymentId);
 
+  if (error) throw error;
+}
+
+export async function syncExpiredPeriods(studentId: string): Promise<void> {
+  const today = new Date().toISOString().split("T")[0];
+  const { error } = await supabase
+    .from("renewal_periods")
+    .update({ status: "expired", updated_at: new Date().toISOString() })
+    .eq("student_id", studentId)
+    .eq("status", "active")
+    .lt("expiration_date", today);
   if (error) throw error;
 }
 

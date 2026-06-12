@@ -1,3 +1,7 @@
+-- NOTE: Not ready to deploy — renewal reminder notifications are not set up yet.
+-- Do not run this in the Supabase SQL editor until the send-renewal-reminders
+-- Edge Function is tested and ready.
+
 -- Enable pg_net extension if not already enabled
 CREATE EXTENSION IF NOT EXISTS pg_net;
 

@@ -26,6 +26,7 @@ import {
   resolveAsQuit,
   resolveWithRenewal,
   getRenewalPeriodById,
+  syncExpiredPeriods,
 } from "../api/StudentRenewalsRequests/studentRenewalsRequests";
 import { useSchool } from "./SchoolContext";
 import { usePrograms } from "./ProgramContext";
@@ -354,21 +355,8 @@ export const StudentRenewalsProvider = ({ children }: { children: ReactNode }) =
 
         const blockingStatuses: UiRenewalStatus[] = ["active", "expiring_soon", "payment_overdue", "paid", "milestone"];
         const studentPeriods = state.periods.filter((p) => p.student_id === req.period.student_id);
-        console.log("[createRenewal] student_id:", req.period.student_id);
-        console.log("[createRenewal] all periods for student:", studentPeriods.map((p) => ({
-          period_id: p.period_id,
-          db_status: p.status,
-          expiration_date: p.expiration_date,
-          ui_status: deriveUiStatus(p),
-        })));
         const existingActive = studentPeriods.find((p) => blockingStatuses.includes(deriveUiStatus(p)));
         if (existingActive) {
-          console.log("[createRenewal] BLOCKED by period:", {
-            period_id: existingActive.period_id,
-            db_status: existingActive.status,
-            expiration_date: existingActive.expiration_date,
-            ui_status: deriveUiStatus(existingActive),
-          });
           throw new Error(
             "This student already has an active renewal. Resolve it before creating a new one.",
           );
@@ -389,14 +377,51 @@ export const StudentRenewalsProvider = ({ children }: { children: ReactNode }) =
           }
         }
 
-        const newPeriod = await createRenewalPeriod(req.period);
+        // Sync any periods that are expired by date but still 'active' in the DB.
+        // The DB status column never auto-updates — the UI derives expiry from dates.
+        const allStudentIds = [req.period.student_id, ...(req.period.linked_student_ids ?? [])];
+        await Promise.all(allStudentIds.map(syncExpiredPeriods));
 
-        for (const installment of req.installments) {
-          await createRenewalPayment({
-            ...installment,
-            period_id: newPeriod.period_id,
-            student_id: newPeriod.student_id,
-          });
+        let newPeriod;
+        try {
+          newPeriod = await createRenewalPeriod(req.period);
+        } catch (err: unknown) {
+          const e = err as Record<string, unknown>;
+          const code = e?.code as string | undefined;
+          if (code === "23505") {
+            throw new Error(
+              "This student already has an active renewal in the database. Go back to Renewal Management, find their current renewal, and resolve it before creating a new one.",
+            );
+          }
+          if (code === "23514") {
+            throw new Error(
+              `Renewal data failed a database check: ${(e?.hint as string) ?? (e?.message as string) ?? "unknown constraint"}. Check that all fields are valid and try again.`,
+            );
+          }
+          const msg = (e?.message as string) ?? "";
+          if (msg.toLowerCase().includes("unique") || msg.toLowerCase().includes("duplicate")) {
+            throw new Error(
+              "A renewal for this student already exists in the database. Resolve the existing renewal before adding a new one.",
+            );
+          }
+          throw new Error(
+            `Failed to save renewal: ${msg || "unexpected error"}. Check the console for details.`,
+          );
+        }
+
+        try {
+          for (const installment of req.installments) {
+            await createRenewalPayment({
+              ...installment,
+              period_id: newPeriod.period_id,
+              student_id: newPeriod.student_id,
+            });
+          }
+        } catch (err) {
+          // Roll back the period so it doesn't become an orphaned 'active' row
+          // that blocks future renewals for this student.
+          await deleteRenewalPeriod(newPeriod.period_id).catch(() => {});
+          throw err;
         }
 
         const fresh = await getRenewalPeriodById(newPeriod.period_id);

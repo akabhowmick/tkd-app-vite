@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { CreateRenewalFormProps, InstallmentInput } from "../../../../types/student_renewal";
 import { useSchool } from "../../../../context/SchoolContext";
 import { usePrograms } from "../../../../context/ProgramContext";
 import { ProgramFormModal, ProgramFormTarget } from "../Programs/ProgramFormModal";
-import { Plus, X } from "lucide-react";
+import { AlertCircle, Plus, X } from "lucide-react";
 
 // ─────────────────────────────────────────────
 // Helpers
@@ -68,6 +68,7 @@ export const CreateRenewalForm: React.FC<CreateRenewalFormProps> = ({ onSubmit, 
   // ── UI state
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const errorRef = useRef<HTMLDivElement>(null);
   const [programFormTarget, setProgramFormTarget] = useState<ProgramFormTarget>(null);
   const [studentSearch, setStudentSearch] = useState("");
   const [showStudentDropdown, setShowStudentDropdown] = useState(false);
@@ -144,6 +145,12 @@ export const CreateRenewalForm: React.FC<CreateRenewalFormProps> = ({ onSubmit, 
 
   const installmentTotal = installments.reduce((sum, i) => sum + (i.amount_due || 0), 0);
   const totalMismatch = totalAmount && Math.abs(installmentTotal - parseFloat(totalAmount)) > 0.01;
+
+  useEffect(() => {
+    if (error) {
+      errorRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [error]);
 
   const handleSubmit = async () => {
     setError("");
@@ -519,9 +526,16 @@ export const CreateRenewalForm: React.FC<CreateRenewalFormProps> = ({ onSubmit, 
           )}
 
           {error && (
-            <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-              {error}
-            </p>
+            <div
+              ref={errorRef}
+              className="flex gap-3 items-start bg-red-50 border border-red-300 rounded-lg px-4 py-3"
+            >
+              <AlertCircle className="text-red-500 mt-0.5 shrink-0" size={18} />
+              <div>
+                <p className="text-sm font-semibold text-red-700 mb-0.5">Unable to save renewal</p>
+                <p className="text-sm text-red-600">{error}</p>
+              </div>
+            </div>
           )}
 
           <div className="flex gap-3 pt-2">
