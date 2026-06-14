@@ -78,10 +78,12 @@ export const StudentListPage = () => {
   const location  = useLocation();
   const { loadStudents, handleDelete, students, schoolId, loading, patchStudent } = useSchool();
   const { ranks } = useBelts();
-  const { getGroupMembers } = useGroups();
+  const { getGroupMembers, groups } = useGroups();
 
-  const [groupMap, setGroupMap]   = useState<Map<string, string[]>>(new Map());
-  const [addOpen, setAddOpen]     = useState(false);
+  const [groupMap, setGroupMap]         = useState<Map<string, string[]>>(new Map());
+  const [studentGroupIdsMap, setStudentGroupIdsMap] = useState<Map<string, Set<string>>>(new Map());
+  const [selectedGroupId, setSelectedGroupId]       = useState<string>("");
+  const [addOpen, setAddOpen]           = useState(false);
 
   // ── Inline edit ───────────────────────────────────────────────────────────
   const [editingUser, setEditingUser] = useState<Student | null>(null);
@@ -97,20 +99,29 @@ export const StudentListPage = () => {
   // ── Pagination ────────────────────────────────────────────────────────────
   const [pageSize, setPageSize]   = useState<25 | 50 | 100>(25);
   const [currentPage, setCurrentPage] = useState(1);
-  const totalPages        = Math.ceil(students.length / pageSize);
-  const paginatedStudents = students.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const filteredStudents  = selectedGroupId === ""
+    ? students
+    : students.filter((s) => studentGroupIdsMap.get(s.id!)?.has(selectedGroupId) ?? false);
+  const totalPages        = Math.ceil(filteredStudents.length / pageSize);
+  const paginatedStudents = filteredStudents.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   useEffect(() => {
     loadStudents();
     if (schoolId) {
       getGroupMembers().then((rows) => {
-        const map = new Map<string, string[]>();
+        const map   = new Map<string, string[]>();
+        const idMap = new Map<string, Set<string>>();
         for (const r of rows) {
           const names = map.get(r.student_id) ?? [];
           names.push(r.group_name);
           map.set(r.student_id, names);
+
+          const ids = idMap.get(r.student_id) ?? new Set<string>();
+          ids.add(r.group_id);
+          idMap.set(r.student_id, ids);
         }
         setGroupMap(map);
+        setStudentGroupIdsMap(idMap);
       });
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -122,6 +133,12 @@ export const StudentListPage = () => {
   };
   const changePageSize = (size: 25 | 50 | 100) => {
     setPageSize(size);
+    setCurrentPage(1);
+    setEditingUser(null);
+  };
+
+  const handleGroupFilter = (groupId: string) => {
+    setSelectedGroupId(groupId);
     setCurrentPage(1);
     setEditingUser(null);
   };
@@ -198,7 +215,19 @@ export const StudentListPage = () => {
       {/* Table header + page-size controls */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-2xl font-bold text-black">View Current Students</h2>
-        <div className="flex items-center gap-2 text-sm text-gray-600">
+        <div className="flex items-center gap-3 text-sm text-gray-600">
+          {groups.length > 0 && (
+            <select
+              value={selectedGroupId}
+              onChange={(e) => handleGroupFilter(e.target.value)}
+              className="px-2 py-1 text-sm rounded border border-gray-300 bg-white"
+            >
+              <option value="">All Groups</option>
+              {groups.map((g) => (
+                <option key={g.id} value={g.id}>{g.name}</option>
+              ))}
+            </select>
+          )}
           <span>Show</span>
           {([25, 50, 100] as const).map((n) => (
             <button
@@ -227,9 +256,11 @@ export const StudentListPage = () => {
           </tr>
         </thead>
         <tbody>
-          {!loading && students.length === 0 ? (
+          {!loading && filteredStudents.length === 0 ? (
             <tr>
-              <td colSpan={6} className="p-4 text-center text-gray-500">No students found.</td>
+              <td colSpan={6} className="p-4 text-center text-gray-500">
+                {selectedGroupId ? "No students in this group." : "No students found."}
+              </td>
             </tr>
           ) : (
             paginatedStudents.map((student, idx) => {
@@ -318,11 +349,12 @@ export const StudentListPage = () => {
       </table>
 
       {/* Pagination */}
-      {students.length > 0 && (
+      {filteredStudents.length > 0 && (
         <div className="flex items-center justify-between mt-4 text-sm text-gray-600">
           <span>
-            Showing {Math.min((currentPage - 1) * pageSize + 1, students.length)}–
-            {Math.min(currentPage * pageSize, students.length)} of {students.length} students
+            Showing {Math.min((currentPage - 1) * pageSize + 1, filteredStudents.length)}–
+            {Math.min(currentPage * pageSize, filteredStudents.length)} of {filteredStudents.length} students
+            {selectedGroupId && ` (filtered)`}
           </span>
           <div className="flex items-center gap-2">
             <button onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 1} className="px-3 py-1 rounded border border-gray-300 hover:border-gray-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">←</button>
