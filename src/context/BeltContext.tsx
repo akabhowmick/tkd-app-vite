@@ -111,14 +111,18 @@ export const BeltProvider = ({ children }: { children: ReactNode }) => {
         await run(async () => {
           await apiCreatePromotion({ ...data, school_id: schoolId });
           await loadPromotions();
-          track("student_promoted", { promotionType: data.promotion_type ?? "manual" });
+          track("student_promoted", {
+            promotionType: data.promotion_type ?? "manual",
+            fromRank: ranks.find((r) => r.rank_id === data.from_rank_id)?.rank_name,
+            toRank: ranks.find((r) => r.rank_id === data.to_rank_id)?.rank_name,
+          });
         }, "Failed to promote student");
       } catch (err) {
         captureException(err, { feature: "belts", action: "promoteStudent" });
         throw err;
       }
     },
-    [schoolId, loadPromotions, run],
+    [schoolId, loadPromotions, ranks, run],
   );
 
   const deletePromotionRecord = useCallback(

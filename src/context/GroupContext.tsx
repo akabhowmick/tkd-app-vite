@@ -118,6 +118,7 @@ export const GroupProvider = ({ children }: { children: ReactNode }) => {
     async (studentId: string, groupId: string): Promise<void> => {
       try {
         await apiAddMemberToGroup(studentId, groupId);
+        track("group_member_added");
       } catch (err) {
         captureException(err, { feature: "groups", action: "addMemberToGroup" });
         throw err;
@@ -130,6 +131,7 @@ export const GroupProvider = ({ children }: { children: ReactNode }) => {
     async (studentId: string, groupId: string): Promise<void> => {
       try {
         await apiRemoveMemberFromGroup(studentId, groupId);
+        track("group_member_removed");
       } catch (err) {
         captureException(err, { feature: "groups", action: "removeMemberFromGroup" });
         throw err;

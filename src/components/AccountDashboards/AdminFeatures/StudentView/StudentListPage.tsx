@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useState } from "react";
+import { track } from "../../../../analytics/posthog";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Student } from "../../../../types/user";
 import { useSchool } from "../../../../context/SchoolContext";
@@ -167,6 +168,7 @@ export const StudentListPage = () => {
         school_id: schoolId,
         current_rank_id: editForm.current_rank_id || undefined,
       });
+      track("student_updated");
     } catch {
       handleEdit(snapshot);
       setEditError("Failed to update student. Please try again.");
@@ -178,8 +180,13 @@ export const StudentListPage = () => {
 
   const confirmDelete = async () => {
     setDeleteLoading(true);
-    try { await handleDelete(deleteConfirm.studentId); }
-    finally { setDeleteLoading(false); setDeleteConfirm({ open: false, studentId: "", studentName: "" }); }
+    try {
+      await handleDelete(deleteConfirm.studentId);
+      track("student_deleted");
+    } finally {
+      setDeleteLoading(false);
+      setDeleteConfirm({ open: false, studentId: "", studentName: "" });
+    }
   };
 
   const getRankName = (rankId?: string | null) =>
@@ -220,7 +227,7 @@ export const StudentListPage = () => {
             <select
               value={selectedGroupId}
               onChange={(e) => handleGroupFilter(e.target.value)}
-              className="px-2 py-1 text-sm rounded border border-gray-300 bg-white"
+              className="px-2 py-1 text-sm rounded border border-gray-300 bg-white outline-none"
             >
               <option value="">All Groups</option>
               {groups.map((g) => (

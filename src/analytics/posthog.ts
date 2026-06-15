@@ -37,7 +37,7 @@ type AnalyticsEvent =
   | { name: "user_logged_out"; props?: never }
   | { name: "attendance_saved"; props: { studentCount: number; date: string } }
   | { name: "attendance_mark_all"; props: { status: "present" | "absent" | "tardy" } }
-  | { name: "renewal_created"; props: { durationMonths: number } }
+  | { name: "renewal_created"; props: { durationMonths: number; amount?: number } }
   | { name: "renewal_payment_marked_paid"; props?: never }
   | { name: "renewal_payment_added"; props?: never }
   | { name: "renewal_student_quit"; props?: never }
@@ -49,11 +49,11 @@ type AnalyticsEvent =
   | { name: "class_session_deleted"; props?: never }
   | { name: "belt_rank_created"; props?: never }
   | { name: "belt_rank_deleted"; props?: never }
-  | { name: "student_promoted"; props: { promotionType: "manual" | "test" } }
+  | { name: "student_promoted"; props: { promotionType: "manual" | "test"; fromRank?: string; toRank?: string } }
   | { name: "promotion_deleted"; props?: never }
   | { name: "inventory_item_created"; props: { category: string } }
   | { name: "inventory_item_deleted"; props?: never }
-  | { name: "inventory_sale_recorded"; props: { category: string } }
+  | { name: "inventory_sale_recorded"; props: { category: string; quantity: number; total: number } }
   | { name: "inventory_restock_recorded"; props?: never }
   | { name: "sidebar_view_changed"; props: { view: string } }
   | { name: "sidebar_collapsed"; props: { collapsed: boolean } }
@@ -71,6 +71,9 @@ type AnalyticsEvent =
   | { name: "group_created"; props?: never }
   | { name: "group_updated"; props?: never }
   | { name: "group_deleted"; props?: never }
+  | { name: "group_member_added"; props?: never }
+  | { name: "group_member_removed"; props?: never }
+  | { name: "student_added"; props: { mode: "single" | "bulk"; count: number } }
   | { name: "notification_settings_saved"; props?: never };
 
 type EventName = AnalyticsEvent["name"];
