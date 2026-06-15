@@ -12,7 +12,16 @@ export function initSentry(): void {
   Sentry.init({
     dsn,
     release: import.meta.env.VITE_APP_VERSION ?? "0.0.0",
-    integrations: [Sentry.browserTracingIntegration(), Sentry.replayIntegration()],
+    integrations: [
+      Sentry.browserTracingIntegration(),
+      Sentry.replayIntegration(),
+      Sentry.feedbackIntegration({
+        colorScheme: "light",
+        buttonLabel: "Report a Bug",
+        submitButtonLabel: "Send Report",
+        formTitle: "Report a Bug",
+      }),
+    ],
     tracesSampleRate: 0.2,
     replaysSessionSampleRate: 0.1,
     replaysOnErrorSampleRate: 1.0,

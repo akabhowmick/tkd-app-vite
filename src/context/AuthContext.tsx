@@ -4,7 +4,7 @@ import { UserSignIn } from "../types/auth";
 import { School } from "../types/school";
 import { supabase } from "../api/supabase";
 import { identifyUser, resetIdentity, track } from "../analytics/posthog";
-import { setSentryUser, clearSentryUser } from "../analytics/sentry";
+import { setSentryUser, clearSentryUser, captureException } from "../analytics/sentry";
 
 interface AuthResult {
   success: boolean;
@@ -48,6 +48,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       // successful load because the check was missing
       if (error) {
         console.error("Error fetching user session:", error);
+        captureException(error, { feature: "auth", action: "session_fetch" });
         setLoading(false);
         return;
       }

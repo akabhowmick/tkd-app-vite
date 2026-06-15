@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../api/supabase";
 import { Eye, EyeOff } from "lucide-react";
+import { captureException } from "../analytics/sentry";
 
 const Login: React.FC = () => {
   const { login } = useAuth();
@@ -50,7 +51,10 @@ const Login: React.FC = () => {
       provider: "google",
       options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
-    if (error) setError("Google sign-in failed. Please try again.");
+    if (error) {
+      captureException(error, { feature: "auth", action: "google_oauth" });
+      setError("Google sign-in failed. Please try again.");
+    }
   };
 
   return (
