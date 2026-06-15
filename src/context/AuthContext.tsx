@@ -63,7 +63,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           createdAt: new Date(data.user.created_at),
           schoolId: m?.schoolId || "",
         });
-        identifyUser(data.user.id, { email: data.user.email, role: m?.role });
+        identifyUser(data.user.id, { email: data.user.email, role: m?.role || undefined, schoolId: m?.schoolId || undefined });
         setSentryUser({ id: data.user.id, email: data.user.email });
         if (storedSchool) setSchool(JSON.parse(storedSchool));
       }
@@ -112,10 +112,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       phone: m?.phone || "",
       role: m?.role || UserRole.Student,
       createdAt: new Date(data.user.created_at),
-      schoolId: m?.schoolId || null,
+      schoolId: m?.schoolId || "",
     };
     setUser(loggedInUser);
-    identifyUser(data.user.id, { email: data.user.email, role: loggedInUser.role });
+    identifyUser(data.user.id, { email: data.user.email, role: loggedInUser.role, schoolId: loggedInUser.schoolId || undefined });
     setSentryUser({ id: data.user.id, email: data.user.email });
     track("user_logged_in", { method: "email" });
 

@@ -8,6 +8,7 @@ import { Input } from "../../../ui/input";
 import { Button } from "../../../ui/button";
 import { Trash2, Plus, BookOpen } from "lucide-react";
 import { useBelts } from "../../../../context/BeltContext";
+import { track } from "../../../../analytics/posthog";
 
 const MAX_BULK_STUDENTS = 20;
 
@@ -96,6 +97,7 @@ export const HandleAddOrEdit: React.FC<HandleAddOrEditProps> = ({
         await updateStudent(student.id!, payload);
       } else if (!isEdit && createStudent) {
         await createStudent(payload);
+        track("student_added", { mode: "single", count: 1 });
       }
 
       if (loadStudents) await loadStudents();
@@ -158,6 +160,8 @@ export const HandleAddOrEdit: React.FC<HandleAddOrEditProps> = ({
 
     const successCount = toSubmit.length - failed.length;
     setBulkLoading(false);
+
+    if (successCount > 0) track("student_added", { mode: "bulk", count: successCount });
 
     if (failed.length === 0) {
       setResult({

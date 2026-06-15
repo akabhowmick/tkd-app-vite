@@ -117,7 +117,11 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
           await Promise.all([loadItems(), loadTransactions()]);
           const item = items.find((i) => i.item_id === data.item_id);
           if (data.transaction_type === "sale") {
-            track("inventory_sale_recorded", { category: item?.category ?? "unknown" });
+            track("inventory_sale_recorded", {
+              category: item?.category ?? "unknown",
+              quantity: data.quantity,
+              total: data.quantity * (data.price_per_unit ?? item?.price ?? 0),
+            });
           } else if (data.transaction_type === "restock") {
             track("inventory_restock_recorded");
           }
