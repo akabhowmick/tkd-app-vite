@@ -112,7 +112,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       phone: m?.phone || "",
       role: m?.role || UserRole.Student,
       createdAt: new Date(data.user.created_at),
-      schoolId: m?.schoolId || null,
+      schoolId: m?.schoolId || "",
     };
     setUser(loggedInUser);
     identifyUser(data.user.id, { email: data.user.email, role: loggedInUser.role, schoolId: loggedInUser.schoolId || undefined });
