@@ -183,9 +183,9 @@ export const StudentListPage = () => {
     try {
       await handleDelete(deleteConfirm.studentId);
       track("student_deleted");
+      setDeleteConfirm({ open: false, studentId: "", studentName: "" });
     } finally {
       setDeleteLoading(false);
-      setDeleteConfirm({ open: false, studentId: "", studentName: "" });
     }
   };
 
@@ -227,7 +227,7 @@ export const StudentListPage = () => {
             <select
               value={selectedGroupId}
               onChange={(e) => handleGroupFilter(e.target.value)}
-              className="px-2 py-1 text-sm rounded border border-gray-300 bg-white outline-none"
+              className="px-2 py-1 text-sm rounded border border-gray-300 bg-white outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="">All Groups</option>
               {groups.map((g) => (
