@@ -428,7 +428,7 @@ export const StudentRenewalsProvider = ({ children }: { children: ReactNode }) =
         dispatch({ type: "UPSERT_PERIOD", payload: fresh });
         track("renewal_created", {
           durationMonths: req.period.duration_months ?? 0,
-          amount: req.period.amount_due ?? undefined,
+          amount: req.installments.reduce((sum, i) => sum + (i.amount_due ?? 0), 0) || undefined,
         });
       }),
     [withAsync, state.periods],
