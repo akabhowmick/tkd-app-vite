@@ -81,9 +81,8 @@ export const StudentListPage = () => {
   const { ranks } = useBelts();
   const { getGroupMembers, groups } = useGroups();
 
-  const [groupMap, setGroupMap]         = useState<Map<string, string[]>>(new Map());
-  const [studentGroupIdsMap, setStudentGroupIdsMap] = useState<Map<string, Set<string>>>(new Map());
-  const [selectedGroupId, setSelectedGroupId]       = useState<string>("");
+  const [groupMap, setGroupMap]               = useState<Map<string, string[]>>(new Map());
+  const [selectedGroupId, setSelectedGroupId] = useState<string>("");
   const [addOpen, setAddOpen]           = useState(false);
 
   // ── Inline edit ───────────────────────────────────────────────────────────
@@ -100,9 +99,12 @@ export const StudentListPage = () => {
   // ── Pagination ────────────────────────────────────────────────────────────
   const [pageSize, setPageSize]   = useState<25 | 50 | 100>(25);
   const [currentPage, setCurrentPage] = useState(1);
-  const filteredStudents  = selectedGroupId === ""
-    ? students
-    : students.filter((s) => studentGroupIdsMap.get(s.id!)?.has(selectedGroupId) ?? false);
+  const filteredStudents = (() => {
+    if (!selectedGroupId) return students;
+    const selectedName = groups.find((g) => g.id === selectedGroupId)?.name;
+    if (!selectedName) return students;
+    return students.filter((s) => groupMap.get(s.id!)?.includes(selectedName) ?? false);
+  })();
   const totalPages        = Math.ceil(filteredStudents.length / pageSize);
   const paginatedStudents = filteredStudents.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
@@ -110,19 +112,13 @@ export const StudentListPage = () => {
     loadStudents();
     if (schoolId) {
       getGroupMembers().then((rows) => {
-        const map   = new Map<string, string[]>();
-        const idMap = new Map<string, Set<string>>();
+        const map = new Map<string, string[]>();
         for (const r of rows) {
           const names = map.get(r.student_id) ?? [];
           names.push(r.group_name);
           map.set(r.student_id, names);
-
-          const ids = idMap.get(r.student_id) ?? new Set<string>();
-          ids.add(r.group_id);
-          idMap.set(r.student_id, ids);
         }
         setGroupMap(map);
-        setStudentGroupIdsMap(idMap);
       });
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
