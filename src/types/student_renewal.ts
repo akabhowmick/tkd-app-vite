@@ -173,6 +173,7 @@ export interface RenewalCategoryProps {
   periods: RenewalPeriodWithUiStatus[];
   borderColor: string;
   children: React.ReactNode;
+  description?: string;
 }
 
 export interface CreateRenewalFormProps {

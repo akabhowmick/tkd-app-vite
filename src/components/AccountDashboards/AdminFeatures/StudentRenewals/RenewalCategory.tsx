@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { FaChevronDown, FaChevronUp } from "react-icons/fa";
+import { Info } from "lucide-react";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "../../../ui/tooltip";
 import { RenewalCategoryProps } from "../../../../types/student_renewal";
 
 export const RenewalCategory: React.FC<RenewalCategoryProps> = ({
@@ -8,6 +10,7 @@ export const RenewalCategory: React.FC<RenewalCategoryProps> = ({
   periods,
   borderColor,
   children,
+  description,
 }) => {
   const [open, setOpen] = useState(false);
 
@@ -22,6 +25,21 @@ export const RenewalCategory: React.FC<RenewalCategoryProps> = ({
         <span className="text-2xl font-bold flex items-center gap-2 text-black">
           <span>{icon}</span>
           {`${title} (${periods.length})`}
+          {description && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info
+                    className="h-4 w-4 text-gray-400 hover:text-gray-600 cursor-help"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </TooltipTrigger>
+                <TooltipContent side="right" className="max-w-xs text-sm">
+                  {description}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
         </span>
         {open ? (
           <FaChevronUp className="text-gray-400 shrink-0" />

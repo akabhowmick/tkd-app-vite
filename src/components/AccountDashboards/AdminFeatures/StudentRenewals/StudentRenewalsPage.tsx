@@ -78,6 +78,7 @@ export const StudentRenewalsPage: React.FC = () => {
     icon: string,
     periods: RenewalPeriodWithUiStatus[],
     borderColor: string,
+    description?: string,
   ) => (
     <RenewalCategory
       key={title}
@@ -85,6 +86,7 @@ export const StudentRenewalsPage: React.FC = () => {
       icon={icon}
       periods={periods}
       borderColor={borderColor}
+      description={description}
     >
       {periods.map((period) => (
         <RenewalCard
@@ -145,13 +147,13 @@ export const StudentRenewalsPage: React.FC = () => {
 
         {/* Renewal list */}
         <div className="flex flex-col gap-6">
-          {renderCategory("Payment Overdue", "💸", grouped.payment_overdue, "border-orange-600")}
-          {renderCategory("Expiring Soon", "⚠️", grouped.expiring_soon, "border-yellow-500")}
-          {renderCategory("Grace Period", "🕓", grouped.grace_period, "border-orange-500")}
-          {renderCategory("Expired", "⛔", grouped.expired, "border-red-600")}
-          {renderCategory("Active", "⏰", grouped.active, "border-blue-500")}
-          {renderCategory("Black Belt Club", "🥋", grouped.milestone, "border-purple-500")}
-          {renderCategory("Paid", "✅", grouped.paid, "border-green-500")}
+          {renderCategory("Payment Overdue", "💸", grouped.payment_overdue, "border-orange-600", "A payment installment is past its due date. The renewal is still active but needs attention.")}
+          {renderCategory("Expiring Soon", "⚠️", grouped.expiring_soon, "border-yellow-500", "This renewal expires within 30 days. Consider starting the renewal process soon.")}
+          {renderCategory("Grace Period", "🕓", grouped.grace_period, "border-orange-500", "The renewal has expired, but the student is still within the grace period to renew.")}
+          {renderCategory("Expired", "⛔", grouped.expired, "border-red-600", "The renewal has fully expired and the grace period has passed.")}
+          {renderCategory("Active", "⏰", grouped.active, "border-blue-500", "Renewal is current with no outstanding issues.")}
+          {renderCategory("Black Belt Club", "🥋", grouped.milestone, "border-purple-500", "Student is in the Black Belt Club program with milestone-based renewal tracking.")}
+          {renderCategory("Paid", "✅", grouped.paid, "border-green-500", "All payments are fully collected and up to date.")}
 
           {!loading && Object.values(grouped).every((g) => g.length === 0) && (
             <div className="text-center text-gray-400 py-16 text-sm">
