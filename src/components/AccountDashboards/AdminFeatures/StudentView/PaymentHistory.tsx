@@ -7,7 +7,8 @@ import { usePrograms } from "../../../../context/ProgramContext";
 import { useSchool } from "../../../../context/SchoolContext";
 import { Skeleton } from "../../../ui/skeleton";
 import { Input } from "../../../ui/input";
-import { Pencil, Check, X, Loader2, Info } from "lucide-react";
+import { Pencil, Check, X, Loader2, Info, Trash2 } from "lucide-react";
+import { AppConfirmModal } from "../../../ui/modal/index";
 import type {
   RenewalPayment,
   RenewalPeriodWithUiStatus,
@@ -87,9 +88,28 @@ interface PeriodBlockProps {
   displayStatus: string;
   programName: string;
   onSave: (periodId: string, paymentId: string, updates: UpdateRenewalPaymentRequest) => Promise<void>;
+  onDelete: (periodId: string) => Promise<void>;
 }
 
-function PeriodBlock({ period, displayStatus, programName, onSave }: PeriodBlockProps) {
+function PeriodBlock({ period, displayStatus, programName, onSave, onDelete }: PeriodBlockProps) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const isActiveDelete = displayStatus === "active";
+  const hasLinkedStudents = (period.linked_student_ids?.length ?? 0) > 0;
+
+  const deleteDescription = [
+    isActiveDelete
+      ? "Warning: this is the student's current active enrollment. Deleting it will remove their enrollment record."
+      : "This will permanently delete this renewal period and all its payments.",
+    hasLinkedStudents
+      ? "This renewal is shared with sibling students — their payment records will also be deleted."
+      : null,
+    deleteError ?? null,
+    "This cannot be undone.",
+  ].filter(Boolean).join(" ");
+
   return (
     <div className="bg-white rounded-lg shadow overflow-hidden">
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
@@ -97,9 +117,17 @@ function PeriodBlock({ period, displayStatus, programName, onSave }: PeriodBlock
           <StatusBadge status={displayStatus} />
           <span className="text-sm font-semibold text-gray-800 truncate">{programName}</span>
         </div>
-        <span className="text-xs text-gray-400 shrink-0 ml-2">
-          Started {fmt(period.created_at)}
-        </span>
+        <div className="flex items-center gap-1 shrink-0 ml-2">
+          <span className="text-xs text-gray-400">Started {fmt(period.created_at)}</span>
+          <button
+            onClick={() => setConfirmDelete(true)}
+            disabled={deleting}
+            className="p-1 rounded text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            title="Delete renewal period"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-gray-100 border-b border-gray-100">
@@ -148,6 +176,31 @@ function PeriodBlock({ period, displayStatus, programName, onSave }: PeriodBlock
           </table>
         </div>
       )}
+
+      <AppConfirmModal
+        open={confirmDelete}
+        onOpenChange={(open) => {
+          if (!open) setDeleteError(null);
+          setConfirmDelete(open);
+        }}
+        title={isActiveDelete ? "Delete Active Enrollment?" : "Delete Renewal Period?"}
+        description={deleteDescription}
+        variant="destructive"
+        confirmLabel="Delete"
+        loading={deleting}
+        onConfirm={async () => {
+          setDeleting(true);
+          setDeleteError(null);
+          try {
+            await onDelete(period.period_id);
+            setConfirmDelete(false);
+          } catch (err) {
+            setDeleteError(err instanceof Error ? err.message : "Delete failed. Please try again.");
+          } finally {
+            setDeleting(false);
+          }
+        }}
+      />
     </div>
   );
 }
@@ -359,7 +412,7 @@ function PaymentRow({ payment, periodId, totalInstallments, onSave }: PaymentRow
 
 export function PaymentHistory({ studentId }: { studentId: string }) {
   const { schoolId } = useSchool();
-  const { periods, loading, loadPeriods, updatePayment } = useStudentRenewals();
+  const { periods, loading, loadPeriods, updatePayment, deletePeriod } = useStudentRenewals();
   const { programs } = usePrograms();
 
   useEffect(() => {
@@ -404,6 +457,7 @@ export function PaymentHistory({ studentId }: { studentId: string }) {
             displayStatus={displayStatus}
             programName={programName}
             onSave={updatePayment}
+            onDelete={deletePeriod}
           />
         );
       })}
