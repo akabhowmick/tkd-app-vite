@@ -52,6 +52,7 @@ import { ProfilePage } from "./MainDashboard/UserProfile/ProfilePage";
 import { SettingsPage } from "./MainDashboard/UserProfile/SettingsPage";
 import { NotificationSettings } from "./MainDashboard/NotificationSettings/NotificationSettings";
 import { AnnouncementsPage } from "../pages/AnnouncementsPage";
+import { InstructorManagement } from "./AccountDashboards/AdminFeatures/Admin/NewFeatures/InstructorManagement";
 
 // Instructor view components
 import { InstructorHome } from "./MainDashboard/InstructorDashboard/InstructorHome";
@@ -241,6 +242,7 @@ const AppContent: React.FC = () => {
           <Route path="profile" element={<ProfilePage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="notifications" element={<NotificationSettings />} />
+          <Route path="instructors" element={<InstructorManagement />} />
         </Route>
 
         {/* ── Instructor dashboard ── */}
