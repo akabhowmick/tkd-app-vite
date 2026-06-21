@@ -26,8 +26,10 @@ const fmt = (d: string | null | undefined) =>
       })
     : "—";
 
-const fmtMoney = (n: number) =>
-  n.toLocaleString("en-US", { style: "currency", currency: "USD" });
+const fmtMoney = (n: number | null | undefined) =>
+  n == null
+    ? "—"
+    : n.toLocaleString("en-US", { style: "currency", currency: "USD" });
 
 // ─── Status badge ─────────────────────────────────────────────────────────────
 
@@ -89,9 +91,10 @@ interface PeriodBlockProps {
   programName: string;
   onSave: (periodId: string, paymentId: string, updates: UpdateRenewalPaymentRequest) => Promise<void>;
   onDelete: (periodId: string) => Promise<void>;
+  onDeletePayment: (periodId: string, paymentId: string) => Promise<void>;
 }
 
-function PeriodBlock({ period, displayStatus, programName, onSave, onDelete }: PeriodBlockProps) {
+function PeriodBlock({ period, displayStatus, programName, onSave, onDelete, onDeletePayment }: PeriodBlockProps) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -170,6 +173,7 @@ function PeriodBlock({ period, displayStatus, programName, onSave, onDelete }: P
                   periodId={period.period_id}
                   totalInstallments={period.payments.length}
                   onSave={onSave}
+                  onDelete={onDeletePayment}
                 />
               ))}
             </tbody>
@@ -212,12 +216,16 @@ interface PaymentRowProps {
   periodId: string;
   totalInstallments: number;
   onSave: (periodId: string, paymentId: string, updates: UpdateRenewalPaymentRequest) => Promise<void>;
+  onDelete: (periodId: string, paymentId: string) => Promise<void>;
 }
 
-function PaymentRow({ payment, periodId, totalInstallments, onSave }: PaymentRowProps) {
+function PaymentRow({ payment, periodId, totalInstallments, onSave, onDelete }: PaymentRowProps) {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [form, setForm] = useState({
     payment_date: "",
     amount_due: "",
@@ -357,6 +365,7 @@ function PaymentRow({ payment, periodId, totalInstallments, onSave }: PaymentRow
     : `Payment ${payment.installment_number} of ${totalInstallments} — the total cost for this renewal is split across ${totalInstallments} installments.`;
 
   return (
+    <>
     <tr className="hover:bg-gray-50 transition-colors">
       <td className="px-4 py-2.5 text-gray-500">
         <div className="flex items-center gap-1">
@@ -396,15 +405,50 @@ function PaymentRow({ payment, periodId, totalInstallments, onSave }: PaymentRow
         {payment.paid_to || <span className="text-gray-300">—</span>}
       </td>
       <td className="px-4 py-2.5">
-        <button
-          onClick={startEdit}
-          className="p-1 rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
-          title="Edit payment"
-        >
-          <Pencil className="h-3.5 w-3.5" />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={startEdit}
+            className="p-1 rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+            title="Edit payment"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </button>
+          <button
+            onClick={() => setConfirmDelete(true)}
+            disabled={deleting}
+            className="p-1 rounded text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            title="Delete payment"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </td>
     </tr>
+    <AppConfirmModal
+      open={confirmDelete}
+      onOpenChange={(open) => {
+        if (!open) setDeleteError(null);
+        setConfirmDelete(open);
+      }}
+      title="Delete Payment?"
+      description={deleteError ?? `Delete installment ${payment.installment_number} of ${totalInstallments}? This cannot be undone.`}
+      variant="destructive"
+      confirmLabel="Delete"
+      loading={deleting}
+      onConfirm={async () => {
+        setDeleting(true);
+        setDeleteError(null);
+        try {
+          await onDelete(periodId, payment.payment_id);
+          setConfirmDelete(false);
+        } catch (err) {
+          setDeleteError(err instanceof Error ? err.message : "Delete failed. Please try again.");
+        } finally {
+          setDeleting(false);
+        }
+      }}
+    />
+  </>
   );
 }
 
@@ -412,7 +456,7 @@ function PaymentRow({ payment, periodId, totalInstallments, onSave }: PaymentRow
 
 export function PaymentHistory({ studentId }: { studentId: string }) {
   const { schoolId } = useSchool();
-  const { periods, loading, loadPeriods, updatePayment, deletePeriod } = useStudentRenewals();
+  const { periods, loading, loadPeriods, updatePayment, deletePeriod, deletePayment } = useStudentRenewals();
   const { programs } = usePrograms();
 
   useEffect(() => {
@@ -458,6 +502,7 @@ export function PaymentHistory({ studentId }: { studentId: string }) {
             programName={programName}
             onSave={updatePayment}
             onDelete={deletePeriod}
+            onDeletePayment={deletePayment}
           />
         );
       })}

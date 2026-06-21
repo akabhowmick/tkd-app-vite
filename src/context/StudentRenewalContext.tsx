@@ -75,7 +75,8 @@ export function deriveUiStatus(period: RenewalPeriod, program?: SchoolProgram): 
   // Resolved states always come from DB
   if (period.status === "renewed") return "renewed";
   if (period.status === "quit") return "quit";
-  if (period.status === "expired") return "expired";
+  // Milestone programs don't expire by time; ignore the DB expired status for them
+  if (period.status === "expired" && !isMilestone) return "expired";
 
   // Overdue installment — applies to both program types
   const hasOverdueInstallment = period.payments.some(isInstallmentOverdue);
@@ -213,6 +214,12 @@ export function groupPeriods(
   result.active.sort(byExpiry);
   result.paid.sort(byExpiry);
   result.milestone.sort(byExpiry);
+
+  // A student with an active BBC renewal should not also appear in expired.
+  const milestoneStudentIds = new Set(result.milestone.map((p) => p.student_id));
+  if (milestoneStudentIds.size > 0) {
+    result.expired = result.expired.filter((p) => !milestoneStudentIds.has(p.student_id));
+  }
 
   return result;
 }

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { FaCog, FaChevronDown, FaChevronUp } from "react-icons/fa";
 import { RenewalCardProps, RenewalPayment } from "../../../../types/student_renewal";
 import { useSchool } from "../../../../context/SchoolContext";
@@ -79,6 +80,7 @@ export const RenewalCard: React.FC<RenewalCardProps> = ({
   initialManageOpen,
   onAllModalsClosed,
 }) => {
+  const navigate = useNavigate();
   const { students } = useSchool();
   const { programs } = usePrograms();
   const [paymentsOpen, setPaymentsOpen] = useState(false);
@@ -266,7 +268,10 @@ export const RenewalCard: React.FC<RenewalCardProps> = ({
       {/* Header row */}
       <div className="flex justify-between items-start">
         <div>
-          <h3 className="font-semibold text-gray-900">
+          <h3
+            className="font-semibold text-gray-900 cursor-pointer hover:underline"
+            onClick={() => navigate(`../students/${period.student_id}`)}
+          >
             {period.duration_months}M · {student?.name ?? "Unknown Student"}
           </h3>
           {(period.linked_student_ids ?? []).length > 0 && (
