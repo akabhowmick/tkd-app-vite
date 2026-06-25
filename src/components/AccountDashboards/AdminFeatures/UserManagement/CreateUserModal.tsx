@@ -33,6 +33,7 @@ export const CreateUserModal: React.FC<Props> = ({ open, onOpenChange, onSuccess
   const [success, setSuccess] = useState<string | null>(null);
 
   const reset = () => {
+    console.log("[CreateUserModal] reset()");
     setName("");
     setEmail("");
     setRole("student");
@@ -47,16 +48,37 @@ export const CreateUserModal: React.FC<Props> = ({ open, onOpenChange, onSuccess
     setError(null);
     setSuccess(null);
 
-    if (!name.trim()) { setError("Name is required."); return; }
-    if (!email.trim()) { setError("Email is required."); return; }
+    console.log("[CreateUserModal] handleSubmit — mode:", mode, "role:", role, "name:", name.trim(), "email:", email.trim());
+
+    if (!name.trim()) {
+      console.warn("[CreateUserModal] validation failed: name is empty");
+      setError("Name is required.");
+      return;
+    }
+    if (!email.trim()) {
+      console.warn("[CreateUserModal] validation failed: email is empty");
+      setError("Email is required.");
+      return;
+    }
     if (mode === "create" && password.length < 8) {
+      console.warn("[CreateUserModal] validation failed: password too short (%d chars)", password.length);
       setError("Password must be at least 8 characters.");
       return;
     }
 
+    const payload = {
+      action: mode,
+      email: email.trim().toLowerCase(),
+      name: name.trim(),
+      role,
+      school_id: schoolId,
+      password: mode === "create" ? "[REDACTED]" : undefined,
+    };
+    console.log("[CreateUserModal] calling createOrInviteUser with payload:", payload);
+
     setLoading(true);
     try {
-      await createOrInviteUser({
+      const result = await createOrInviteUser({
         action: mode,
         email: email.trim().toLowerCase(),
         name: name.trim(),
@@ -64,6 +86,7 @@ export const CreateUserModal: React.FC<Props> = ({ open, onOpenChange, onSuccess
         school_id: schoolId,
         password: mode === "create" ? password : undefined,
       });
+      console.log("[CreateUserModal] createOrInviteUser succeeded:", result);
 
       setSuccess(
         mode === "invite"
@@ -72,6 +95,7 @@ export const CreateUserModal: React.FC<Props> = ({ open, onOpenChange, onSuccess
       );
       if (onSuccess) onSuccess();
     } catch (err) {
+      console.error("[CreateUserModal] createOrInviteUser failed:", err);
       setError(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
       setLoading(false);
@@ -82,6 +106,7 @@ export const CreateUserModal: React.FC<Props> = ({ open, onOpenChange, onSuccess
     <AppFormModal
       open={open}
       onOpenChange={(o) => {
+        console.log("[CreateUserModal] onOpenChange:", o);
         if (!o) reset();
         onOpenChange(o);
       }}
@@ -113,7 +138,7 @@ export const CreateUserModal: React.FC<Props> = ({ open, onOpenChange, onSuccess
               <button
                 key={m}
                 type="button"
-                onClick={() => setMode(m)}
+                onClick={() => { console.log("[CreateUserModal] mode changed:", m); setMode(m); }}
                 className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-colors ${
                   mode === m
                     ? "bg-white text-gray-900 shadow-sm"
@@ -158,7 +183,7 @@ export const CreateUserModal: React.FC<Props> = ({ open, onOpenChange, onSuccess
                 <button
                   key={r.value}
                   type="button"
-                  onClick={() => setRole(r.value)}
+                  onClick={() => { console.log("[CreateUserModal] role changed:", r.value); setRole(r.value); }}
                   className={`flex flex-col gap-0.5 px-3 py-2.5 rounded-lg border-2 text-left transition-colors ${
                     role === r.value
                       ? "border-primary bg-primary/5"
