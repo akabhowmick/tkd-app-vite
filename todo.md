@@ -3,7 +3,8 @@
 ## Multi-tenancy / admin onboarding
 - [x] **Fixed: creating a school now makes you its admin.** `SchoolContext.createSchool` sets `admin_id: user.id` on the insert, then updates the caller's own `users` row (`role: "admin"`, `school_id: <new school id>`). The `prevent_self_role_escalation` trigger's carve-out allows exactly this case. Verified end-to-end against real RLS (as a non-admin test account): the school insert succeeds, the self-promotion goes through, and the account can only see its own new school — not the real TaekwonMaru data. `CreateSchoolProfile.tsx` is still a dead stub (unused, not wired to any route) — fine to delete whenever, not blocking anything.
 - [x] Deleted the two confirmed bot accounts (`xuku.wabu.7.35@...`, `nuqup.ehu.k.o.s.78@...`) — both auth and public.users rows are gone.
-- [ ] Decide what to do with the 3 non-bot-but-unclear `role=admin` accounts left over from the backfill (`adminuser@gmail.com`, `kimmichbenjamin18@gmail.com`, `usataekwonmaru@gmail.com`) — demote to `other` if they're not real staff, or confirm and give them `school_id`. Also 4 more look like seed/test data (`edata88701@gmail.com`, `irisang8377@icloud.com`, `newuser@gmail.com`).
+- [x] Demoted the 3 unclear `role=admin` accounts: `usataekwonmaru@gmail.com` → `instructor`, `kimmichbenjamin18@gmail.com` → `student`, `adminuser@gmail.com` → `other`. None have a `school_id`, so none can see real school data. Your own `akabhowmick@gmail.com` is untouched (still `admin`, still scoped to the real TaekwonMaru school).
+- [ ] 3 more accounts still look like seed/test data left over from earlier development (`edata88701@gmail.com`, `irisang8377@icloud.com`, `newuser@gmail.com`) — delete or leave inert, your call.
 
 ## Security — critical/high
 - [ ] Remove "Admin" as a self-signup option on `Signup.tsx` — it's the door the bot accounts used to grab the `admin` role label (harmless now data-wise, but still an open door).
