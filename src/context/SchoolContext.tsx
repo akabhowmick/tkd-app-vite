@@ -257,8 +257,24 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   }, [schoolId]);
 
   const createSchool = async (school: Omit<School, "id" | "created_at">) => {
-    const { data, error } = await supabase.from("schools").insert(school).select().single();
+    if (!user?.id) throw new Error("You must be signed in to create a school.");
+
+    const { data, error } = await supabase
+      .from("schools")
+      .insert({ ...school, admin_id: user.id })
+      .select()
+      .single();
     if (error) throw error;
+
+    // Owning the school row (admin_id = you) is what actually grants admin
+    // access under RLS. Mirror that onto your own users row too, since
+    // create-user and other admin checks key off users.role/school_id.
+    const { error: userError } = await supabase
+      .from("users")
+      .update({ role: "admin", school_id: data.id })
+      .eq("id", user.id);
+    if (userError) throw userError;
+
     setSchool(data);
     setSchoolId(data.id);
     track("school_created");
