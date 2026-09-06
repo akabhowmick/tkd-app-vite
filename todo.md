@@ -4,7 +4,7 @@
 - [x] **Fixed: creating a school now makes you its admin.** `SchoolContext.createSchool` sets `admin_id: user.id` on the insert, then updates the caller's own `users` row (`role: "admin"`, `school_id: <new school id>`). The `prevent_self_role_escalation` trigger's carve-out allows exactly this case. Verified end-to-end against real RLS (as a non-admin test account): the school insert succeeds, the self-promotion goes through, and the account can only see its own new school — not the real TaekwonMaru data. `CreateSchoolProfile.tsx` is still a dead stub (unused, not wired to any route) — fine to delete whenever, not blocking anything.
 - [x] Deleted the two confirmed bot accounts (`xuku.wabu.7.35@...`, `nuqup.ehu.k.o.s.78@...`) — both auth and public.users rows are gone.
 - [x] Demoted the 3 unclear `role=admin` accounts: `usataekwonmaru@gmail.com` → `instructor`, `kimmichbenjamin18@gmail.com` → `student`, `adminuser@gmail.com` → `other`. None have a `school_id`, so none can see real school data. Your own `akabhowmick@gmail.com` is untouched (still `admin`, still scoped to the real TaekwonMaru school).
-- [ ] 3 more accounts still look like seed/test data left over from earlier development (`edata88701@gmail.com`, `irisang8377@icloud.com`, `newuser@gmail.com`) — delete or leave inert, your call.
+- [x] Deleted the 3 leftover seed/test accounts (`edata88701@gmail.com`, `irisang8377@icloud.com`, `newuser@gmail.com`). Only `akabhowmick@gmail.com` (admin) plus the 3 demoted accounts remain in `auth.users`.
 
 ## Security — critical/high
 - [ ] Remove "Admin" as a self-signup option on `Signup.tsx` — it's the door the bot accounts used to grab the `admin` role label (harmless now data-wise, but still an open door).
@@ -14,7 +14,10 @@
   - Validate `school_id` matches the caller's own school before creating a user for it.
   - Don't return raw Supabase error text to the client.
   - Lock down CORS from `*` to the real app origin.
-- [ ] Turn on Supabase Auth hardening: enable leaked-password protection (flagged by Supabase's own linter), enable email confirmation before login, add a captcha on signup, and confirm the server-side minimum password length matches the 10-char client-side rule.
+- [ ] **Manual step — Supabase dashboard only, no API/tool access to do this remotely:**
+  - Authentication → Sign In / Providers → Email: turn on **"Confirm email"** (signups are instant right now with no confirmation — how the bot accounts got in and out in the same second) and **"Secure email change"**.
+  - Authentication → Attack Protection: turn on **"Leaked password protection"** (flagged by Supabase's own linter) and a **CAPTCHA** (hCaptcha/Turnstile) if your plan supports it.
+  - Confirm the server-side minimum password length matches the 10-char client-side rule.
 - [ ] Audit + fix `npm audit` findings (2 critical, 8 high in prod deps — react-router/turbo-stream DoS, `ws`). Move `supabase` CLI out of runtime `dependencies` into `devDependencies`.
 
 ## Privacy / legal
