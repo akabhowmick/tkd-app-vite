@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { UserRole } from "../types/user";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "../api/supabase";
 import { Eye, EyeOff, Check, X } from "lucide-react";
+import TurnstileCaptcha, { isCaptchaEnabled, type TurnstileInstance } from "../components/TurnstileCaptcha";
 
 const passwordRules = [
   { label: "At least 10 characters", test: (p: string) => p.length >= 10 },
@@ -23,6 +24,8 @@ const SignUp: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [passwordTouched, setPasswordTouched] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | undefined>();
+  const captchaRef = useRef<TurnstileInstance>();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -47,19 +50,27 @@ const SignUp: React.FC = () => {
       return;
     }
 
+    if (isCaptchaEnabled() && !captchaToken) {
+      setError("Please complete the security check.");
+      return;
+    }
+
     setLoading(true);
     try {
-      const result = await signup(formData, formData.password);
+      const result = await signup(formData, formData.password, captchaToken);
       if (result.success) {
         navigate("/dashboard");
-      } else {
-        setError(result.message);
+        return;
       }
+      setError(result.message);
     } catch {
       setError("Sign-up failed. Please try again.");
     } finally {
       setLoading(false);
     }
+    // Captcha tokens are single-use, so a failed attempt needs a fresh one.
+    captchaRef.current?.reset();
+    setCaptchaToken(undefined);
   };
 
   const handleGoogleSignUp = async () => {
@@ -157,6 +168,8 @@ const SignUp: React.FC = () => {
               <option value={UserRole.Other}>Other user</option>
             </select>
           </div>
+
+          <TurnstileCaptcha ref={captchaRef} onToken={setCaptchaToken} />
 
           {error && (
             <p className="text-red-500 text-sm bg-red-50 border border-red-200 rounded-lg px-3 py-2">

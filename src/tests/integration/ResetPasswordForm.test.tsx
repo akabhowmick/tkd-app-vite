@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import ResetPassword from "../../pages/ResetPassword";
@@ -18,6 +18,21 @@ vi.mock("framer-motion", () => ({
     ),
   },
 }));
+
+// Stand-in widget: a button that "solves" the captcha
+vi.mock("@marsidev/react-turnstile", async () => {
+  const { forwardRef, useImperativeHandle } = await import("react");
+  return {
+    Turnstile: forwardRef<unknown, { onSuccess?: (token: string) => void }>(({ onSuccess }, ref) => {
+      useImperativeHandle(ref, () => ({ reset: vi.fn() }));
+      return (
+        <button type="button" onClick={() => onSuccess?.("captcha-token")}>
+          Solve captcha
+        </button>
+      );
+    }),
+  };
+});
 
 const mockResetPasswordForEmail = supabase.auth.resetPasswordForEmail as ReturnType<typeof vi.fn>;
 const mockUpdateUser = supabase.auth.updateUser as ReturnType<typeof vi.fn>;
@@ -69,6 +84,38 @@ describe("ResetPassword — request mode", () => {
     fireEvent.click(screen.getByRole("button", { name: /send reset link/i }));
     await waitFor(() => {
       expect(screen.getByText(/could not send reset email/i)).toBeInTheDocument();
+    });
+  });
+});
+
+describe("ResetPassword — captcha", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.stubEnv("VITE_TURNSTILE_SITE_KEY", "test-site-key");
+  });
+  afterEach(() => vi.stubEnv("VITE_TURNSTILE_SITE_KEY", ""));
+
+  it("blocks the reset request until the security check is completed", async () => {
+    renderResetPassword();
+    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: "user@example.com" } });
+    fireEvent.click(screen.getByRole("button", { name: /send reset link/i }));
+    await waitFor(() => {
+      expect(screen.getByText(/please complete the security check/i)).toBeInTheDocument();
+    });
+    expect(mockResetPasswordForEmail).not.toHaveBeenCalled();
+  });
+
+  it("sends the captcha token with the reset request", async () => {
+    mockResetPasswordForEmail.mockResolvedValue({ data: {}, error: null });
+    renderResetPassword();
+    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: "user@example.com" } });
+    fireEvent.click(screen.getByRole("button", { name: /solve captcha/i }));
+    fireEvent.click(screen.getByRole("button", { name: /send reset link/i }));
+    await waitFor(() => {
+      expect(mockResetPasswordForEmail).toHaveBeenCalledWith(
+        "user@example.com",
+        expect.objectContaining({ captchaToken: "captcha-token" }),
+      );
     });
   });
 });

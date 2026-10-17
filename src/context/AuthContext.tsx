@@ -15,8 +15,8 @@ interface AuthContextType {
   user: BaseUser | null;
   school: School | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<AuthResult>;
-  signup: (newUser: UserSignIn, password: string) => Promise<AuthResult>;
+  login: (email: string, password: string, captchaToken?: string) => Promise<AuthResult>;
+  signup: (newUser: UserSignIn, password: string, captchaToken?: string) => Promise<AuthResult>;
   logout: () => void;
 }
 
@@ -33,6 +33,8 @@ export const friendlyAuthError = (message: string): string => {
     return "Please enter a valid email address.";
   if (message.includes("rate limit"))
     return "Too many attempts. Please wait a moment and try again.";
+  if (message.toLowerCase().includes("captcha"))
+    return "Security check failed. Please try again.";
   return "Something went wrong. Please try again.";
 };
 
@@ -100,8 +102,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return () => subscription.unsubscribe();
   }, []);
 
-  const login = async (email: string, password: string): Promise<AuthResult> => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  const login = async (email: string, password: string, captchaToken?: string): Promise<AuthResult> => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+      options: { captchaToken },
+    });
     if (error) return { success: false, message: friendlyAuthError(error.message) };
 
     const m = data.user?.user_metadata;
@@ -122,11 +128,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return { success: true, message: "" };
   };
 
-  const signup = async (newUser: UserSignIn, password: string): Promise<AuthResult> => {
+  const signup = async (
+    newUser: UserSignIn,
+    password: string,
+    captchaToken?: string,
+  ): Promise<AuthResult> => {
     const { data, error } = await supabase.auth.signUp({
       email: newUser.email,
       password,
-      options: { data: { role: newUser.role } },
+      options: { data: { role: newUser.role }, captchaToken },
     });
 
     if (error) return { success: false, message: friendlyAuthError(error.message) };

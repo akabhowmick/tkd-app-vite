@@ -28,6 +28,9 @@ vi.mock("../api/supabase", () => ({
   },
 }));
 
+// ── Turnstile captcha — off by default so a local site key in .env doesn't leak into tests
+vi.stubEnv("VITE_TURNSTILE_SITE_KEY", "");
+
 // ── PostHog — no analytics events in tests
 vi.mock("posthog-js", () => ({
   default: {

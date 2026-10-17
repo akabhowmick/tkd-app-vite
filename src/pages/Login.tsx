@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../api/supabase";
 import { Eye, EyeOff } from "lucide-react";
+import TurnstileCaptcha, { isCaptchaEnabled, type TurnstileInstance } from "../components/TurnstileCaptcha";
 
 const Login: React.FC = () => {
   const { login } = useAuth();
@@ -13,6 +14,8 @@ const Login: React.FC = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | undefined>();
+  const captchaRef = useRef<TurnstileInstance>();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -29,19 +32,27 @@ const Login: React.FC = () => {
       return;
     }
 
+    if (isCaptchaEnabled() && !captchaToken) {
+      setError("Please complete the security check.");
+      return;
+    }
+
     setLoading(true);
     try {
-      const result = await login(formData.email, formData.password);
+      const result = await login(formData.email, formData.password, captchaToken);
       if (result.success) {
         navigate("/dashboard");
-      } else {
-        setError(result.message);
+        return;
       }
+      setError(result.message);
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
+    // Captcha tokens are single-use, so a failed attempt needs a fresh one.
+    captchaRef.current?.reset();
+    setCaptchaToken(undefined);
   };
 
   const handleGoogleSignIn = async () => {
@@ -108,6 +119,8 @@ const Login: React.FC = () => {
               </button>
             </div>
           </div>
+
+          <TurnstileCaptcha ref={captchaRef} onToken={setCaptchaToken} />
 
           {error && (
             <p className="text-red-500 text-sm bg-red-50 border border-red-200 rounded-lg px-3 py-2">

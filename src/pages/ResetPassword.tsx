@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../api/supabase";
 import { Eye, EyeOff, Check, X } from "lucide-react";
+import TurnstileCaptcha, { isCaptchaEnabled, type TurnstileInstance } from "../components/TurnstileCaptcha";
 
 const passwordRules = [
   { label: "At least 10 characters", test: (p: string) => p.length >= 10 },
@@ -23,6 +24,8 @@ const ResetPassword: React.FC = () => {
   const [passwordTouched, setPasswordTouched] = useState(false);
   const [status, setStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [loading, setLoading] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | undefined>();
+  const captchaRef = useRef<TurnstileInstance>();
 
   // Supabase puts the recovery token in the URL hash on redirect
   useEffect(() => {
@@ -44,11 +47,20 @@ const ResetPassword: React.FC = () => {
       return;
     }
 
+    if (isCaptchaEnabled() && !captchaToken) {
+      setStatus({ type: "error", message: "Please complete the security check." });
+      return;
+    }
+
     setLoading(true);
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password`,
+      captchaToken,
     });
     setLoading(false);
+    // Captcha tokens are single-use, so another request needs a fresh one.
+    captchaRef.current?.reset();
+    setCaptchaToken(undefined);
 
     if (error) {
       setStatus({
@@ -118,6 +130,8 @@ const ResetPassword: React.FC = () => {
                   className="border border-gray-300 p-2.5 rounded-lg w-full bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
+
+              <TurnstileCaptcha ref={captchaRef} onToken={setCaptchaToken} />
 
               {status && (
                 <p

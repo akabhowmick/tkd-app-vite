@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import Login from "../../pages/Login";
@@ -6,6 +6,7 @@ import { supabase } from "../../api/supabase";
 
 const mockLogin = vi.fn();
 const mockNavigate = vi.fn();
+const mockCaptchaReset = vi.fn();
 
 vi.mock("../../context/AuthContext", () => ({
   useAuth: () => ({ login: mockLogin }),
@@ -23,6 +24,21 @@ vi.mock("framer-motion", () => ({
     ),
   },
 }));
+
+// Stand-in widget: a button that "solves" the captcha, plus a spy-able reset()
+vi.mock("@marsidev/react-turnstile", async () => {
+  const { forwardRef, useImperativeHandle } = await import("react");
+  return {
+    Turnstile: forwardRef<unknown, { onSuccess?: (token: string) => void }>(({ onSuccess }, ref) => {
+      useImperativeHandle(ref, () => ({ reset: mockCaptchaReset }));
+      return (
+        <button type="button" onClick={() => onSuccess?.("captcha-token")}>
+          Solve captcha
+        </button>
+      );
+    }),
+  };
+});
 
 const renderLogin = () =>
   render(
@@ -72,7 +88,7 @@ describe("Login form — submission", () => {
     fireEvent.change(screen.getByLabelText(/password/i), { target: { value: "mypassword" } });
     fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
     await waitFor(() => {
-      expect(mockLogin).toHaveBeenCalledWith("user@example.com", "mypassword");
+      expect(mockLogin).toHaveBeenCalledWith("user@example.com", "mypassword", undefined);
       expect(mockNavigate).toHaveBeenCalledWith("/dashboard");
     });
   });
@@ -97,6 +113,41 @@ describe("Login form — submission", () => {
     fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
     await waitFor(() => {
       expect(screen.getByText(/something went wrong/i)).toBeInTheDocument();
+    });
+  });
+});
+
+describe("Login form — captcha", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.stubEnv("VITE_TURNSTILE_SITE_KEY", "test-site-key");
+  });
+  afterEach(() => vi.stubEnv("VITE_TURNSTILE_SITE_KEY", ""));
+
+  const fillCredentials = () => {
+    fireEvent.change(screen.getByLabelText(/^email$/i), { target: { value: "user@example.com" } });
+    fireEvent.change(screen.getByLabelText(/password/i), { target: { value: "mypassword" } });
+  };
+
+  it("blocks sign-in until the security check is completed", async () => {
+    renderLogin();
+    fillCredentials();
+    fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
+    await waitFor(() => {
+      expect(screen.getByText(/please complete the security check/i)).toBeInTheDocument();
+    });
+    expect(mockLogin).not.toHaveBeenCalled();
+  });
+
+  it("sends the captcha token and resets the widget after a failed attempt", async () => {
+    mockLogin.mockResolvedValue({ success: false, message: "Incorrect email or password." });
+    renderLogin();
+    fillCredentials();
+    fireEvent.click(screen.getByRole("button", { name: /solve captcha/i }));
+    fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
+    await waitFor(() => {
+      expect(mockLogin).toHaveBeenCalledWith("user@example.com", "mypassword", "captcha-token");
+      expect(mockCaptchaReset).toHaveBeenCalled();
     });
   });
 });
